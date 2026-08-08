@@ -12,14 +12,15 @@ npm run dev
 
 ## Struttura
 
-- `src/pages` — pagine dell'app (`LoginPage`, `ResetPasswordPage`, `AdminPage`)
+- `src/pages` — pagine dell'app (`LoginPage`, `ResetPasswordPage`, `AdminPage`,
+  `ImpostazioniPage`)
 - `src/components` — componenti condivisi (`src/components/ui` per shadcn/ui,
   `RegistrationsTable`, `SummaryCards`)
 - `src/lib` — utility e client (`src/lib/supabase.ts`, `src/lib/format.ts`,
-  `src/lib/paymentStatus.ts`)
+  `src/lib/paymentStatus.ts`, `src/lib/appSettingsSchema.ts`)
 - `src/hooks` — hook custom (`useAuth`, `useRegistrations`, `useEventOptions`,
-  `useRegistrationMutations`)
-- `src/types` — tipi condivisi (`Registration`, `EventOption`)
+  `useRegistrationMutations`, `useAppSettings`)
+- `src/types` — tipi condivisi (`Registration`, `EventOption`, `AppSettings`)
 
 ## Routing
 
@@ -28,6 +29,8 @@ npm run dev
   link di recupero ricevuto via email
 - `/admin` — area protetta con la tabella iscritti (richiede sessione
   Supabase)
+- `/admin/impostazioni` — area protetta per aggiornare la riga unica di
+  `app_settings` (email mittente, dati ricevuta, timbro)
 
 ## Recupero password
 
@@ -53,10 +56,30 @@ campo note interne (`note_admin`) editabili per riga (persistiti su
 Supabase), e un pannello di riepilogo con totale iscritti, incassato e da
 incassare.
 
+## Impostazioni
+
+`/admin/impostazioni` legge e aggiorna l'unica riga di `app_settings`
+(`id = 1`, già popolata a DB — la pagina non fa mai insert, solo update):
+
+- `email_mittente` — indirizzo Burrumballa usato come mittente delle email e
+  per il recupero password (vedi sezione "Recupero password" sopra)
+- `ricevuta_intestazione`, `ricevuta_indirizzo`, `ricevuta_piva_cf`,
+  `ricevuta_iban`, `ricevuta_note` — dati usati dalle Edge Functions per
+  generare la ricevuta PDF
+- `timbro_url` — path dell'immagine del timbro nel bucket Storage privato
+  `assets` (upload in `timbro/timbro.<ext>` con `upsert: true`); essendo il
+  bucket privato, l'anteprima viene mostrata generando una Signed URL
+  (`supabase.storage.from("assets").createSignedUrl(...)`)
+
+Form con React Hook Form + Zod (validazione: email mittente obbligatoria e
+valida, intestazione obbligatoria, IBAN opzionale ma validato se presente) e
+notifiche di salvataggio/errore con `sonner` (Toaster montato in
+`main.tsx`).
+
 ## Stack
 
 React Router, TanStack Query, TanStack Table, React Hook Form + Zod, Supabase,
-lucide-react, date-fns, jsPDF + jspdf-autotable.
+lucide-react, date-fns, jsPDF + jspdf-autotable, sonner.
 
 ## Deploy
 

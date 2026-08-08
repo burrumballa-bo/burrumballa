@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { LogOut, Search } from "lucide-react"
+import { LogOut, Search, Settings } from "lucide-react"
 
 import { supabase } from "@/lib/supabase"
 import { cn } from "@/lib/utils"
@@ -84,10 +84,16 @@ export default function AdminPage() {
     <div className="mx-auto max-w-7xl space-y-6 p-6 md:p-8">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Iscritti</h1>
-        <Button variant="outline" onClick={handleLogout}>
-          <LogOut />
-          Esci
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => navigate("/admin/impostazioni")}>
+            <Settings />
+            Impostazioni
+          </Button>
+          <Button variant="outline" onClick={handleLogout}>
+            <LogOut />
+            Esci
+          </Button>
+        </div>
       </div>
 
       {registrationsQuery.isError && (
