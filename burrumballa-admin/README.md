@@ -56,6 +56,15 @@ campo note interne (`note_admin`) editabili per riga (persistiti su
 Supabase), e un pannello di riepilogo con totale iscritti, incassato e da
 incassare.
 
+Quando lo stato passa a **Pagato bonifico**, la tabella invoca
+automaticamente la Edge Function `send-payment-confirmation` (vedi
+`../supabase/functions/send-payment-confirmation`), che genera la ricevuta
+PDF (dati dinamici da `app_settings` + timbro da Storage) e la invia via
+email all'iscritto. La guardia anti-doppio-invio vive lato server
+(`registrations.email_conferma_bonifico_inviata_at`), quindi la function è
+sicura da richiamare più volte. L'esito (inviata / già inviata / errore)
+viene mostrato con un Toast (`sonner`).
+
 ## Impostazioni
 
 `/admin/impostazioni` legge e aggiorna l'unica riga di `app_settings`

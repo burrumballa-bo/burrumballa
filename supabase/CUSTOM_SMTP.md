@@ -93,6 +93,7 @@ quando quest'ultimo cambia:
 |---|---|---|
 | Reset password, invito, conferma email, magic link | Supabase Auth (Custom SMTP) | Dashboard → Authentication → SMTP Settings → *Sender email* (vedi sopra) |
 | Conferma iscrizione all'evento | Edge Function `send-registration-email` → API HTTP Resend | Secret `EMAIL_MITTENTE` (`supabase secrets set EMAIL_MITTENTE="Burrumballa <...>"`) |
+| Conferma pagamento (ricevuta PDF in allegato) | Edge Function `send-payment-confirmation` → API HTTP Resend | Legge `app_settings.email_mittente` **dinamicamente ad ogni invio** (nessun secret da aggiornare); usa il secret `EMAIL_MITTENTE` solo come fallback se il campo è vuoto |
 
 **Il campo "Sender email" della dashboard Supabase non legge
 dinamicamente il database ad ogni invio**: è una configurazione statica.
