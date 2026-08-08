@@ -34,7 +34,7 @@ export default function LoginPage() {
       return
     }
 
-    navigate("/admin", { replace: true })
+    navigate("/", { replace: true })
   }
 
   return (

@@ -7,7 +7,7 @@ export default function AdminPage() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
-    navigate("/admin/login", { replace: true })
+    navigate("/login", { replace: true })
   }
 
   return (
