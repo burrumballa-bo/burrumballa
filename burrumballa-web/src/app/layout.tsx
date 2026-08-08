@@ -1,6 +1,8 @@
 import type { Metadata } from "next"
 import "./globals.css"
 
+import { Toaster } from "@/components/ui/sonner"
+
 export const metadata: Metadata = {
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.burrumballa.it"
@@ -16,7 +18,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="it">
-      <body>{children}</body>
+      <body>
+        {children}
+        <Toaster richColors position="top-center" />
+      </body>
     </html>
   )
 }

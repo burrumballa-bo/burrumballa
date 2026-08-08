@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import Link from "next/link"
 import {
   Banknote,
   CalendarDays,
@@ -10,6 +11,7 @@ import {
 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -211,6 +213,10 @@ export default function SentiComeSuonaPage() {
           </div>
         </CardContent>
       </Card>
+
+      <Button asChild size="lg" className="mx-auto">
+        <Link href="/eventi/senti-come-suona/iscrizione">Iscriviti ora</Link>
+      </Button>
     </main>
   )
 }
