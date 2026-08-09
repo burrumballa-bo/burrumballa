@@ -393,7 +393,8 @@ export function RegistrationForm() {
           <CardDescription>
             Seleziona una o più categorie, oppure &quot;Nessuna battle&quot;. 1
             categoria: {formatCurrency(15)} · 2 categorie: {formatCurrency(20)}{" "}
-            · 3+ categorie: {formatCurrency(25)}.
+            · 3 categorie: {formatCurrency(25)} · 4 categorie:{" "}
+            {formatCurrency(30)}.
           </CardDescription>
         </CardHeader>
         <CardContent>

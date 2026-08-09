@@ -16,16 +16,18 @@ export const ONSITE_SURCHARGE = 5
 const WORKSHOP_FALLBACK_PRICE = 25
 
 // La battle non si paga a somma delle singole categorie: il prezzo dipende
-// da QUANTE categorie vengono scelte (bundle 1/2/3 = 15/20/25€).
+// da QUANTE categorie vengono scelte (bundle 1/2/3/4 = 15/20/25/30€).
+const BATTLE_MAX_TIER = 4
 const BATTLE_TIER_PRICES: Record<number, number> = {
   1: 15,
   2: 20,
   3: 25,
+  4: 30,
 }
 
 function prezzoBattlePerNumeroCategorie(numero: number): number {
   if (numero <= 0) return 0
-  if (numero >= 3) return BATTLE_TIER_PRICES[3]
+  if (numero >= BATTLE_MAX_TIER) return BATTLE_TIER_PRICES[BATTLE_MAX_TIER]
   return BATTLE_TIER_PRICES[numero] ?? 0
 }
 
@@ -74,12 +76,12 @@ export function calcolaTotale(input: CalcolaTotaleInput): CalcolaTotaleResult {
   const battleCount = categorieBattleReali.length
   const amountBattle = prezzoBattlePerNumeroCategorie(battleCount)
 
-  const surchargeLate =
-    (isLate && amountWorkshop > 0 ? LATE_SURCHARGE : 0) +
-    (isLate && amountBattle > 0 ? LATE_SURCHARGE : 0)
+  // I sovrapprezzi riguardano solo la battle (che ha una scadenza e una
+  // gestione dei posti più stringenti): il solo workshop non li paga mai.
+  const surchargeLate = isLate && amountBattle > 0 ? LATE_SURCHARGE : 0
 
   const surchargeOnsite =
-    input.paymentMethod === "sul_posto" && amountWorkshop + amountBattle > 0
+    input.paymentMethod === "sul_posto" && amountBattle > 0
       ? ONSITE_SURCHARGE
       : 0
 

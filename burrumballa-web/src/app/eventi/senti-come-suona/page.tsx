@@ -11,6 +11,7 @@ import {
   Users,
 } from "lucide-react"
 
+import { RegistrationForm } from "@/components/registration/registration-form"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -30,8 +31,9 @@ export async function generateMetadata(): Promise<Metadata> {
   const dataEvento = formatEventDate(eventInfo.data_evento)
   const title = dataEvento ? `${eventInfo.titolo} — ${dataEvento}` : eventInfo.titolo
   const description =
-    eventInfo.descrizione ??
-    `Iscrizioni entro il ${formatDeadlineDate(eventInfo.scadenza_iscrizioni)}.`
+    (eventInfo.descrizione ??
+      `Iscrizioni entro il ${formatDeadlineDate(eventInfo.scadenza_iscrizioni)}.`) +
+    " Iscriviti online: workshop, battle e pagamento in un unico form."
 
   return {
     title,
@@ -164,8 +166,8 @@ export default async function SentiComeSuonaPage() {
               Costi <span className="text-muted-foreground italic">(Fees)</span>
             </p>
             <p className="text-muted-foreground mt-1 text-sm">
-              15€ / 20€ / 25€ a seconda della categoria{" "}
-              <span className="italic">(depending on the category)</span>
+              15€ / 20€ / 25€ / 30€ a seconda del numero di categorie{" "}
+              <span className="italic">(depending on how many categories)</span>
             </p>
           </div>
         </CardContent>
@@ -198,17 +200,19 @@ export default async function SentiComeSuonaPage() {
             <li className="flex items-start gap-2">
               <Banknote className="mt-0.5 size-4 shrink-0" />
               <span>
-                Dopo la scadenza: <strong className="text-foreground">+5€</strong>{" "}
+                Battle dopo la scadenza:{" "}
+                <strong className="text-foreground">+5€</strong>{" "}
                 <span className="italic">
-                  (after the deadline: +€5)
+                  (battle after the deadline: +€5)
                 </span>
               </span>
             </li>
             <li className="flex items-start gap-2">
               <CreditCard className="mt-0.5 size-4 shrink-0" />
               <span>
-                Pagamento sul posto: <strong className="text-foreground">+5€</strong>{" "}
-                <span className="italic">(payment on site: +€5)</span>
+                Battle pagata sul posto:{" "}
+                <strong className="text-foreground">+5€</strong>{" "}
+                <span className="italic">(battle paid on site: +€5)</span>
               </span>
             </li>
           </ul>
@@ -245,8 +249,20 @@ export default async function SentiComeSuonaPage() {
       )}
 
       <Button asChild size="lg" className="mx-auto">
-        <Link href="/eventi/senti-come-suona/iscrizione">Iscriviti ora</Link>
+        <Link href="#iscrizione">Iscriviti ora</Link>
       </Button>
+
+      <div id="iscrizione" className="flex scroll-mt-8 flex-col gap-6">
+        <header className="flex flex-col gap-2 text-center">
+          <h2 className="text-3xl font-bold tracking-tight">Iscrizione</h2>
+          <p className="text-muted-foreground text-sm">
+            Compila tutti i campi obbligatori (*). Il totale viene calcolato
+            in tempo reale.
+          </p>
+        </header>
+
+        <RegistrationForm />
+      </div>
     </main>
   )
 }
