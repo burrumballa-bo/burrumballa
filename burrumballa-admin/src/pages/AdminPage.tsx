@@ -1,13 +1,15 @@
 import { useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { CalendarDays, LogOut, Search, Settings } from "lucide-react"
+import { CalendarDays, FileDown, LogOut, Search, Settings } from "lucide-react"
 import { toast } from "sonner"
 
 import { supabase } from "@/lib/supabase"
 import { cn } from "@/lib/utils"
 import { PAYMENT_STATUS_OPTIONS } from "@/lib/paymentStatus"
+import { exportRegistrationsPdf } from "@/lib/pdfExport"
 import { useRegistrations } from "@/hooks/useRegistrations"
 import { useEventOptions } from "@/hooks/useEventOptions"
+import { useEventInfo } from "@/hooks/useEventInfo"
 import {
   useUpdateNoteAdmin,
   useUpdatePaymentStatus,
@@ -16,7 +18,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { SummaryCards } from "@/components/SummaryCards"
 import { RegistrationsTable } from "@/components/RegistrationsTable"
-import type { PaymentStatus } from "@/types/registration"
+import type { PaymentStatus, Registration } from "@/types/registration"
 
 type StatusFilter = "tutti" | PaymentStatus
 
@@ -32,6 +34,7 @@ export default function AdminPage() {
 
   const registrationsQuery = useRegistrations()
   const eventOptionsQuery = useEventOptions()
+  const eventInfoQuery = useEventInfo()
   const updateStatus = useUpdatePaymentStatus()
   const updateNote = useUpdateNoteAdmin()
 
@@ -81,11 +84,39 @@ export default function AdminPage() {
     navigate("/admin/login", { replace: true })
   }
 
+  const exportPdf = (list: Registration[], statusLabel: string) => {
+    exportRegistrationsPdf({
+      registrations: list,
+      workshopLabels,
+      battleLabels,
+      eventTitle: eventInfoQuery.data?.titolo,
+      eventDate: eventInfoQuery.data?.data_evento,
+      statusLabel,
+      searchTerm: search,
+    })
+  }
+
+  const handleExportVisible = () => {
+    const statusLabel = FILTERS.find((f) => f.value === statusFilter)?.label ?? "Tutti"
+    exportPdf(filtered, statusLabel)
+  }
+
+  const handleExportByStatus = (status: PaymentStatus) => {
+    const list = searchFiltered.filter((r) => r.payment_status === status)
+    setStatusFilter(status)
+    const statusLabel = PAYMENT_STATUS_OPTIONS.find((o) => o.value === status)?.label ?? status
+    exportPdf(list, statusLabel)
+  }
+
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6 md:p-8">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Iscritti</h1>
         <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={handleExportVisible}>
+            <FileDown />
+            Esporta PDF
+          </Button>
           <Button variant="outline" onClick={() => navigate("/admin/evento")}>
             <CalendarDays />
             Evento
@@ -143,6 +174,27 @@ export default function AdminPage() {
             </button>
           ))}
         </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-muted-foreground text-xs">Esporta PDF:</span>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => handleExportByStatus("pagato_bonifico")}
+        >
+          Solo pagati bonifico
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => handleExportByStatus("da_pagare")}>
+          Solo da pagare
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => handleExportByStatus("pagato_in_loco")}
+        >
+          Solo pagati in loco
+        </Button>
       </div>
 
       {registrationsQuery.isLoading ? (
