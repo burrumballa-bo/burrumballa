@@ -1,15 +1,18 @@
 import type { Metadata } from "next"
+import Link from "next/link"
 import {
   Banknote,
   CalendarDays,
   Clock,
   CreditCard,
   Gavel,
+  Info,
   TriangleAlert,
   Users,
 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -17,52 +20,63 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { formatDeadlineDate, formatEventDate, getEventInfo } from "@/lib/event-info"
 
 // Renderizzata lato server ad ogni richiesta (App Router = SSR di default).
 export const dynamic = "force-dynamic"
 
-const title = "Senti Come Suona — 28 Settembre 2025"
-const description =
-  "Workshop di Waacking con Rada, battle Hip Hop & Allstyle (1vs1 e 2vs2) con giuria Spider, Zurek e Rada. Iscrizioni entro il 21/09/2025."
+export async function generateMetadata(): Promise<Metadata> {
+  const eventInfo = await getEventInfo()
+  const dataEvento = formatEventDate(eventInfo.data_evento)
+  const title = dataEvento ? `${eventInfo.titolo} — ${dataEvento}` : eventInfo.titolo
+  const description =
+    eventInfo.descrizione ??
+    `Iscrizioni entro il ${formatDeadlineDate(eventInfo.scadenza_iscrizioni)}.`
 
-export const metadata: Metadata = {
-  title,
-  description,
-  alternates: {
-    canonical: "/eventi/senti-come-suona",
-  },
-  openGraph: {
+  return {
     title,
     description,
-    url: "/eventi/senti-come-suona",
-    siteName: "Burrumballa",
-    type: "website",
-    locale: "it_IT",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title,
-    description,
-  },
+    alternates: {
+      canonical: "/eventi/senti-come-suona",
+    },
+    openGraph: {
+      title,
+      description,
+      url: "/eventi/senti-come-suona",
+      siteName: "Burrumballa",
+      type: "website",
+      locale: "it_IT",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
+  }
 }
 
-export default function SentiComeSuonaPage() {
+export default async function SentiComeSuonaPage() {
+  const eventInfo = await getEventInfo()
+  const dataEvento = formatEventDate(eventInfo.data_evento)
+
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-8 px-6 py-12">
       <header className="flex flex-col gap-3 text-center">
         <Badge variant="secondary" className="mx-auto">
           Evento / Event
         </Badge>
-        <h1 className="text-4xl font-bold tracking-tight">Senti Come Suona</h1>
-        <div className="text-muted-foreground flex items-center justify-center gap-2 text-sm">
-          <CalendarDays className="size-4" />
-          <span>
-            Domenica 28 Settembre 2025{" "}
-            <span className="italic">
-              (Sunday, September 28, 2025)
-            </span>
-          </span>
-        </div>
+        <h1 className="text-4xl font-bold tracking-tight">{eventInfo.titolo}</h1>
+        {dataEvento && (
+          <div className="text-muted-foreground flex items-center justify-center gap-2 text-sm">
+            <CalendarDays className="size-4" />
+            <span>{dataEvento}</span>
+          </div>
+        )}
+        {eventInfo.descrizione && (
+          <p className="text-muted-foreground mx-auto max-w-xl text-sm">
+            {eventInfo.descrizione}
+          </p>
+        )}
       </header>
 
       <Card>
@@ -175,7 +189,9 @@ export default function SentiComeSuonaPage() {
                 Registration deadline
               </p>
             </div>
-            <Badge variant="secondary">21/09/2025</Badge>
+            <Badge variant="secondary">
+              {formatDeadlineDate(eventInfo.scadenza_iscrizioni)}
+            </Badge>
           </div>
 
           <ul className="text-muted-foreground flex flex-col gap-2 text-sm">
@@ -211,6 +227,26 @@ export default function SentiComeSuonaPage() {
           </div>
         </CardContent>
       </Card>
+
+      {eventInfo.testi_informativi && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-xl">
+              <Info className="size-5" />
+              Informazioni
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground text-sm whitespace-pre-wrap">
+              {eventInfo.testi_informativi}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      <Button asChild size="lg" className="mx-auto">
+        <Link href="/eventi/senti-come-suona/iscrizione">Iscriviti ora</Link>
+      </Button>
     </main>
   )
 }
