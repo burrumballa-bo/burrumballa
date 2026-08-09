@@ -31,10 +31,10 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
 import {
+  FALLBACK_REGISTRATION_DEADLINE,
   NO_BATTLE_KEY,
   NO_WORKSHOP_KEY,
   ONSITE_SURCHARGE,
-  REGISTRATION_DEADLINE,
   calcolaTotale,
   formatCurrency,
   type CalcolaTotaleResult,
@@ -65,6 +65,7 @@ interface RiepilogoIscrizione {
 export function RegistrationForm() {
   const [options, setOptions] = React.useState<EventOptionStato[] | null>(null)
   const [optionsError, setOptionsError] = React.useState<string | null>(null)
+  const [deadline, setDeadline] = React.useState<Date>(FALLBACK_REGISTRATION_DEADLINE)
   const [riepilogo, setRiepilogo] = React.useState<RiepilogoIscrizione | null>(
     null
   )
@@ -84,6 +85,19 @@ export function RegistrationForm() {
       return
     }
     setOptions((data as EventOptionStato[]) ?? [])
+  }, [])
+
+  React.useEffect(() => {
+    const supabase = createClient()
+    supabase
+      .from("event_info")
+      .select("scadenza_iscrizioni")
+      .eq("id", 1)
+      .single()
+      .then(({ data, error }) => {
+        if (error || !data?.scadenza_iscrizioni) return
+        setDeadline(new Date(data.scadenza_iscrizioni))
+      })
   }, [])
 
   React.useEffect(() => {
@@ -122,8 +136,9 @@ export function RegistrationForm() {
         battleCategorie,
         paymentMethod,
         workshopOptions,
+        deadline,
       }),
-    [workshop, battleCategorie, paymentMethod, workshopOptions]
+    [workshop, battleCategorie, paymentMethod, workshopOptions, deadline]
   )
 
   async function onSubmit(values: RegistrationFormValues) {
@@ -132,6 +147,7 @@ export function RegistrationForm() {
       battleCategorie: values.battleCategorie,
       paymentMethod: values.paymentMethod,
       workshopOptions,
+      deadline,
     })
 
     const workshopValue =
@@ -213,6 +229,7 @@ export function RegistrationForm() {
     return (
       <RegistrationConfirmation
         riepilogo={riepilogo}
+        deadline={deadline}
         onReset={() => setRiepilogo(null)}
       />
     )
@@ -531,7 +548,7 @@ export function RegistrationForm() {
             <div className="flex justify-between">
               <span className="text-muted-foreground">
                 Sovrapprezzo ritardo (dopo il{" "}
-                {deadlineFormatter.format(REGISTRATION_DEADLINE)})
+                {deadlineFormatter.format(deadline)})
               </span>
               <span>{formatCurrency(totale.surchargeLate)}</span>
             </div>
@@ -568,9 +585,11 @@ export function RegistrationForm() {
 
 function RegistrationConfirmation({
   riepilogo,
+  deadline,
   onReset,
 }: {
   riepilogo: RiepilogoIscrizione
+  deadline: Date
   onReset: () => void
 }) {
   const { values, totale, workshopLabel, battleLabels } = riepilogo
@@ -660,7 +679,7 @@ function RegistrationConfirmation({
             <div className="text-muted-foreground flex items-center gap-2 text-xs">
               <CalendarClock className="size-4" />
               Scadenza: effettua il bonifico entro il{" "}
-              {deadlineFormatter.format(REGISTRATION_DEADLINE)} per confermare
+              {deadlineFormatter.format(deadline)} per confermare
               il posto.
             </div>
           </div>

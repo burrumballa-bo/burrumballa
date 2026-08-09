@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { LogOut, Search, Settings } from "lucide-react"
+import { CalendarDays, LogOut, Search, Settings } from "lucide-react"
 import { toast } from "sonner"
 
 import { supabase } from "@/lib/supabase"
@@ -86,6 +86,10 @@ export default function AdminPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Iscritti</h1>
         <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => navigate("/admin/evento")}>
+            <CalendarDays />
+            Evento
+          </Button>
           <Button variant="outline" onClick={() => navigate("/admin/impostazioni")}>
             <Settings />
             Impostazioni
