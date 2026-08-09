@@ -13,14 +13,18 @@ npm run dev
 ## Struttura
 
 - `src/pages` — pagine dell'app (`LoginPage`, `ResetPasswordPage`, `AdminPage`,
-  `ImpostazioniPage`)
+  `ImpostazioniPage`, `EventoPage`)
 - `src/components` — componenti condivisi (`src/components/ui` per shadcn/ui,
-  `RegistrationsTable`, `SummaryCards`)
+  `RegistrationsTable`, `SummaryCards`, `EventOptionsSection`, `EventOptionRow`)
 - `src/lib` — utility e client (`src/lib/supabase.ts`, `src/lib/format.ts`,
-  `src/lib/paymentStatus.ts`, `src/lib/appSettingsSchema.ts`)
+  `src/lib/paymentStatus.ts`, `src/lib/appSettingsSchema.ts`,
+  `src/lib/eventInfoSchema.ts`, `src/lib/eventOptionSchema.ts`,
+  `src/lib/optionAvailability.ts`, `src/lib/datetime.ts`)
 - `src/hooks` — hook custom (`useAuth`, `useRegistrations`, `useEventOptions`,
-  `useRegistrationMutations`, `useAppSettings`)
-- `src/types` — tipi condivisi (`Registration`, `EventOption`, `AppSettings`)
+  `useRegistrationMutations`, `useAppSettings`, `useEventInfo`,
+  `useEventOptionsStato`)
+- `src/types` — tipi condivisi (`Registration`, `EventOption`, `AppSettings`,
+  `EventInfo`, `EventOptionStato`)
 
 ## Routing
 
@@ -31,6 +35,8 @@ npm run dev
   Supabase)
 - `/admin/impostazioni` — area protetta per aggiornare la riga unica di
   `app_settings` (email mittente, dati ricevuta, timbro)
+- `/admin/evento` — area protetta per gestire l'evento "Senti Come Suona"
+  (info evento + opzioni del form)
 
 ## Recupero password
 
@@ -56,6 +62,15 @@ campo note interne (`note_admin`) editabili per riga (persistiti su
 Supabase), e un pannello di riepilogo con totale iscritti, incassato e da
 incassare.
 
+Quando lo stato passa a **Pagato bonifico**, la tabella invoca
+automaticamente la Edge Function `send-payment-confirmation` (vedi
+`../supabase/functions/send-payment-confirmation`), che genera la ricevuta
+PDF (dati dinamici da `app_settings` + timbro da Storage) e la invia via
+email all'iscritto. La guardia anti-doppio-invio vive lato server
+(`registrations.email_conferma_bonifico_inviata_at`), quindi la function è
+sicura da richiamare più volte. L'esito (inviata / già inviata / errore)
+viene mostrato con un Toast (`sonner`).
+
 ## Impostazioni
 
 `/admin/impostazioni` legge e aggiorna l'unica riga di `app_settings`
@@ -75,6 +90,30 @@ Form con React Hook Form + Zod (validazione: email mittente obbligatoria e
 valida, intestazione obbligatoria, IBAN opzionale ma validato se presente) e
 notifiche di salvataggio/errore con `sonner` (Toaster montato in
 `main.tsx`).
+
+## Evento
+
+`/admin/evento` gestisce i contenuti dell'evento "Senti Come Suona":
+
+- **Info evento** — legge e aggiorna l'unica riga di `event_info` (`id = 1`):
+  `titolo`, `data_evento`, `descrizione`, `testi_informativi` e
+  `scadenza_iscrizioni`. Questi valori sono letti pubblicamente (RLS anon)
+  dalla pagina evento (`/eventi/senti-come-suona`) e dal form di iscrizione
+  (per il calcolo del sovrapprezzo di ritardo), quindi ogni salvataggio si
+  riflette subito sul sito pubblico.
+- **Opzioni form** — tabella `event_options` (workshop e battle), una riga per
+  opzione con `label`, `prezzo`, `ordine`, `attivo` e, soprattutto,
+  `max_posti` (vuoto = illimitato) e il toggle **Sold out manuale**. I
+  conteggi (colonna Iscritti e badge Disponibile/In esaurimento/SOLD OUT) sono
+  letti dalla view `event_options_stato`, che conta **tutti** gli iscritti a
+  un'opzione a prescindere dallo stato di pagamento, e si aggiornano da soli
+  ogni 15s (oltre che dopo ogni salvataggio o con il pulsante "Aggiorna"). Il
+  sold out scatta in automatico quando iscritti ≥ max posti, oppure quando è
+  attivo il toggle manuale — in entrambi i casi l'opzione risulta
+  disabilitata nel form pubblico di iscrizione.
+
+Entrambe le sezioni usano React Hook Form + Zod per la validazione e mostrano
+un Toast (`sonner`) di conferma o errore ad ogni salvataggio.
 
 ## Stack
 
