@@ -4,8 +4,10 @@ import type { EventOptionStato, PaymentMethod } from "./types"
 export const NO_WORKSHOP_KEY = "no_workshop"
 export const NO_BATTLE_KEY = "no_battle"
 
-// Scadenza iscrizioni: dal 22/09/2025 scattano i sovrapprezzi di ritardo.
-export const REGISTRATION_DEADLINE = new Date("2025-09-21T23:59:59+02:00")
+// Scadenza iscrizioni di fallback, usata solo se `event_info` non è
+// raggiungibile: il valore reale arriva da `event_info.scadenza_iscrizioni`
+// (gestito dall'admin in /admin/evento).
+export const FALLBACK_REGISTRATION_DEADLINE = new Date("2025-09-21T23:59:59+02:00")
 
 export const LATE_SURCHARGE = 5
 export const ONSITE_SURCHARGE = 5
@@ -32,6 +34,7 @@ export interface CalcolaTotaleInput {
   battleCategorie: string[]
   paymentMethod: PaymentMethod | ""
   workshopOptions: EventOptionStato[]
+  deadline: Date
   now?: Date
 }
 
@@ -54,7 +57,7 @@ export function formatCurrency(value: number): string {
 
 export function calcolaTotale(input: CalcolaTotaleInput): CalcolaTotaleResult {
   const now = input.now ?? new Date()
-  const isLate = now.getTime() > REGISTRATION_DEADLINE.getTime()
+  const isLate = now.getTime() > input.deadline.getTime()
 
   const workshopChiave =
     input.workshop && input.workshop !== NO_WORKSHOP_KEY ? input.workshop : null
