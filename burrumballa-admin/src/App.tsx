@@ -2,6 +2,8 @@ import { Routes, Route, Navigate } from "react-router-dom"
 import LoginPage from "@/pages/LoginPage"
 import ResetPasswordPage from "@/pages/ResetPasswordPage"
 import AdminPage from "@/pages/AdminPage"
+import ImpostazioniPage from "@/pages/ImpostazioniPage"
+import EventoPage from "@/pages/EventoPage"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
 
 function App() {
@@ -14,6 +16,22 @@ function App() {
         element={
           <ProtectedRoute>
             <AdminPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/impostazioni"
+        element={
+          <ProtectedRoute>
+            <ImpostazioniPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/evento"
+        element={
+          <ProtectedRoute>
+            <EventoPage />
           </ProtectedRoute>
         }
       />

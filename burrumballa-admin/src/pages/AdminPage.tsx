@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { LogOut, Search } from "lucide-react"
+import { CalendarDays, LogOut, Search, Settings } from "lucide-react"
+import { toast } from "sonner"
 
 import { supabase } from "@/lib/supabase"
 import { cn } from "@/lib/utils"
@@ -84,10 +85,20 @@ export default function AdminPage() {
     <div className="mx-auto max-w-7xl space-y-6 p-6 md:p-8">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Iscritti</h1>
-        <Button variant="outline" onClick={handleLogout}>
-          <LogOut />
-          Esci
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => navigate("/admin/evento")}>
+            <CalendarDays />
+            Evento
+          </Button>
+          <Button variant="outline" onClick={() => navigate("/admin/impostazioni")}>
+            <Settings />
+            Impostazioni
+          </Button>
+          <Button variant="outline" onClick={handleLogout}>
+            <LogOut />
+            Esci
+          </Button>
+        </div>
       </div>
 
       {registrationsQuery.isError && (
@@ -96,7 +107,7 @@ export default function AdminPage() {
           {(registrationsQuery.error as Error).message}
         </p>
       )}
-      {(updateStatus.isError || updateNote.isError) && (
+      {updateNote.isError && (
         <p className="text-destructive text-sm">
           Salvataggio non riuscito. Riprova.
         </p>
@@ -142,7 +153,26 @@ export default function AdminPage() {
           workshopLabels={workshopLabels}
           battleLabels={battleLabels}
           onStatusChange={(id, status) =>
-            updateStatus.mutate({ id, paymentStatus: status })
+            updateStatus.mutate(
+              { id, paymentStatus: status },
+              {
+                onSuccess: (result) => {
+                  if (result.emailStatus === "sent") {
+                    toast.success("Ricevuta di pagamento inviata via email.")
+                  } else if (result.emailStatus === "failed") {
+                    toast.error(
+                      "Stato aggiornato, ma l'invio della ricevuta non è riuscito.",
+                      { description: result.emailError }
+                    )
+                  }
+                },
+                onError: (error) => {
+                  toast.error("Aggiornamento stato non riuscito.", {
+                    description: (error as Error).message,
+                  })
+                },
+              }
+            )
           }
           onNoteChange={(id, note) => updateNote.mutate({ id, noteAdmin: note })}
         />
