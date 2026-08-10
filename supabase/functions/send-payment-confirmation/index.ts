@@ -8,11 +8,14 @@
 //   supabase functions deploy send-payment-confirmation
 //
 // Secret richiesti (Supabase -> Project Settings -> Edge Functions,
-// oppure `supabase secrets set NOME=valore`):
-//   RESEND_API_KEY   - API key di Resend (obbligatoria)
-//   EMAIL_MITTENTE   - mittente di fallback "Nome <email@dominio>",
-//                      usato solo se app_settings.email_mittente e' vuoto
-//                      (opzionale, default onboarding@resend.dev)
+// oppure `supabase secrets set NOME=valore`), SMTP Tophost:
+//   SMTP_HOST   - host del server SMTP (es. mail.tophost.it)
+//   SMTP_PORT   - porta SMTP (465 = TLS implicito, 587 = STARTTLS)
+//   SMTP_USER   - utente/casella SMTP
+//   SMTP_PASS   - password della casella SMTP
+//   SMTP_FROM   - mittente di fallback "Nome <email@dominio>",
+//                 usato solo se app_settings.email_mittente e' vuoto
+//                 (opzionale, default SMTP_USER)
 //
 // SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY sono iniettate automaticamente
 // da Supabase in ogni Edge Function: servono qui per leggere/scrivere
@@ -28,12 +31,15 @@ import {
   type PDFFont,
   type PDFPage,
 } from "npm:pdf-lib@1.17.1"
+import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts"
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")
-const EMAIL_MITTENTE_FALLBACK =
-  Deno.env.get("EMAIL_MITTENTE") ?? "Burrumballa <onboarding@resend.dev>"
+const SMTP_HOST = Deno.env.get("SMTP_HOST")
+const SMTP_PORT = Deno.env.get("SMTP_PORT")
+const SMTP_USER = Deno.env.get("SMTP_USER")
+const SMTP_PASS = Deno.env.get("SMTP_PASS")
+const SMTP_FROM_FALLBACK = Deno.env.get("SMTP_FROM") ?? SMTP_USER ?? ""
 
 const TIMBRO_BUCKET = "assets"
 const EMAIL_SUBJECT = "Pagamento confermato — SENTI COME SUONA vol.3"
@@ -116,15 +122,6 @@ function pdfSafeText(text: string): string {
       return isSafe ? char : "?"
     })
     .join("")
-}
-
-function toBase64(bytes: Uint8Array): string {
-  let binary = ""
-  const chunkSize = 0x8000
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize))
-  }
-  return btoa(binary)
 }
 
 interface ReceiptLine {
@@ -417,6 +414,18 @@ function buildEmailHtml(registration: Registration, settings: AppSettings): stri
   `
 }
 
+function buildEmailText(registration: Registration, settings: AppSettings): string {
+  return [
+    "Pagamento confermato — SENTI COME SUONA vol.3",
+    "",
+    `Ciao ${registration.nome},`,
+    "Abbiamo ricevuto il tuo bonifico: la tua iscrizione a Senti Come Suona vol.3 è confermata.",
+    "In allegato trovi la ricevuta di pagamento in PDF.",
+    "",
+    `A presto,\n${settings.ricevuta_intestazione ?? "Burrumballa"}`,
+  ].join("\n")
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders })
@@ -432,8 +441,11 @@ Deno.serve(async (req: Request) => {
       500
     )
   }
-  if (!RESEND_API_KEY) {
-    return jsonResponse({ error: "RESEND_API_KEY non configurata" }, 500)
+  if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS) {
+    return jsonResponse(
+      { error: "Configurazione SMTP incompleta (SMTP_HOST/SMTP_PORT/SMTP_USER/SMTP_PASS)" },
+      500
+    )
   }
 
   let payload: unknown
@@ -545,31 +557,35 @@ Deno.serve(async (req: Request) => {
       ? settingsRow.ricevuta_intestazione
         ? `${settingsRow.ricevuta_intestazione} <${settingsRow.email_mittente}>`
         : settingsRow.email_mittente
-      : EMAIL_MITTENTE_FALLBACK
+      : SMTP_FROM_FALLBACK
 
-    const resendResponse = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-        "Content-Type": "application/json",
+    const smtpClient = new SMTPClient({
+      connection: {
+        hostname: SMTP_HOST,
+        port: Number(SMTP_PORT),
+        tls: Number(SMTP_PORT) === 465,
+        auth: { username: SMTP_USER, password: SMTP_PASS },
       },
-      body: JSON.stringify({
+    })
+
+    try {
+      await smtpClient.send({
         from: fromAddress,
-        to: [registration.email],
+        to: registration.email,
         subject: EMAIL_SUBJECT,
+        content: buildEmailText(registration, settingsRow),
         html: buildEmailHtml(registration, settingsRow),
         attachments: [
           {
             filename: `ricevuta-${receiptNumber(registration)}.pdf`,
-            content: toBase64(pdfBytes),
+            content: pdfBytes,
+            contentType: "application/pdf",
+            encoding: "binary",
           },
         ],
-      }),
-    })
-
-    if (!resendResponse.ok) {
-      const errorBody = await resendResponse.text()
-      throw new Error(`Invio email non riuscito: ${errorBody}`)
+      })
+    } finally {
+      await smtpClient.close()
     }
 
     return jsonResponse({ ok: true, skipped: false })
