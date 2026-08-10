@@ -1,18 +1,24 @@
 // Edge Function invocata dal form pubblico dopo un insert riuscito su
-// `registrations`. Invia l'email di conferma iscrizione tramite Resend.
+// `registrations`. Invia l'email di conferma iscrizione via SMTP.
 //
 // Deploy:
 //   supabase functions deploy send-registration-email
 //
 // Secret richiesti (Supabase -> Project Settings -> Edge Functions,
-// oppure `supabase secrets set NOME=valore`):
-//   RESEND_API_KEY   - API key di Resend (obbligatoria)
-//   EMAIL_MITTENTE   - mittente "Nome <email@dominio>" (opzionale,
-//                      default onboarding@resend.dev)
+// oppure `supabase secrets set NOME=valore`), SMTP Tophost:
+//   SMTP_HOST   - host del server SMTP (es. mail.tophost.it)
+//   SMTP_PORT   - porta SMTP (465 = TLS implicito, 587 = STARTTLS)
+//   SMTP_USER   - utente/casella SMTP
+//   SMTP_PASS   - password della casella SMTP
+//   SMTP_FROM   - mittente "Nome <email@dominio>" (opzionale, default SMTP_USER)
 
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")
-const EMAIL_MITTENTE =
-  Deno.env.get("EMAIL_MITTENTE") ?? "Burrumballa <onboarding@resend.dev>"
+import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts"
+
+const SMTP_HOST = Deno.env.get("SMTP_HOST")
+const SMTP_PORT = Deno.env.get("SMTP_PORT")
+const SMTP_USER = Deno.env.get("SMTP_USER")
+const SMTP_PASS = Deno.env.get("SMTP_PASS")
+const SMTP_FROM = Deno.env.get("SMTP_FROM") ?? SMTP_USER ?? ""
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -79,6 +85,29 @@ function buildEmailHtml(payload: RegistrationEmailPayload): string {
   `
 }
 
+function buildEmailText(payload: RegistrationEmailPayload): string {
+  const pagamentoText =
+    payload.paymentMethod === "bonifico" ? "Bonifico bancario" : "Sul posto"
+
+  return [
+    "Iscrizione confermata — Senti Come Suona",
+    "",
+    `Ciao ${payload.nome},`,
+    "Abbiamo ricevuto la tua iscrizione a Senti Come Suona. Ecco il riepilogo:",
+    `Nome: ${payload.nome} ${payload.cognome}`,
+    `Workshop: ${payload.workshopLabel}`,
+    `Battle: ${payload.battleLabels.join(", ")}`,
+    `Pagamento: ${pagamentoText}`,
+    `Totale: ${formatCurrency(payload.amountTotal)}`,
+    "",
+    payload.paymentMethod === "bonifico"
+      ? "Il posto è confermato solo dopo la ricezione del bonifico."
+      : "Ricordati di portare l'importo esatto il giorno dell'evento.",
+    "",
+    "A presto,\nBurrumballa",
+  ].join("\n")
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders })
@@ -91,9 +120,11 @@ Deno.serve(async (req: Request) => {
     })
   }
 
-  if (!RESEND_API_KEY) {
+  if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS) {
     return new Response(
-      JSON.stringify({ error: "RESEND_API_KEY non configurata" }),
+      JSON.stringify({
+        error: "Configurazione SMTP incompleta (SMTP_HOST/SMTP_PORT/SMTP_USER/SMTP_PASS)",
+      }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -118,29 +149,34 @@ Deno.serve(async (req: Request) => {
     })
   }
 
-  const resendResponse = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${RESEND_API_KEY}`,
-      "Content-Type": "application/json",
+  const smtpClient = new SMTPClient({
+    connection: {
+      hostname: SMTP_HOST,
+      port: Number(SMTP_PORT),
+      tls: Number(SMTP_PORT) === 465,
+      auth: { username: SMTP_USER, password: SMTP_PASS },
     },
-    body: JSON.stringify({
-      from: EMAIL_MITTENTE,
-      to: [payload.email],
-      subject: "Iscrizione confermata — Senti Come Suona",
-      html: buildEmailHtml(payload),
-    }),
   })
 
-  if (!resendResponse.ok) {
-    const errorBody = await resendResponse.text()
+  try {
+    await smtpClient.send({
+      from: SMTP_FROM,
+      to: payload.email,
+      subject: "Iscrizione confermata — Senti Come Suona",
+      content: buildEmailText(payload),
+      html: buildEmailHtml(payload),
+    })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Errore sconosciuto"
     return new Response(
-      JSON.stringify({ error: "Invio email non riuscito", detail: errorBody }),
+      JSON.stringify({ error: "Invio email non riuscito", detail: message }),
       {
         status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
     )
+  } finally {
+    await smtpClient.close()
   }
 
   return new Response(JSON.stringify({ ok: true }), {
