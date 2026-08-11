@@ -58,6 +58,21 @@ export function formatEventDate(dateStr: string | null): string | null {
   return formatted.replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
+// Formatta una data "YYYY-MM-DD" come { giorno: "27", mese: "09" }, per
+// l'evidenza numerica grande usata nell'hero della pagina evento.
+export function formatEventDayMonth(
+  dateStr: string | null
+): { giorno: string; mese: string } | null {
+  if (!dateStr) return null
+  const [y, m, d] = dateStr.split("-").map(Number)
+  if (!y || !m || !d) return null
+
+  return {
+    giorno: String(d).padStart(2, "0"),
+    mese: String(m).padStart(2, "0"),
+  }
+}
+
 export function formatDeadlineDate(iso: string): string {
   return new Intl.DateTimeFormat("it-IT", {
     day: "2-digit",
