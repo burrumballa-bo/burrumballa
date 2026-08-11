@@ -8,7 +8,9 @@ import { toast } from "sonner"
 import {
   Banknote,
   CalendarClock,
+  Check,
   CheckCircle2,
+  Copy,
   Loader2,
   RefreshCw,
   TriangleAlert,
@@ -46,9 +48,6 @@ import {
 } from "@/lib/registration/schema"
 import type { EventOptionStato } from "@/lib/registration/types"
 
-// PLACEHOLDER: sostituire con l'IBAN reale dell'associazione.
-const IBAN_PLACEHOLDER = "IT00 X000 0000 0000 0000 0000 000"
-
 const deadlineFormatter = new Intl.DateTimeFormat("it-IT", {
   day: "2-digit",
   month: "2-digit",
@@ -58,11 +57,77 @@ const deadlineFormatter = new Intl.DateTimeFormat("it-IT", {
 // Taglio diagonale ricorrente nel design (tag, pillole, CTA).
 const DIAGONAL_CUT = "[clip-path:polygon(0_0,100%_0,94%_100%,0_100%)]"
 
+interface BonificoInfo {
+  eventTitle: string
+  iban: string
+  intestatario: string
+}
+
+const FALLBACK_BONIFICO_INFO: BonificoInfo = {
+  eventTitle: "Senti Come Suona",
+  iban: "IT00 X000 0000 0000 0000 0000 000",
+  intestatario: "Burrumballa APS",
+}
+
 interface RiepilogoIscrizione {
   values: RegistrationFormValues
   totale: CalcolaTotaleResult
   workshopLabel: string
   battleLabels: string[]
+}
+
+function CopyableRow({
+  label,
+  value,
+  mono = true,
+}: {
+  label: string
+  value: string
+  mono?: boolean
+}) {
+  const [copied, setCopied] = React.useState(false)
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(value)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 1500)
+    } catch {
+      toast.error("Copia non riuscita", {
+        description: "Seleziona e copia il testo manualmente.",
+      })
+    }
+  }
+
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col gap-0.5">
+        <span className="text-muted-foreground text-[11px] tracking-[0.08em] uppercase">
+          {label}
+        </span>
+        <span
+          className={cn(
+            "text-foreground text-sm break-all",
+            mono && "font-mono"
+          )}
+        >
+          {value}
+        </span>
+      </div>
+      <button
+        type="button"
+        onClick={handleCopy}
+        aria-label={`Copia ${label.toLowerCase()}`}
+        className="text-muted-foreground hover:border-[#f5d90a] hover:text-[#f5d90a] flex size-7 shrink-0 items-center justify-center rounded-[2px] border border-white/15 transition-colors"
+      >
+        {copied ? (
+          <Check className="size-3.5 text-[#7ef58a]" />
+        ) : (
+          <Copy className="size-3.5" />
+        )}
+      </button>
+    </div>
+  )
 }
 
 function SectionCard({
@@ -98,6 +163,9 @@ export function RegistrationForm() {
   const [options, setOptions] = React.useState<EventOptionStato[] | null>(null)
   const [optionsError, setOptionsError] = React.useState<string | null>(null)
   const [deadline, setDeadline] = React.useState<Date>(FALLBACK_REGISTRATION_DEADLINE)
+  const [bonificoInfo, setBonificoInfo] = React.useState<BonificoInfo>(
+    FALLBACK_BONIFICO_INFO
+  )
   const [riepilogo, setRiepilogo] = React.useState<RiepilogoIscrizione | null>(
     null
   )
@@ -121,14 +189,36 @@ export function RegistrationForm() {
 
   React.useEffect(() => {
     const supabase = createClient()
+
     supabase
       .from("event_info")
-      .select("scadenza_iscrizioni")
+      .select("titolo, scadenza_iscrizioni")
       .eq("id", 1)
       .single()
       .then(({ data, error }) => {
-        if (error || !data?.scadenza_iscrizioni) return
-        setDeadline(new Date(data.scadenza_iscrizioni))
+        if (error || !data) return
+        if (data.scadenza_iscrizioni) {
+          setDeadline(new Date(data.scadenza_iscrizioni))
+        }
+        setBonificoInfo((prev) => ({
+          ...prev,
+          eventTitle: data.titolo || prev.eventTitle,
+        }))
+      })
+
+    // Vista pubblica su app_settings (ricevuta_iban / ricevuta_intestazione):
+    // stessi dati che l'admin gestisce in Impostazioni per la ricevuta PDF.
+    supabase
+      .from("bonifico_info")
+      .select("iban, intestatario")
+      .single()
+      .then(({ data, error }) => {
+        if (error || !data) return
+        setBonificoInfo((prev) => ({
+          ...prev,
+          iban: data.iban || prev.iban,
+          intestatario: data.intestatario || prev.intestatario,
+        }))
       })
   }, [])
 
@@ -266,6 +356,7 @@ export function RegistrationForm() {
       <RegistrationConfirmation
         riepilogo={riepilogo}
         deadline={deadline}
+        bonificoInfo={bonificoInfo}
         onReset={() => setRiepilogo(null)}
       />
     )
@@ -807,66 +898,113 @@ export function RegistrationForm() {
 function RegistrationConfirmation({
   riepilogo,
   deadline,
+  bonificoInfo,
   onReset,
 }: {
   riepilogo: RiepilogoIscrizione
   deadline: Date
+  bonificoInfo: BonificoInfo
   onReset: () => void
 }) {
   const { values, totale, workshopLabel, battleLabels } = riepilogo
+  const isBonifico = values.paymentMethod === "bonifico"
+  const causale = `Iscrizione ${bonificoInfo.eventTitle} - ${values.nome} ${values.cognome}`
+
   return (
     <SectionCard accent="yellow">
       <CardHeader className="px-5">
         <div className="flex items-center gap-2">
-          <CheckCircle2 className="size-6 text-[#7ef58a]" />
-          <CardTitle className="font-[family-name:var(--font-anton)] text-lg uppercase">
-            Iscrizione confermata
-          </CardTitle>
+          <CheckCircle2 className="size-5 text-[#7ef58a]" />
+          <p className="text-xs font-bold tracking-[0.12em] text-[#7ef58a] uppercase">
+            Iscrizione completata
+          </p>
         </div>
-        <CardDescription>
-          Abbiamo registrato la tua iscrizione. Riceverai anche un&apos;email
-          di conferma a {values.email}.
+        <CardTitle className="font-[family-name:var(--font-anton)] text-2xl uppercase">
+          Grazie, {values.nome}!
+        </CardTitle>
+        <CardDescription className="text-[13px] leading-relaxed text-white/75">
+          La tua iscrizione è andata a buon fine. Dovresti aver già ricevuto
+          un&apos;email di conferma a{" "}
+          <span className="text-foreground font-semibold">
+            {values.email}
+          </span>
+          : se non la vedi, controlla anche nella cartella spam.
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-4 px-5 text-sm">
-        <div className="grid gap-1">
-          <p>
-            <span className="text-muted-foreground">Nome:</span> {values.nome}{" "}
-            {values.cognome} ({values.aka})
-          </p>
-          {values.akaPartner2vs2 && (
-            <p>
-              <span className="text-muted-foreground">Crew / partner 2vs2:</span>{" "}
-              {values.akaPartner2vs2}
+      <CardContent className="flex flex-col gap-4 px-5">
+        {isBonifico && (
+          <div className="flex flex-col gap-3 rounded-[2px] border border-[#7c1fd6]/50 bg-[#7c1fd6]/10 p-4">
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <Banknote className="size-4 text-[#a855f7]" />
+              Completa il pagamento con bonifico
+            </div>
+
+            <div className="flex flex-col gap-2.5">
+              <CopyableRow label="IBAN" value={bonificoInfo.iban} />
+              <CopyableRow
+                label="Intestatario"
+                value={bonificoInfo.intestatario}
+                mono={false}
+              />
+              <CopyableRow label="Causale" value={causale} />
+            </div>
+
+            <div className="text-muted-foreground flex items-center gap-2 text-xs">
+              <CalendarClock className="size-4 shrink-0" />
+              Effettua il bonifico entro il{" "}
+              {deadlineFormatter.format(deadline)} per confermare il posto.
+            </div>
+            <p className="text-muted-foreground text-xs leading-relaxed">
+              Una volta effettuato il bonifico, appena ci arriva un nostro
+              operatore ne confermerà la ricezione e riceverai la ricevuta di
+              pagamento via email.
             </p>
-          )}
-          <p>
-            <span className="text-muted-foreground">Workshop:</span>{" "}
-            {workshopLabel}
-          </p>
-          <p>
-            <span className="text-muted-foreground">Battle:</span>{" "}
-            {battleLabels.join(", ")}
-          </p>
-          <p>
-            <span className="text-muted-foreground">Pagamento:</span>{" "}
-            {values.paymentMethod === "bonifico"
-              ? "Bonifico bancario"
-              : "Contanti sul posto"}
-          </p>
-        </div>
+          </div>
+        )}
 
         <div className="flex flex-col gap-2 rounded-[2px] border border-white/10 bg-[#111] p-4">
-          <div className="flex justify-between">
+          <p className="mb-1 text-xs font-bold tracking-[0.12em] text-[#a855f7] uppercase">
+            Riepilogo iscrizione
+          </p>
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Nome</span>
+            <span>
+              {values.nome} {values.cognome} ({values.aka})
+            </span>
+          </div>
+          {values.akaPartner2vs2 && (
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">
+                Crew / partner 2vs2
+              </span>
+              <span>{values.akaPartner2vs2}</span>
+            </div>
+          )}
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Workshop</span>
+            <span>{workshopLabel}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Battle</span>
+            <span>{battleLabels.join(", ")}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Pagamento</span>
+            <span>
+              {isBonifico ? "Bonifico bancario" : "Contanti sul posto"}
+            </span>
+          </div>
+          <div className="my-1 border-t border-white/10" />
+          <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Workshop</span>
             <span>{formatCurrency(totale.amountWorkshop)}</span>
           </div>
-          <div className="flex justify-between">
+          <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Battle</span>
             <span>{formatCurrency(totale.amountBattle)}</span>
           </div>
           {totale.surchargeLate > 0 && (
-            <div className="flex justify-between">
+            <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">
                 Sovrapprezzo ritardo
               </span>
@@ -874,7 +1012,7 @@ function RegistrationConfirmation({
             </div>
           )}
           {totale.surchargeOnsite > 0 && (
-            <div className="flex justify-between">
+            <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">
                 Sovrapprezzo sul posto
               </span>
@@ -888,27 +1026,6 @@ function RegistrationConfirmation({
             </span>
           </div>
         </div>
-
-        {values.paymentMethod === "bonifico" && (
-          <div className="flex flex-col gap-2 rounded-[2px] border border-[#7c1fd6]/50 bg-[#7c1fd6]/10 p-4">
-            <div className="flex items-center gap-2 font-medium">
-              <Banknote className="size-4" />
-              Dati per il bonifico
-            </div>
-            <p className="text-muted-foreground text-xs">
-              IBAN (placeholder, verrà confermato dall&apos;organizzazione):{" "}
-              <span className="text-foreground font-mono">
-                {IBAN_PLACEHOLDER}
-              </span>
-            </p>
-            <div className="text-muted-foreground flex items-center gap-2 text-xs">
-              <CalendarClock className="size-4" />
-              Scadenza: effettua il bonifico entro il{" "}
-              {deadlineFormatter.format(deadline)} per confermare
-              il posto.
-            </div>
-          </div>
-        )}
       </CardContent>
       <CardFooter className="flex flex-col gap-2 px-5 sm:flex-row">
         <Button

@@ -159,6 +159,9 @@ export default function ImpostazioniPage() {
             <CardTitle>Dati per la ricevuta</CardTitle>
             <CardDescription>
               Usati dalle Edge Functions per generare la ricevuta PDF.
+              Intestazione e IBAN vengono mostrati anche a chi si iscrive con
+              pagamento tramite bonifico, nella pagina di conferma
+              iscrizione.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
