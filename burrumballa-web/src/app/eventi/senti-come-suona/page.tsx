@@ -80,16 +80,21 @@ export default async function SentiComeSuonaPage() {
             <div className="absolute inset-0 bg-[linear-gradient(0deg,rgba(0,0,0,.85)_0%,rgba(0,0,0,.2)_35%,transparent_60%)]" />
 
             {logoUrl && (
-              // eslint-disable-next-line @next/next/no-img-element -- immagine da signed URL Supabase
-              <img
-                src={logoUrl}
-                alt=""
-                aria-hidden
-                className="absolute top-3 right-3 h-32 w-auto drop-shadow-[0_4px_16px_rgba(0,0,0,.55)] sm:h-44 lg:top-6 lg:right-6 lg:h-56 xl:h-64"
-              />
+              <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center lg:right-8">
+                {/* eslint-disable-next-line @next/next/no-img-element -- immagine da signed URL Supabase */}
+                <img
+                  src={logoUrl}
+                  alt=""
+                  aria-hidden
+                  className="h-[85%] w-auto drop-shadow-[0_4px_16px_rgba(0,0,0,.55)]"
+                />
+              </div>
             )}
 
-            <div className="absolute bottom-5 left-5 lg:bottom-8 lg:left-8">
+            {/* Su schermi stretti il logo (grande e centrale) si
+                sovrapporrebbe alla data: qui resta nascosta e riappare
+                sotto l'immagine (vedi blocco subito dopo lo strip). */}
+            <div className="absolute bottom-5 left-5 hidden sm:block lg:bottom-8 lg:left-8">
               {dayMonthName && (
                 <p className="font-[family-name:var(--font-anton)] text-4xl leading-none text-white uppercase sm:text-5xl lg:text-6xl xl:text-7xl">
                   {dayMonthName}
@@ -102,6 +107,17 @@ export default async function SentiComeSuonaPage() {
           </div>
 
           <TribaleStrip url={frameUrl} position="bottom" />
+
+          <div className="px-5 py-4 sm:hidden">
+            {dayMonthName && (
+              <p className="font-[family-name:var(--font-anton)] text-4xl leading-none text-white uppercase">
+                {dayMonthName}
+              </p>
+            )}
+            <p className="mt-2 text-sm font-bold tracking-[0.25em] text-white/70 uppercase">
+              Bologna · Italy
+            </p>
+          </div>
         </div>
       </section>
 
