@@ -25,8 +25,8 @@ const GIURIA = [
 
 const HOST_DJ = [
   { nome: "DULK", ruolo: "HOST", colore: "#d6249f" },
-  { nome: "SPIDER", ruolo: "DJ", colore: "#a855f7" },
-  { nome: "RADA", ruolo: "DJ", colore: "#a855f7" },
+  { nome: "STILL", ruolo: "DJ", colore: "#a855f7" },
+  { nome: "GFEAR", ruolo: "LIVE", colore: "#a855f7" },
 ]
 
 function PlaceholderPhoto({
@@ -232,13 +232,6 @@ export default async function SentiComeSuonaPage() {
               </>
             )}
           </p>
-          <Button
-            asChild
-            variant="ghost"
-            className="mt-4 h-auto px-0 text-xs font-semibold text-[#f5d90a] hover:bg-transparent hover:text-[#f5d90a]/80"
-          >
-            <Link href="#iscrizione">Vai al form ↓</Link>
-          </Button>
         </div>
       </section>
 
