@@ -4,6 +4,7 @@ export const eventInfoSchema = z.object({
   titolo: z.string().trim().min(1, "Il titolo è obbligatorio."),
   data_evento: z.string().trim(),
   descrizione: z.string().trim(),
+  luogo: z.string().trim(),
   testi_informativi: z.string().trim(),
   scadenza_iscrizioni: z
     .string()
@@ -17,6 +18,7 @@ export const emptyEventInfoFormValues: EventInfoFormValues = {
   titolo: "",
   data_evento: "",
   descrizione: "",
+  luogo: "",
   testi_informativi: "",
   scadenza_iscrizioni: "",
 }

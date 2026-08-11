@@ -11,6 +11,13 @@ import {
   useUpdateEventOption,
 } from "@/hooks/useEventOptionsStato"
 import {
+  useCreateEventPerson,
+  useDeleteEventPerson,
+  useEventPeople,
+  useSentiComeSuonaImageFiles,
+  useUpdateEventPerson,
+} from "@/hooks/useEventPeople"
+import {
   eventInfoSchema,
   emptyEventInfoFormValues,
   type EventInfoFormValues,
@@ -28,7 +35,12 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { EventOptionsSection } from "@/components/EventOptionsSection"
+import { EventPeopleSection } from "@/components/EventPeopleSection"
 import type { EventOptionUpdateInput } from "@/types/eventOption"
+import type {
+  EventPersonInsertInput,
+  EventPersonUpdateInput,
+} from "@/types/eventPerson"
 
 export default function EventoPage() {
   const navigate = useNavigate()
@@ -37,6 +49,14 @@ export default function EventoPage() {
   const optionsQuery = useEventOptionsStato()
   const updateOption = useUpdateEventOption()
   const [savingOptionId, setSavingOptionId] = useState<string | null>(null)
+
+  const peopleQuery = useEventPeople()
+  const imageFilesQuery = useSentiComeSuonaImageFiles()
+  const createPerson = useCreateEventPerson()
+  const updatePerson = useUpdateEventPerson()
+  const deletePerson = useDeleteEventPerson()
+  const [savingPersonId, setSavingPersonId] = useState<string | null>(null)
+  const [deletingPersonId, setDeletingPersonId] = useState<string | null>(null)
 
   const {
     register,
@@ -49,6 +69,7 @@ export default function EventoPage() {
           titolo: eventInfoQuery.data.titolo ?? "",
           data_evento: eventInfoQuery.data.data_evento ?? "",
           descrizione: eventInfoQuery.data.descrizione ?? "",
+          luogo: eventInfoQuery.data.luogo ?? "",
           testi_informativi: eventInfoQuery.data.testi_informativi ?? "",
           scadenza_iscrizioni: isoToDatetimeLocal(
             eventInfoQuery.data.scadenza_iscrizioni
@@ -69,6 +90,7 @@ export default function EventoPage() {
         titolo: values.titolo,
         data_evento: values.data_evento || null,
         descrizione: values.descrizione || null,
+        luogo: values.luogo || null,
         testi_informativi: values.testi_informativi || null,
         scadenza_iscrizioni: scadenzaIso,
       },
@@ -91,6 +113,46 @@ export default function EventoPage() {
           description: (error as Error).message,
         }),
       onSettled: () => setSavingOptionId(null),
+    })
+  }
+
+  const handleCreatePerson = (input: EventPersonInsertInput, onDone: () => void) => {
+    createPerson.mutate(input, {
+      onSuccess: () => {
+        toast.success("Persona aggiunta.")
+        onDone()
+      },
+      onError: (error) =>
+        toast.error("Aggiunta non riuscita.", {
+          description: (error as Error).message,
+        }),
+    })
+  }
+
+  const handleSavePerson = (input: EventPersonUpdateInput) => {
+    setSavingPersonId(input.id)
+    updatePerson.mutate(input, {
+      onSuccess: () => toast.success("Persona salvata."),
+      onError: (error) =>
+        toast.error("Salvataggio non riuscito.", {
+          description: (error as Error).message,
+        }),
+      onSettled: () => setSavingPersonId(null),
+    })
+  }
+
+  const handleDeletePerson = (id: string) => {
+    if (!window.confirm("Eliminare questa persona? L'operazione non è reversibile.")) {
+      return
+    }
+    setDeletingPersonId(id)
+    deletePerson.mutate(id, {
+      onSuccess: () => toast.success("Persona eliminata."),
+      onError: (error) =>
+        toast.error("Eliminazione non riuscita.", {
+          description: (error as Error).message,
+        }),
+      onSettled: () => setDeletingPersonId(null),
     })
   }
 
@@ -161,6 +223,19 @@ export default function EventoPage() {
               <div className="space-y-2">
                 <Label htmlFor="descrizione">Descrizione</Label>
                 <Textarea id="descrizione" rows={2} {...register("descrizione")} />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="luogo">Luogo</Label>
+                <Input
+                  id="luogo"
+                  placeholder="Es. Circolo La Fattoria, Via Pirandello 6"
+                  {...register("luogo")}
+                />
+                <p className="text-muted-foreground text-xs">
+                  Mostrato nella pagina pubblica sotto la descrizione, con
+                  icona a pin.
+                </p>
               </div>
 
               <div className="space-y-2">
@@ -236,6 +311,37 @@ export default function EventoPage() {
               options={battleOptions}
               onSave={handleSaveOption}
               savingId={savingOptionId}
+            />
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Giuria & Host / DJ</CardTitle>
+          <CardDescription>
+            Persone mostrate nella pagina pubblica dell&apos;evento.
+            L&apos;immagine si sceglie tra i file già caricati su Storage
+            (bucket &quot;assets&quot;, cartella &quot;senti_come_suona&quot;).
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {peopleQuery.isLoading ? (
+            <p className="text-muted-foreground text-sm">Caricamento...</p>
+          ) : peopleQuery.isError ? (
+            <p className="text-destructive text-sm">
+              Errore nel caricamento: {(peopleQuery.error as Error).message}
+            </p>
+          ) : (
+            <EventPeopleSection
+              people={peopleQuery.data ?? []}
+              imageFiles={imageFilesQuery.data ?? []}
+              onCreate={handleCreatePerson}
+              onSave={handleSavePerson}
+              onDelete={handleDeletePerson}
+              savingId={savingPersonId}
+              deletingId={deletingPersonId}
+              isCreating={createPerson.isPending}
             />
           )}
         </CardContent>
