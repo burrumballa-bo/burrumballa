@@ -21,7 +21,6 @@ const GIURIA = [
   { nome: "SHORTEE", ruolo: "JUDGE" },
   { nome: "FABBREEZY", ruolo: "JUDGE · WORKSHOP" },
   { nome: "NASTYA", ruolo: "JUDGE · WORKSHOP" },
-  { nome: "ZUREK", ruolo: "JUDGE" },
 ]
 
 const HOST_DJ = [
