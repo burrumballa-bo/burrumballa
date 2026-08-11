@@ -10,14 +10,19 @@ export const registrationSchema = z.object({
   akaPartner2vs2: z.string().trim().optional(),
   email: z.string().trim().min(1).email(),
   workshop: z.string().min(1),
-  battleCategorie: z.array(z.string()).min(1),
+  battleCategorie: z.array(z.string()),
   paymentMethod: z.enum(["bonifico", "sul_posto"]),
   consensoRegolamento: z
     .boolean()
     .refine((value) => value === true, {
       message: "Devi accettare il regolamento e il trattamento dei dati.",
     }),
-  consensoImmagini: z.enum(["si", "no"]),
+  consensoImmagini: z
+    .boolean()
+    .refine((value) => value === true, {
+      message:
+        "Devi acconsentire alla pubblicazione di foto/video per completare l'iscrizione.",
+    }),
 })
 
 export type RegistrationFormValues = z.infer<typeof registrationSchema>
@@ -35,5 +40,5 @@ export const registrationDefaultValues: RegistrationFormValues = {
   battleCategorie: [],
   paymentMethod: "bonifico",
   consensoRegolamento: false,
-  consensoImmagini: "no",
+  consensoImmagini: false,
 }

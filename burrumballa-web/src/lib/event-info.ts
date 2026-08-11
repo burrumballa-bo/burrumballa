@@ -4,6 +4,7 @@ export interface EventInfo {
   titolo: string
   data_evento: string | null
   descrizione: string | null
+  luogo: string | null
   testi_informativi: string | null
   scadenza_iscrizioni: string
 }
@@ -16,6 +17,7 @@ const FALLBACK_EVENT_INFO: EventInfo = {
   data_evento: "2025-09-28",
   descrizione:
     "Workshop di Waacking con Rada, battle Hip Hop & Allstyle (1vs1 e 2vs2) con giuria Spider, Zurek e Rada.",
+  luogo: null,
   testi_informativi: null,
   scadenza_iscrizioni: "2025-09-21T23:59:59+02:00",
 }
@@ -30,7 +32,9 @@ export async function getEventInfo(): Promise<EventInfo> {
     )
     const { data, error } = await supabase
       .from("event_info")
-      .select("titolo, data_evento, descrizione, testi_informativi, scadenza_iscrizioni")
+      .select(
+        "titolo, data_evento, descrizione, luogo, testi_informativi, scadenza_iscrizioni"
+      )
       .eq("id", 1)
       .single()
 
@@ -58,19 +62,16 @@ export function formatEventDate(dateStr: string | null): string | null {
   return formatted.replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
-// Formatta una data "YYYY-MM-DD" come { giorno: "27", mese: "09" }, per
-// l'evidenza numerica grande usata nell'hero della pagina evento.
-export function formatEventDayMonth(
-  dateStr: string | null
-): { giorno: string; mese: string } | null {
+// Formatta una data "YYYY-MM-DD" come "27 SETTEMBRE", per l'overlay data
+// sulla foto di copertina nell'hero della pagina evento.
+export function formatEventDayMonthName(dateStr: string | null): string | null {
   if (!dateStr) return null
   const [y, m, d] = dateStr.split("-").map(Number)
   if (!y || !m || !d) return null
 
-  return {
-    giorno: String(d).padStart(2, "0"),
-    mese: String(m).padStart(2, "0"),
-  }
+  return new Intl.DateTimeFormat("it-IT", { day: "numeric", month: "long" })
+    .format(new Date(y, m - 1, d))
+    .toUpperCase()
 }
 
 export function formatDeadlineDate(iso: string): string {

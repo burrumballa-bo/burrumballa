@@ -1,15 +1,19 @@
 import type { Metadata } from "next"
-import Link from "next/link"
+import { MapPin } from "lucide-react"
 
 import { RegistrationForm } from "@/components/registration/registration-form"
-import { Button } from "@/components/ui/button"
+import { PersonAvatar } from "@/components/senti-come-suona/person-avatar"
+import { TribaleBackground } from "@/components/senti-come-suona/tribale-background"
+import { TribaleStrip } from "@/components/senti-come-suona/tribale-strip"
 import { cn } from "@/lib/utils"
+import { formatEventDate, formatEventDayMonthName, getEventInfo } from "@/lib/event-info"
 import {
-  formatDeadlineDate,
-  formatEventDate,
-  formatEventDayMonth,
-  getEventInfo,
-} from "@/lib/event-info"
+  getEventPeople,
+  getSignedAssetUrls,
+  sentiComeSuonaPath,
+} from "@/lib/senti-come-suona-assets"
+
+import { buildEventMetadata } from "./metadata"
 
 // Renderizzata lato server ad ogni richiesta (App Router = SSR di default).
 export const dynamic = "force-dynamic"
@@ -17,142 +21,112 @@ export const dynamic = "force-dynamic"
 // Taglio diagonale ricorrente nel design (tag, pillole, CTA).
 const DIAGONAL_CUT = "[clip-path:polygon(0_0,100%_0,94%_100%,0_100%)]"
 
-const GIURIA = [
-  { nome: "SHORTEE", ruolo: "JUDGE" },
-  { nome: "FABBREEZY", ruolo: "JUDGE · WORKSHOP" },
-  { nome: "NASTYA", ruolo: "JUDGE · WORKSHOP" },
-]
-
-const HOST_DJ = [
-  { nome: "DULK", ruolo: "HOST", colore: "#d6249f" },
-  { nome: "STILL", ruolo: "DJ", colore: "#a855f7" },
-  { nome: "GFEAR", ruolo: "LIVE", colore: "#a855f7" },
-]
-
-function PlaceholderPhoto({
-  label,
-  className,
-}: {
-  label: string
-  className?: string
-}) {
-  return (
-    <div
-      className={cn(
-        "relative aspect-square overflow-hidden [clip-path:polygon(0_0,100%_0,100%_88%,0_100%)]",
-        className
-      )}
-    >
-      <div className="absolute inset-0 flex items-center justify-center bg-[repeating-linear-gradient(45deg,rgba(255,255,255,.06)_0_10px,rgba(255,255,255,.02)_10px_20px)] px-1 text-center font-mono text-[8px] leading-tight text-white/40">
-        {label}
-      </div>
-    </div>
-  )
-}
+// File caricati su Storage (bucket 'assets', cartella 'senti_come_suona/').
+const HERO_COVER_FILE = "sfondo_crew.jpeg"
+const HERO_FRAME_FILE = "sfondo_tribale.jpg"
+const HERO_LOGO_FILE = "senti_come_suona_logo.png"
 
 export async function generateMetadata(): Promise<Metadata> {
   const eventInfo = await getEventInfo()
-  const dataEvento = formatEventDate(eventInfo.data_evento)
-  const title = dataEvento ? `${eventInfo.titolo} — ${dataEvento}` : eventInfo.titolo
-  const description =
-    (eventInfo.descrizione ??
-      `Iscrizioni entro il ${formatDeadlineDate(eventInfo.scadenza_iscrizioni)}.`) +
-    " Iscriviti online: workshop, battle e pagamento in un unico form."
-
-  return {
-    title,
-    description,
-    alternates: {
-      canonical: "/eventi/senti-come-suona",
-    },
-    openGraph: {
-      title,
-      description,
-      url: "/eventi/senti-come-suona",
-      siteName: "Burrumballa",
-      type: "website",
-      locale: "it_IT",
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-    },
-  }
+  return buildEventMetadata(eventInfo)
 }
 
 export default async function SentiComeSuonaPage() {
-  const eventInfo = await getEventInfo()
+  const [eventInfo, people] = await Promise.all([getEventInfo(), getEventPeople()])
+
+  const imagePaths = [
+    sentiComeSuonaPath(HERO_COVER_FILE),
+    sentiComeSuonaPath(HERO_FRAME_FILE),
+    sentiComeSuonaPath(HERO_LOGO_FILE),
+    ...people
+      .map((persona) => persona.immagine_path)
+      .filter((path): path is string => !!path),
+  ]
+  const assetUrls = await getSignedAssetUrls(imagePaths)
+
+  const coverUrl = assetUrls[sentiComeSuonaPath(HERO_COVER_FILE)] ?? null
+  const frameUrl = assetUrls[sentiComeSuonaPath(HERO_FRAME_FILE)] ?? null
+  const logoUrl = assetUrls[sentiComeSuonaPath(HERO_LOGO_FILE)] ?? null
+
   const dataEvento = formatEventDate(eventInfo.data_evento)
-  const dayMonth = formatEventDayMonth(eventInfo.data_evento)
+  const dayMonthName = formatEventDayMonthName(eventInfo.data_evento)
+
+  const giuria = people.filter((persona) => persona.categoria === "giuria")
+  const hostDj = people.filter((persona) => persona.categoria === "host_dj")
 
   return (
     <main className="flex flex-col">
       {/* Hero */}
       <section className="relative bg-[#050505]">
-        <div className="lg:mx-auto lg:flex lg:max-w-6xl lg:items-stretch">
-          <div className="relative h-72 overflow-hidden sm:h-80 lg:h-auto lg:min-h-[440px] lg:flex-1">
-            <div className="absolute inset-0 flex items-center justify-center bg-[repeating-linear-gradient(45deg,rgba(255,255,255,.06)_0_10px,rgba(255,255,255,.02)_10px_20px)] font-mono text-xs tracking-wide text-white/40">
-              FOTO COPERTINA EVENTO
-            </div>
-            <div className="absolute inset-0 bg-[linear-gradient(0deg,#050505_5%,transparent_55%)]" />
-            <svg
-              className="absolute top-0 left-0 h-[180px] w-[200px] lg:h-[220px] lg:w-[260px]"
-              viewBox="0 0 200 180"
-              aria-hidden
-            >
-              <polygon points="0,0 200,0 0,180" fill="#f5d90a" opacity="0.92" />
-            </svg>
-            <svg
-              className="absolute right-0 bottom-0 h-[140px] w-[140px] lg:h-[170px] lg:w-[170px]"
-              viewBox="0 0 140 140"
-              aria-hidden
-            >
-              <polygon points="140,140 40,140 140,20" fill="#d6249f" opacity="0.9" />
-            </svg>
-            <div className="absolute top-5 left-5 bg-[#f5d90a] px-2 py-1 text-black">
-              <span className="font-[family-name:var(--font-anton)] text-xs tracking-[0.1em] uppercase">
-                Evento
-              </span>
-            </div>
-            <div className="absolute bottom-4 left-5 lg:bottom-8 lg:left-8">
-              <h1 className="font-[family-name:var(--font-anton)] text-3xl leading-[1.05] text-white uppercase sm:text-4xl lg:text-5xl xl:text-6xl">
-                {eventInfo.titolo}
-              </h1>
+        <div className="2xl:mx-auto 2xl:max-w-6xl">
+          <TribaleStrip url={frameUrl} position="top" />
+
+          <div className="relative h-72 overflow-hidden sm:h-80 lg:h-[440px] xl:h-[480px]">
+            <h1 className="sr-only">{eventInfo.titolo}</h1>
+
+            {coverUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- immagine da signed URL Supabase
+              <img
+                src={coverUrl}
+                alt=""
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center bg-[repeating-linear-gradient(45deg,rgba(255,255,255,.06)_0_10px,rgba(255,255,255,.02)_10px_20px)] font-mono text-xs tracking-wide text-white/40">
+                FOTO COPERTINA EVENTO
+              </div>
+            )}
+
+            <div className="absolute inset-0 bg-[linear-gradient(0deg,rgba(0,0,0,.85)_0%,rgba(0,0,0,.2)_35%,transparent_60%)]" />
+
+            {logoUrl && (
+              // eslint-disable-next-line @next/next/no-img-element -- immagine da signed URL Supabase
+              <img
+                src={logoUrl}
+                alt=""
+                aria-hidden
+                className="absolute top-3 right-3 h-32 w-auto drop-shadow-[0_4px_16px_rgba(0,0,0,.55)] sm:h-44 lg:top-6 lg:right-6 lg:h-56 xl:h-64"
+              />
+            )}
+
+            <div className="absolute bottom-5 left-5 lg:bottom-8 lg:left-8">
+              {dayMonthName && (
+                <p className="font-[family-name:var(--font-anton)] text-4xl leading-none text-white uppercase sm:text-5xl lg:text-6xl xl:text-7xl">
+                  {dayMonthName}
+                </p>
+              )}
+              <p className="mt-2 text-sm font-bold tracking-[0.25em] text-white/70 uppercase sm:text-base lg:text-lg">
+                Bologna · Italy
+              </p>
             </div>
           </div>
-          <div className="flex items-baseline justify-between gap-4 bg-[#111] px-5 py-4 lg:w-72 lg:flex-none lg:flex-col lg:items-start lg:justify-center lg:gap-4 lg:border-l lg:border-white/10 lg:px-8 lg:py-10 xl:w-80">
-            <div className="font-[family-name:var(--font-anton)] text-4xl leading-none text-[#f5d90a] sm:text-5xl lg:text-6xl">
-              {dayMonth ? dayMonth.giorno : "—"}
-              <span className="ml-1 text-base text-white sm:text-lg">
-                {dayMonth ? `/${dayMonth.mese}` : ""}
-              </span>
-            </div>
-            <div className="text-right lg:text-left">
-              <div className="text-sm font-semibold text-white">BOLOGNA</div>
-              <div className="text-xs text-white/50">ITALY</div>
-            </div>
-          </div>
+
+          <TribaleStrip url={frameUrl} position="bottom" />
         </div>
       </section>
 
-      {/* Descrizione + info */}
-      <section className="border-t-2 border-[#7c1fd6] bg-black">
-        <div className="px-5 py-5 lg:mx-auto lg:max-w-6xl lg:px-10 lg:py-8">
+      {/* Descrizione + luogo + info */}
+      <section className="bg-black">
+        {/* La linea viola segue la stessa larghezza dell'hero (full-bleed,
+            boxed solo su monitor grandi), non quella del blocco testo. */}
+        <div className="border-t-2 border-[#7c1fd6] 2xl:mx-auto 2xl:max-w-6xl" />
+        <div className="px-5 py-5 lg:mx-auto lg:max-w-3xl lg:px-10 lg:py-8">
           {eventInfo.descrizione && (
-            <p className="mb-3 text-[13px] leading-relaxed text-white/75 lg:max-w-2xl lg:text-sm">
+            <p className="mb-3 text-[13px] leading-relaxed text-white/75 lg:text-sm">
               {eventInfo.descrizione}
             </p>
           )}
+
+          {eventInfo.luogo && (
+            <div className="mb-3 flex items-center gap-2">
+              <MapPin className="size-4 shrink-0 text-[#f5d90a]" />
+              <p className="text-sm font-bold text-white lg:text-base">
+                {eventInfo.luogo}
+              </p>
+            </div>
+          )}
+
           <div className="flex flex-wrap gap-2">
-            <span
-              className={cn(
-                "bg-white px-2.5 py-1.5 text-[10px] font-bold text-black",
-                DIAGONAL_CUT
-              )}
-            >
-              SPAZIO BELLO SGUARDO
-            </span>
             <span
               className={cn(
                 "bg-[#f5d90a] px-2.5 py-1.5 text-[10px] font-bold text-black",
@@ -163,7 +137,7 @@ export default async function SentiComeSuonaPage() {
             </span>
           </div>
           {eventInfo.testi_informativi && (
-            <p className="mt-4 text-xs leading-relaxed whitespace-pre-wrap text-white/50 lg:max-w-2xl">
+            <p className="mt-4 text-xs leading-relaxed whitespace-pre-wrap text-white/50">
               {eventInfo.testi_informativi}
             </p>
           )}
@@ -171,54 +145,91 @@ export default async function SentiComeSuonaPage() {
       </section>
 
       {/* Giuria / Host / DJ */}
-      <section className="bg-[#050505]">
-        <div className="px-5 py-6 lg:mx-auto lg:max-w-6xl lg:px-10 lg:py-10">
-          <p className="font-[family-name:var(--font-anton)] mb-1 text-sm tracking-[0.08em] text-white uppercase lg:text-base">
-            Giuria
-          </p>
-          <p className="mb-3 text-[10px] text-white/40">Judge</p>
-          <div className="mb-6 grid grid-cols-2 gap-2.5 lg:grid-cols-4 lg:gap-6">
-            {GIURIA.map((persona) => (
-              <div key={persona.nome} className="flex flex-col gap-1.5">
-                <PlaceholderPhoto label={`FOTO\n${persona.nome}`} />
-                <div>
-                  <p className="font-[family-name:var(--font-anton)] text-[15px] text-white lg:text-lg">
-                    {persona.nome}
-                  </p>
-                  <p className="text-[8px] font-bold tracking-[0.1em] text-[#f5d90a] uppercase lg:text-[10px]">
-                    {persona.ruolo}
-                  </p>
+      {(giuria.length > 0 || hostDj.length > 0) && (
+        <section className="bg-[#050505]">
+          <div className="px-5 py-6 lg:mx-auto lg:max-w-3xl lg:px-10 lg:py-10">
+            {giuria.length > 0 && (
+              <>
+                <p className="font-[family-name:var(--font-anton)] mb-1 text-sm tracking-[0.08em] text-white uppercase lg:text-base">
+                  Giuria
+                </p>
+                <p className="mb-3 text-[10px] text-white/40">Judge</p>
+                <div className="mb-6 flex flex-wrap justify-center gap-2.5 lg:gap-6">
+                  {giuria.map((persona) => (
+                    <div
+                      key={persona.id}
+                      className="flex w-[calc(50%-0.3125rem)] flex-col gap-1.5 lg:w-[calc(33.3333%-1rem)]"
+                    >
+                      <PersonAvatar
+                        persona={persona}
+                        url={
+                          persona.immagine_path
+                            ? (assetUrls[persona.immagine_path] ?? null)
+                            : null
+                        }
+                      />
+                      <div>
+                        <p className="font-[family-name:var(--font-anton)] text-[15px] text-white lg:text-lg">
+                          {persona.nome}
+                        </p>
+                        {persona.ruolo && (
+                          <p className="text-[8px] font-bold tracking-[0.1em] text-[#f5d90a] uppercase lg:text-[10px]">
+                            {persona.ruolo}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </div>
-            ))}
-          </div>
-          <p className="font-[family-name:var(--font-anton)] mb-2.5 text-xs tracking-[0.08em] text-white uppercase lg:text-sm">
-            Host · DJ
-          </p>
-          <div className="grid grid-cols-3 gap-2 lg:max-w-2xl lg:gap-4">
-            {HOST_DJ.map((persona) => (
-              <div key={persona.nome} className="flex flex-col gap-1">
-                <PlaceholderPhoto label="FOTO" />
-                <div>
-                  <p className="font-[family-name:var(--font-anton)] text-[11px] text-white lg:text-sm">
-                    {persona.nome}
-                  </p>
-                  <p
-                    className="text-[7px] font-bold tracking-[0.08em] uppercase lg:text-[9px]"
-                    style={{ color: persona.colore }}
-                  >
-                    {persona.ruolo}
-                  </p>
+              </>
+            )}
+
+            {hostDj.length > 0 && (
+              <>
+                <p className="font-[family-name:var(--font-anton)] mb-2.5 text-xs tracking-[0.08em] text-white uppercase lg:text-sm">
+                  Host · DJ
+                </p>
+                <div className="flex flex-wrap justify-center gap-2.5 lg:gap-6">
+                  {hostDj.map((persona) => (
+                    <div
+                      key={persona.id}
+                      className="flex w-[calc(50%-0.3125rem)] flex-col gap-1 lg:w-[calc(33.3333%-1rem)]"
+                    >
+                      <PersonAvatar
+                        persona={persona}
+                        square={false}
+                        url={
+                          persona.immagine_path
+                            ? (assetUrls[persona.immagine_path] ?? null)
+                            : null
+                        }
+                      />
+                      <div>
+                        <p className="font-[family-name:var(--font-anton)] text-[11px] text-white lg:text-sm">
+                          {persona.nome}
+                        </p>
+                        {persona.ruolo && (
+                          <p
+                            className="text-[7px] font-bold tracking-[0.08em] uppercase lg:text-[9px]"
+                            style={{ color: persona.colore ?? "#a855f7" }}
+                          >
+                            {persona.ruolo}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </div>
-            ))}
+              </>
+            )}
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Titolo sezione iscrizione */}
-      <section className="border-t-2 border-[#f5d90a] bg-[#111]">
-        <div className="px-5 pt-7 pb-2 lg:mx-auto lg:max-w-3xl lg:px-10 lg:pt-12 lg:pb-4">
+      <section className="relative border-t-2 border-[#f5d90a] bg-[#111]">
+        <TribaleBackground url={frameUrl} />
+        <div className="relative px-5 pt-7 pb-7 lg:mx-auto lg:max-w-3xl lg:px-10 lg:pt-12 lg:pb-12">
           <h2 className="font-[family-name:var(--font-anton)] text-[28px] tracking-[0.03em] text-white uppercase sm:text-[30px] lg:text-4xl">
             Iscrizione
           </h2>

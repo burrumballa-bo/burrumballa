@@ -2,24 +2,15 @@
 
 import * as React from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Controller, useForm } from "react-hook-form"
 import { toast } from "sonner"
-import {
-  Banknote,
-  CalendarClock,
-  Check,
-  CheckCircle2,
-  Copy,
-  Loader2,
-  RefreshCw,
-  TriangleAlert,
-} from "lucide-react"
+import { Loader2, RefreshCw, TriangleAlert } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
-  Card,
   CardContent,
   CardDescription,
   CardFooter,
@@ -39,7 +30,6 @@ import {
   ONSITE_SURCHARGE,
   calcolaTotale,
   formatCurrency,
-  type CalcolaTotaleResult,
 } from "@/lib/registration/pricing"
 import {
   registrationDefaultValues,
@@ -48,126 +38,26 @@ import {
 } from "@/lib/registration/schema"
 import type { EventOptionStato } from "@/lib/registration/types"
 
-const deadlineFormatter = new Intl.DateTimeFormat("it-IT", {
-  day: "2-digit",
-  month: "2-digit",
-  year: "numeric",
-})
+import {
+  FALLBACK_BONIFICO_INFO,
+  type BonificoInfo,
+  type RiepilogoIscrizione,
+} from "@/components/registration/registration-confirmation"
+import { DIAGONAL_CUT, SectionCard, deadlineFormatter } from "@/components/registration/shared"
 
-// Taglio diagonale ricorrente nel design (tag, pillole, CTA).
-const DIAGONAL_CUT = "[clip-path:polygon(0_0,100%_0,94%_100%,0_100%)]"
-
-interface BonificoInfo {
-  eventTitle: string
-  iban: string
-  intestatario: string
-}
-
-const FALLBACK_BONIFICO_INFO: BonificoInfo = {
-  eventTitle: "Senti Come Suona",
-  iban: "IT00 X000 0000 0000 0000 0000 000",
-  intestatario: "Burrumballa APS",
-}
-
-interface RiepilogoIscrizione {
-  values: RegistrationFormValues
-  totale: CalcolaTotaleResult
-  workshopLabel: string
-  battleLabels: string[]
-}
-
-function CopyableRow({
-  label,
-  value,
-  mono = true,
-}: {
-  label: string
-  value: string
-  mono?: boolean
-}) {
-  const [copied, setCopied] = React.useState(false)
-
-  async function handleCopy() {
-    try {
-      await navigator.clipboard.writeText(value)
-      setCopied(true)
-      window.setTimeout(() => setCopied(false), 1500)
-    } catch {
-      toast.error("Copia non riuscita", {
-        description: "Seleziona e copia il testo manualmente.",
-      })
-    }
-  }
-
-  return (
-    <div className="flex items-center justify-between gap-3">
-      <div className="flex flex-col gap-0.5">
-        <span className="text-muted-foreground text-[11px] tracking-[0.08em] uppercase">
-          {label}
-        </span>
-        <span
-          className={cn(
-            "text-foreground text-sm break-all",
-            mono && "font-mono"
-          )}
-        >
-          {value}
-        </span>
-      </div>
-      <button
-        type="button"
-        onClick={handleCopy}
-        aria-label={`Copia ${label.toLowerCase()}`}
-        className="text-muted-foreground hover:border-[#f5d90a] hover:text-[#f5d90a] flex size-7 shrink-0 items-center justify-center rounded-[2px] border border-white/15 transition-colors"
-      >
-        {copied ? (
-          <Check className="size-3.5 text-[#7ef58a]" />
-        ) : (
-          <Copy className="size-3.5" />
-        )}
-      </button>
-    </div>
-  )
-}
-
-function SectionCard({
-  accent,
-  children,
-  className,
-}: {
-  accent: "purple" | "yellow" | "fuchsia"
-  children: React.ReactNode
-  className?: string
-}) {
-  const accentColor =
-    accent === "purple"
-      ? "border-t-[#7c1fd6]"
-      : accent === "fuchsia"
-        ? "border-t-[#d6249f]"
-        : "border-t-[#f5d90a]"
-
-  return (
-    <Card
-      className={cn(
-        "gap-5 rounded-[2px] border-x-0 border-b-0 border-t-2 bg-[#050505] px-0 py-6 shadow-none",
-        accentColor,
-        className
-      )}
-    >
-      {children}
-    </Card>
-  )
-}
+// Chiave sessionStorage con cui il riepilogo viene passato alla pagina di
+// conferma dedicata (/eventi/senti-come-suona/conferma): evita di dover
+// ripescare l'iscrizione da Supabase (anon non ha permessi di SELECT su
+// registrations) solo per mostrare un riepilogo di cortesia.
+const CONFIRMATION_STORAGE_KEY = "scs-registration-confirmation"
 
 export function RegistrationForm() {
+  const router = useRouter()
   const [options, setOptions] = React.useState<EventOptionStato[] | null>(null)
   const [optionsError, setOptionsError] = React.useState<string | null>(null)
   const [deadline, setDeadline] = React.useState<Date>(FALLBACK_REGISTRATION_DEADLINE)
   const [bonificoInfo, setBonificoInfo] = React.useState<BonificoInfo>(
     FALLBACK_BONIFICO_INFO
-  )
-  const [riepilogo, setRiepilogo] = React.useState<RiepilogoIscrizione | null>(
-    null
   )
 
   const loadOptions = React.useCallback(async () => {
@@ -240,7 +130,6 @@ export function RegistrationForm() {
     register,
     handleSubmit,
     watch,
-    reset,
     formState: { errors, isSubmitting },
   } = useForm<RegistrationFormValues>({
     resolver: zodResolver(registrationSchema),
@@ -297,7 +186,7 @@ export function RegistrationForm() {
       surcharge_onsite: totaleFinale.surchargeOnsite,
       amount_total: totaleFinale.amountTotal,
       consenso_regolamento: values.consensoRegolamento,
-      consenso_immagini: values.consensoImmagini === "si",
+      consenso_immagini: values.consensoImmagini,
     }
 
     const supabase = createClient()
@@ -346,20 +235,26 @@ export function RegistrationForm() {
       )
     }
 
-    toast.success("Iscrizione registrata con successo!")
-    setRiepilogo({ values, totale: totaleFinale, workshopLabel, battleLabels })
-    reset(registrationDefaultValues)
-  }
+    const riepilogo: RiepilogoIscrizione = {
+      values,
+      totale: totaleFinale,
+      workshopLabel,
+      battleLabels,
+    }
 
-  if (riepilogo) {
-    return (
-      <RegistrationConfirmation
-        riepilogo={riepilogo}
-        deadline={deadline}
-        bonificoInfo={bonificoInfo}
-        onReset={() => setRiepilogo(null)}
-      />
-    )
+    try {
+      sessionStorage.setItem(
+        CONFIRMATION_STORAGE_KEY,
+        JSON.stringify({ riepilogo, deadline: deadline.toISOString(), bonificoInfo })
+      )
+    } catch {
+      // sessionStorage non disponibile (privacy mode, storage pieno...):
+      // la pagina di conferma mostrerà comunque un fallback con link
+      // all'evento, l'iscrizione resta comunque registrata su Supabase.
+    }
+
+    toast.success("Iscrizione registrata con successo!")
+    router.push("/eventi/senti-come-suona/conferma")
   }
 
   if (optionsError) {
@@ -390,13 +285,15 @@ export function RegistrationForm() {
     )
   }
 
+  const submitDisabledByZeroBalance = totale.amountTotal === 0
+
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
       className="flex flex-col gap-6"
       noValidate
     >
-      <SectionCard accent="purple">
+      <SectionCard>
         <CardHeader className="px-5">
           <CardTitle className="font-[family-name:var(--font-anton)] text-lg uppercase">
             I tuoi dati
@@ -534,77 +431,16 @@ export function RegistrationForm() {
               </div>
             </div>
           </div>
-
-          <Controller
-            control={control}
-            name="consensoRegolamento"
-            render={({ field }) => (
-              <label
-                htmlFor="consenso-regolamento"
-                className="mt-2 flex cursor-pointer items-start gap-2"
-              >
-                <Checkbox
-                  id="consenso-regolamento"
-                  checked={field.value}
-                  onCheckedChange={(value) => field.onChange(value === true)}
-                  aria-invalid={!!errors.consensoRegolamento}
-                  className="mt-0.5 rounded-none border-white/30 data-[state=checked]:border-[#f5d90a] data-[state=checked]:bg-[#f5d90a] data-[state=checked]:text-black"
-                />
-                <span className="text-muted-foreground text-xs leading-relaxed">
-                  Accetto il regolamento dell&apos;evento e il trattamento dei
-                  dati personali *
-                </span>
-              </label>
-            )}
-          />
-          {errors.consensoRegolamento && (
-            <p className="text-destructive -mt-2 text-sm">
-              {errors.consensoRegolamento.message}
-            </p>
-          )}
-
-          <div className="mt-1 flex flex-col gap-2 border-t border-white/10 pt-4">
-            <p className="text-sm font-medium">
-              Acconsenti alla pubblicazione di foto/video dell&apos;evento in
-              cui potresti comparire?
-            </p>
-            <Controller
-              control={control}
-              name="consensoImmagini"
-              render={({ field }) => (
-                <RadioGroup
-                  value={field.value}
-                  onValueChange={field.onChange}
-                  className="grid grid-cols-2 gap-2"
-                >
-                  <label
-                    htmlFor="consenso-si"
-                    className="flex cursor-pointer items-center gap-2 rounded-[2px] border border-white/10 bg-[#151515] p-2.5 text-sm"
-                  >
-                    <RadioGroupItem id="consenso-si" value="si" />
-                    Sì, acconsento
-                  </label>
-                  <label
-                    htmlFor="consenso-no"
-                    className="flex cursor-pointer items-center gap-2 rounded-[2px] border border-white/10 bg-[#151515] p-2.5 text-sm"
-                  >
-                    <RadioGroupItem id="consenso-no" value="no" />
-                    No
-                  </label>
-                </RadioGroup>
-              )}
-            />
-          </div>
         </CardContent>
       </SectionCard>
 
-      <SectionCard accent="yellow">
+      <SectionCard accent="purple">
         <CardHeader className="px-5">
           <CardTitle className="font-[family-name:var(--font-anton)] text-lg uppercase">
             Battle
           </CardTitle>
           <CardDescription className="text-xs font-bold tracking-[0.12em] text-[#a855f7] uppercase">
-            Scegli le categorie
+            Scegli le categorie (facoltativo)
           </CardDescription>
         </CardHeader>
         <CardContent className="px-5">
@@ -671,14 +507,11 @@ export function RegistrationForm() {
               </div>
             )}
           />
-          {errors.battleCategorie && (
-            <p className="text-destructive mt-2 text-sm">
-              Seleziona un&apos;opzione battle.
-            </p>
-          )}
           <p className="text-muted-foreground mt-3 text-xs leading-relaxed">
-            Costo in base al numero di categorie scelte: {formatCurrency(15)} /{" "}
-            {formatCurrency(20)} / {formatCurrency(25)} / {formatCurrency(30)}.
+            Nessun obbligo di scelta: puoi anche non selezionare nessuna
+            categoria. Costo in base al numero di categorie scelte:{" "}
+            {formatCurrency(15)} / {formatCurrency(20)} / {formatCurrency(25)}{" "}
+            / {formatCurrency(30)}.
           </p>
         </CardContent>
       </SectionCard>
@@ -868,13 +701,93 @@ export function RegistrationForm() {
           <p className="text-muted-foreground text-xs leading-relaxed">
             Il posto è confermato solo dopo il pagamento. Scadenza iscrizioni:{" "}
             {deadlineFormatter.format(deadline)} — dopo la scadenza: +
-            {formatCurrency(5)}.
+            {formatCurrency(5)}. Le coordinate bancarie per il bonifico
+            saranno visibili nello step successivo e ti verranno inviate
+            anche via email.
           </p>
+
+          <div className="flex flex-col gap-3 border-t border-white/10 pt-4">
+            <Controller
+              control={control}
+              name="consensoRegolamento"
+              render={({ field }) => (
+                <label
+                  htmlFor="consenso-regolamento"
+                  className="flex cursor-pointer items-start gap-2"
+                >
+                  <Checkbox
+                    id="consenso-regolamento"
+                    checked={field.value}
+                    onCheckedChange={(value) => field.onChange(value === true)}
+                    aria-invalid={!!errors.consensoRegolamento}
+                    className="mt-0.5 rounded-none border-white/30 data-[state=checked]:border-[#f5d90a] data-[state=checked]:bg-[#f5d90a] data-[state=checked]:text-black"
+                  />
+                  <span className="text-muted-foreground text-xs leading-relaxed">
+                    Accetto il regolamento dell&apos;evento e il trattamento
+                    dei dati personali *
+                  </span>
+                </label>
+              )}
+            />
+            {errors.consensoRegolamento && (
+              <p className="text-destructive -mt-1 text-sm">
+                {errors.consensoRegolamento.message}
+              </p>
+            )}
+
+            <Controller
+              control={control}
+              name="consensoImmagini"
+              render={({ field }) => (
+                <label
+                  htmlFor="consenso-immagini"
+                  className="flex cursor-pointer items-start gap-2"
+                >
+                  <Checkbox
+                    id="consenso-immagini"
+                    checked={field.value}
+                    onCheckedChange={(value) => field.onChange(value === true)}
+                    aria-invalid={!!errors.consensoImmagini}
+                    className="mt-0.5 rounded-none border-white/30 data-[state=checked]:border-[#f5d90a] data-[state=checked]:bg-[#f5d90a] data-[state=checked]:text-black"
+                  />
+                  <span className="text-muted-foreground text-xs leading-relaxed">
+                    Acconsenti alla pubblicazione di foto/video
+                    dell&apos;evento in cui potresti comparire? *
+                  </span>
+                </label>
+              )}
+            />
+            {errors.consensoImmagini && (
+              <p className="text-destructive -mt-1 text-sm">
+                {errors.consensoImmagini.message}
+              </p>
+            )}
+
+            <p className="text-muted-foreground text-[11px] leading-relaxed">
+              Leggi l&apos;
+              <Link
+                href="/privacy"
+                target="_blank"
+                className="underline underline-offset-2 hover:text-[#f5d90a]"
+              >
+                informativa privacy
+              </Link>{" "}
+              e la{" "}
+              <Link
+                href="/cookie-policy"
+                target="_blank"
+                className="underline underline-offset-2 hover:text-[#f5d90a]"
+              >
+                cookie policy
+              </Link>
+              .
+            </p>
+          </div>
         </CardContent>
-        <CardFooter className="px-5">
+        <CardFooter className="flex flex-col gap-2 px-5">
           <Button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || submitDisabledByZeroBalance}
             className={cn(
               "h-auto w-full rounded-[2px] bg-[#f5d90a] py-3.5 text-sm font-bold tracking-[0.05em] text-black uppercase hover:bg-[#f5d90a]/90",
               DIAGONAL_CUT
@@ -889,164 +802,14 @@ export function RegistrationForm() {
               "Conferma iscrizione"
             )}
           </Button>
+          {!isSubmitting && submitDisabledByZeroBalance && (
+            <p className="text-muted-foreground w-full text-center text-xs">
+              Seleziona almeno un workshop o una categoria battle per
+              continuare.
+            </p>
+          )}
         </CardFooter>
       </SectionCard>
     </form>
-  )
-}
-
-function RegistrationConfirmation({
-  riepilogo,
-  deadline,
-  bonificoInfo,
-  onReset,
-}: {
-  riepilogo: RiepilogoIscrizione
-  deadline: Date
-  bonificoInfo: BonificoInfo
-  onReset: () => void
-}) {
-  const { values, totale, workshopLabel, battleLabels } = riepilogo
-  const isBonifico = values.paymentMethod === "bonifico"
-  const causale = `Iscrizione ${bonificoInfo.eventTitle} - ${values.nome} ${values.cognome}`
-
-  return (
-    <SectionCard accent="yellow">
-      <CardHeader className="px-5">
-        <div className="flex items-center gap-2">
-          <CheckCircle2 className="size-5 text-[#7ef58a]" />
-          <p className="text-xs font-bold tracking-[0.12em] text-[#7ef58a] uppercase">
-            Iscrizione completata
-          </p>
-        </div>
-        <CardTitle className="font-[family-name:var(--font-anton)] text-2xl uppercase">
-          Grazie, {values.nome}!
-        </CardTitle>
-        <CardDescription className="text-[13px] leading-relaxed text-white/75">
-          La tua iscrizione è andata a buon fine. Dovresti aver già ricevuto
-          un&apos;email di conferma a{" "}
-          <span className="text-foreground font-semibold">
-            {values.email}
-          </span>
-          : se non la vedi, controlla anche nella cartella spam.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4 px-5">
-        {isBonifico && (
-          <div className="flex flex-col gap-3 rounded-[2px] border border-[#7c1fd6]/50 bg-[#7c1fd6]/10 p-4">
-            <div className="flex items-center gap-2 text-sm font-semibold">
-              <Banknote className="size-4 text-[#a855f7]" />
-              Completa il pagamento con bonifico
-            </div>
-
-            <div className="flex flex-col gap-2.5">
-              <CopyableRow label="IBAN" value={bonificoInfo.iban} />
-              <CopyableRow
-                label="Intestatario"
-                value={bonificoInfo.intestatario}
-                mono={false}
-              />
-              <CopyableRow label="Causale" value={causale} />
-            </div>
-
-            <div className="text-muted-foreground flex items-center gap-2 text-xs">
-              <CalendarClock className="size-4 shrink-0" />
-              Effettua il bonifico entro il{" "}
-              {deadlineFormatter.format(deadline)} per confermare il posto.
-            </div>
-            <p className="text-muted-foreground text-xs leading-relaxed">
-              Una volta effettuato il bonifico, appena ci arriva un nostro
-              operatore ne confermerà la ricezione e riceverai la ricevuta di
-              pagamento via email.
-            </p>
-          </div>
-        )}
-
-        <div className="flex flex-col gap-2 rounded-[2px] border border-white/10 bg-[#111] p-4">
-          <p className="mb-1 text-xs font-bold tracking-[0.12em] text-[#a855f7] uppercase">
-            Riepilogo iscrizione
-          </p>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Nome</span>
-            <span>
-              {values.nome} {values.cognome} ({values.aka})
-            </span>
-          </div>
-          {values.akaPartner2vs2 && (
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">
-                Crew / partner 2vs2
-              </span>
-              <span>{values.akaPartner2vs2}</span>
-            </div>
-          )}
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Workshop</span>
-            <span>{workshopLabel}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Battle</span>
-            <span>{battleLabels.join(", ")}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Pagamento</span>
-            <span>
-              {isBonifico ? "Bonifico bancario" : "Contanti sul posto"}
-            </span>
-          </div>
-          <div className="my-1 border-t border-white/10" />
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Workshop</span>
-            <span>{formatCurrency(totale.amountWorkshop)}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Battle</span>
-            <span>{formatCurrency(totale.amountBattle)}</span>
-          </div>
-          {totale.surchargeLate > 0 && (
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">
-                Sovrapprezzo ritardo
-              </span>
-              <span>{formatCurrency(totale.surchargeLate)}</span>
-            </div>
-          )}
-          {totale.surchargeOnsite > 0 && (
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">
-                Sovrapprezzo sul posto
-              </span>
-              <span>{formatCurrency(totale.surchargeOnsite)}</span>
-            </div>
-          )}
-          <div className="flex justify-between border-t border-white/15 pt-2 text-base font-bold">
-            <span>Totale</span>
-            <span className="text-[#f5d90a]">
-              {formatCurrency(totale.amountTotal)}
-            </span>
-          </div>
-        </div>
-      </CardContent>
-      <CardFooter className="flex flex-col gap-2 px-5 sm:flex-row">
-        <Button
-          variant="outline"
-          onClick={onReset}
-          className="w-full rounded-[2px] border-white/20 bg-transparent sm:w-auto"
-        >
-          Nuova iscrizione
-        </Button>
-        <Button
-          asChild
-          className={cn(
-            "w-full rounded-[2px] bg-[#f5d90a] font-bold text-black uppercase hover:bg-[#f5d90a]/90 sm:w-auto",
-            DIAGONAL_CUT
-          )}
-        >
-          <Link href="/eventi/senti-come-suona">
-            Torna alla pagina dell&apos;evento
-          </Link>
-        </Button>
-      </CardFooter>
-    </SectionCard>
   )
 }
