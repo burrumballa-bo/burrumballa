@@ -1,9 +1,11 @@
 import { Routes, Route, Navigate } from "react-router-dom"
 import LoginPage from "@/pages/LoginPage"
 import ResetPasswordPage from "@/pages/ResetPasswordPage"
-import AdminPage from "@/pages/AdminPage"
+import AdminHomePage from "@/pages/AdminHomePage"
 import ImpostazioniPage from "@/pages/ImpostazioniPage"
-import EventoPage from "@/pages/EventoPage"
+import EventDashboardPage from "@/pages/EventDashboardPage"
+import EventoPaginaPage from "@/pages/EventoPaginaPage"
+import EventoIscrittiPage from "@/pages/EventoIscrittiPage"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
 
 function App() {
@@ -15,7 +17,7 @@ function App() {
         path="/admin"
         element={
           <ProtectedRoute>
-            <AdminPage />
+            <AdminHomePage />
           </ProtectedRoute>
         }
       />
@@ -31,7 +33,23 @@ function App() {
         path="/admin/evento"
         element={
           <ProtectedRoute>
-            <EventoPage />
+            <EventDashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/evento/pagina"
+        element={
+          <ProtectedRoute>
+            <EventoPaginaPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/evento/iscritti"
+        element={
+          <ProtectedRoute>
+            <EventoIscrittiPage />
           </ProtectedRoute>
         }
       />

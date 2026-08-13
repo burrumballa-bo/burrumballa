@@ -42,7 +42,7 @@ import type {
   EventPersonUpdateInput,
 } from "@/types/eventPerson"
 
-export default function EventoPage() {
+export default function EventoPaginaPage() {
   const navigate = useNavigate()
   const eventInfoQuery = useEventInfo()
   const updateEventInfo = useUpdateEventInfo()
@@ -68,6 +68,9 @@ export default function EventoPage() {
       ? {
           titolo: eventInfoQuery.data.titolo ?? "",
           data_evento: eventInfoQuery.data.data_evento ?? "",
+          ora_inizio: eventInfoQuery.data.ora_inizio ?? "",
+          ora_fine: eventInfoQuery.data.ora_fine ?? "",
+          descrizione_iscrizione: eventInfoQuery.data.descrizione_iscrizione ?? "",
           descrizione: eventInfoQuery.data.descrizione ?? "",
           luogo: eventInfoQuery.data.luogo ?? "",
           testi_informativi: eventInfoQuery.data.testi_informativi ?? "",
@@ -89,6 +92,9 @@ export default function EventoPage() {
       {
         titolo: values.titolo,
         data_evento: values.data_evento || null,
+        ora_inizio: values.ora_inizio || null,
+        ora_fine: values.ora_fine || null,
+        descrizione_iscrizione: values.descrizione_iscrizione || null,
         descrizione: values.descrizione || null,
         luogo: values.luogo || null,
         testi_informativi: values.testi_informativi || null,
@@ -163,10 +169,10 @@ export default function EventoPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-6 md:p-8">
       <div className="flex items-center gap-3">
-        <Button variant="outline" size="icon" onClick={() => navigate("/admin")}>
+        <Button variant="outline" size="icon" onClick={() => navigate("/admin/evento")}>
           <ArrowLeft />
         </Button>
-        <h1 className="text-2xl font-semibold">Evento: Senti Come Suona</h1>
+        <h1 className="text-2xl font-semibold">Modifica pagina evento</h1>
       </div>
 
       {eventInfoQuery.isLoading ? (
@@ -199,25 +205,47 @@ export default function EventoPage() {
                 )}
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-4 sm:grid-cols-3">
                 <div className="space-y-2">
                   <Label htmlFor="data_evento">Data evento</Label>
                   <Input id="data_evento" type="date" {...register("data_evento")} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="scadenza_iscrizioni">Scadenza iscrizioni</Label>
-                  <Input
-                    id="scadenza_iscrizioni"
-                    type="datetime-local"
-                    aria-invalid={!!errors.scadenza_iscrizioni}
-                    {...register("scadenza_iscrizioni")}
-                  />
-                  {errors.scadenza_iscrizioni && (
-                    <p className="text-destructive text-sm">
-                      {errors.scadenza_iscrizioni.message}
-                    </p>
-                  )}
+                  <Label htmlFor="ora_inizio">Orario inizio</Label>
+                  <Input id="ora_inizio" type="time" {...register("ora_inizio")} />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="ora_fine">Orario fine</Label>
+                  <Input id="ora_fine" type="time" {...register("ora_fine")} />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="scadenza_iscrizioni">Scadenza iscrizioni</Label>
+                <Input
+                  id="scadenza_iscrizioni"
+                  type="datetime-local"
+                  aria-invalid={!!errors.scadenza_iscrizioni}
+                  {...register("scadenza_iscrizioni")}
+                />
+                {errors.scadenza_iscrizioni && (
+                  <p className="text-destructive text-sm">
+                    {errors.scadenza_iscrizioni.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="descrizione_iscrizione">Descrizione iscrizione</Label>
+                <Textarea
+                  id="descrizione_iscrizione"
+                  rows={2}
+                  {...register("descrizione_iscrizione")}
+                />
+                <p className="text-muted-foreground text-xs">
+                  Testo sotto il titolo &quot;Iscrizione&quot; nella pagina pubblica,
+                  seguito automaticamente da data e orario evento.
+                </p>
               </div>
 
               <div className="space-y-2">

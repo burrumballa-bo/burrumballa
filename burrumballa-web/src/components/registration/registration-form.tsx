@@ -402,11 +402,11 @@ export function RegistrationForm() {
 
           <div className="mt-2 flex flex-col gap-2">
             <p className="text-xs font-semibold tracking-[0.1em] text-[#a855f7] uppercase">
-              Nome d&apos;arte / Crew (per 2vs2)
+              Aka / Crew (per 2vs2)
             </p>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="flex flex-col gap-2">
-                <Label htmlFor="aka">Nome d&apos;arte *</Label>
+                <Label htmlFor="aka">Aka *</Label>
                 <Input
                   id="aka"
                   aria-invalid={!!errors.aka}
@@ -415,7 +415,7 @@ export function RegistrationForm() {
                 />
                 {errors.aka && (
                   <p className="text-destructive text-sm">
-                    Il nome d&apos;arte è obbligatorio.
+                    L&apos;aka è obbligatoria.
                   </p>
                 )}
               </div>

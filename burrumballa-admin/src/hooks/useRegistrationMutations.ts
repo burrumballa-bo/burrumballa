@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { FunctionsHttpError } from "@supabase/supabase-js"
 import { supabase } from "@/lib/supabase"
-import type { PaymentStatus } from "@/types/registration"
+import type { PaymentMethod, PaymentStatus } from "@/types/registration"
 
 async function describeFunctionsError(error: unknown): Promise<string> {
   if (error instanceof FunctionsHttpError) {
@@ -87,6 +87,60 @@ export function useUpdateNoteAdmin() {
       const { error } = await supabase
         .from("registrations")
         .update({ note_admin: noteAdmin || null })
+        .eq("id", id)
+
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["registrations"] })
+    },
+  })
+}
+
+export interface UpdateRegistrationInput {
+  id: string
+  nome: string
+  cognome: string
+  aka: string | null
+  aka_partner_2vs2: string | null
+  email: string
+  workshop: string | null
+  battle_categories: string[]
+  payment_method: PaymentMethod
+  consenso_immagini: boolean
+}
+
+// Aggiorna i dati anagrafici/scelte dell'iscrizione (modificabili
+// dall'admin nel modale di dettaglio). Stato pagamento e note hanno le
+// loro mutation dedicate qui sopra (con effetti collaterali propri, es.
+// invio ricevuta): questa copre il resto dei campi "scritti dall'utente".
+export function useUpdateRegistration() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (input: UpdateRegistrationInput) => {
+      const { id, ...values } = input
+      const { error } = await supabase.from("registrations").update(values).eq("id", id)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["registrations"] })
+    },
+  })
+}
+
+// Soft delete: imposta deleted_at invece di cancellare la riga. La
+// persona sparisce da liste/statistiche/conteggio posti (vedi
+// conta_iscritti_opzione in supabase/migrations), ma resta in tabella —
+// se aveva già pagato, il rimborso va effettuato fuori app.
+export function useDeleteRegistration() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("registrations")
+        .update({ deleted_at: new Date().toISOString() })
         .eq("id", id)
 
       if (error) throw error

@@ -6,7 +6,12 @@ import { PersonAvatar } from "@/components/senti-come-suona/person-avatar"
 import { TribaleBackground } from "@/components/senti-come-suona/tribale-background"
 import { TribaleStrip } from "@/components/senti-come-suona/tribale-strip"
 import { cn } from "@/lib/utils"
-import { formatEventDate, formatEventDayMonthName, getEventInfo } from "@/lib/event-info"
+import {
+  formatEventDate,
+  formatEventDayMonthName,
+  formatEventTimeRange,
+  getEventInfo,
+} from "@/lib/event-info"
 import {
   getEventPeople,
   getSignedAssetUrls,
@@ -48,8 +53,13 @@ export default async function SentiComeSuonaPage() {
   const frameUrl = assetUrls[sentiComeSuonaPath(HERO_FRAME_FILE)] ?? null
   const logoUrl = assetUrls[sentiComeSuonaPath(HERO_LOGO_FILE)] ?? null
 
-  const dataEvento = formatEventDate(eventInfo.data_evento)
+  const dataEvento = formatEventDate(
+    eventInfo.data_evento,
+    eventInfo.ora_inizio,
+    eventInfo.ora_fine
+  )
   const dayMonthName = formatEventDayMonthName(eventInfo.data_evento)
+  const orario = formatEventTimeRange(eventInfo.ora_inizio, eventInfo.ora_fine)
 
   const giuria = people.filter((persona) => persona.categoria === "giuria")
   const hostDj = people.filter((persona) => persona.categoria === "host_dj")
@@ -142,16 +152,18 @@ export default async function SentiComeSuonaPage() {
             </div>
           )}
 
-          <div className="flex flex-wrap gap-2">
-            <span
-              className={cn(
-                "bg-[#f5d90a] px-2.5 py-1.5 text-[10px] font-bold text-black",
-                DIAGONAL_CUT
-              )}
-            >
-              15:00–22:00
-            </span>
-          </div>
+          {orario && (
+            <div className="flex flex-wrap gap-2">
+              <span
+                className={cn(
+                  "bg-[#f5d90a] px-2.5 py-1.5 text-[10px] font-bold text-black",
+                  DIAGONAL_CUT
+                )}
+              >
+                {orario}
+              </span>
+            </div>
+          )}
           {eventInfo.testi_informativi && (
             <p className="mt-4 text-xs leading-relaxed whitespace-pre-wrap text-white/50">
               {eventInfo.testi_informativi}
@@ -250,8 +262,7 @@ export default async function SentiComeSuonaPage() {
             Iscrizione
           </h2>
           <p className="mt-1 text-[11px] text-white/50">
-            Completa i dati, scegli categorie battle e workshop, paga in un
-            unico form
+            {eventInfo.descrizione_iscrizione}
             {dataEvento && (
               <>
                 {" "}

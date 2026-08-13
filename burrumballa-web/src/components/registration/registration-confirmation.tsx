@@ -99,8 +99,8 @@ export function RegistrationConfirmation({
               {deadlineFormatter.format(deadline)} per confermare il posto.
             </div>
             <p className="text-muted-foreground text-xs leading-relaxed">
-              Una volta effettuato il bonifico, appena ci arriva un nostro
-              operatore ne confermerà la ricezione e riceverai la ricevuta di
+              Una volta effettuato il bonifico, appena un nostro
+              operatore ne confermerà la ricezione, riceverai la ricevuta di
               pagamento via email.
             </p>
           </div>

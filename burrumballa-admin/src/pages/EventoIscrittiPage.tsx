@@ -1,21 +1,22 @@
 import { useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { CalendarDays, LogOut, Search, Settings } from "lucide-react"
+import { ArrowLeft, Search } from "lucide-react"
 import { toast } from "sonner"
 
-import { supabase } from "@/lib/supabase"
 import { cn } from "@/lib/utils"
 import { PAYMENT_STATUS_OPTIONS } from "@/lib/paymentStatus"
 import { useRegistrations } from "@/hooks/useRegistrations"
-import { useEventOptions } from "@/hooks/useEventOptions"
+import { useEventOptionsStato } from "@/hooks/useEventOptionsStato"
 import {
+  useDeleteRegistration,
   useUpdateNoteAdmin,
   useUpdatePaymentStatus,
+  useUpdateRegistration,
 } from "@/hooks/useRegistrationMutations"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { SummaryCards } from "@/components/SummaryCards"
 import { RegistrationsTable } from "@/components/RegistrationsTable"
+import { RegistrationDetailModal } from "@/components/RegistrationDetailModal"
 import type { PaymentStatus } from "@/types/registration"
 
 type StatusFilter = "tutti" | PaymentStatus
@@ -25,30 +26,27 @@ const FILTERS: { value: StatusFilter; label: string }[] = [
   ...PAYMENT_STATUS_OPTIONS,
 ]
 
-export default function AdminPage() {
+export default function EventoIscrittiPage() {
   const navigate = useNavigate()
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("tutti")
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
   const registrationsQuery = useRegistrations()
-  const eventOptionsQuery = useEventOptions()
+  const optionsQuery = useEventOptionsStato()
   const updateStatus = useUpdatePaymentStatus()
   const updateNote = useUpdateNoteAdmin()
+  const updateRegistration = useUpdateRegistration()
+  const deleteRegistration = useDeleteRegistration()
 
   const registrations = useMemo(
     () => registrationsQuery.data ?? [],
     [registrationsQuery.data]
   )
 
-  const { workshopLabels, battleLabels } = useMemo(() => {
-    const workshop: Record<string, string> = {}
-    const battle: Record<string, string> = {}
-    for (const option of eventOptionsQuery.data ?? []) {
-      if (option.tipo === "workshop") workshop[option.chiave] = option.label
-      else battle[option.chiave] = option.label
-    }
-    return { workshopLabels: workshop, battleLabels: battle }
-  }, [eventOptionsQuery.data])
+  const options = optionsQuery.data ?? []
+  const workshopOptions = useMemo(() => options.filter((o) => o.tipo === "workshop"), [options])
+  const battleOptions = useMemo(() => options.filter((o) => o.tipo === "battle"), [options])
 
   const searchFiltered = useMemo(() => {
     const term = search.trim().toLowerCase()
@@ -76,29 +74,17 @@ export default function AdminPage() {
     return searchFiltered.filter((r) => r.payment_status === statusFilter)
   }, [searchFiltered, statusFilter])
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    navigate("/admin/login", { replace: true })
-  }
+  const selected = selectedId
+    ? (registrations.find((r) => r.id === selectedId) ?? null)
+    : null
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6 md:p-8">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <Button variant="outline" size="icon" onClick={() => navigate("/admin/evento")}>
+          <ArrowLeft />
+        </Button>
         <h1 className="text-2xl font-semibold">Iscritti</h1>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => navigate("/admin/evento")}>
-            <CalendarDays />
-            Evento
-          </Button>
-          <Button variant="outline" onClick={() => navigate("/admin/impostazioni")}>
-            <Settings />
-            Impostazioni
-          </Button>
-          <Button variant="outline" onClick={handleLogout}>
-            <LogOut />
-            Esci
-          </Button>
-        </div>
       </div>
 
       {registrationsQuery.isError && (
@@ -107,13 +93,6 @@ export default function AdminPage() {
           {(registrationsQuery.error as Error).message}
         </p>
       )}
-      {updateNote.isError && (
-        <p className="text-destructive text-sm">
-          Salvataggio non riuscito. Riprova.
-        </p>
-      )}
-
-      <SummaryCards registrations={registrations} />
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative w-full sm:max-w-xs">
@@ -150,11 +129,34 @@ export default function AdminPage() {
       ) : (
         <RegistrationsTable
           data={filtered}
-          workshopLabels={workshopLabels}
-          battleLabels={battleLabels}
-          onStatusChange={(id, status) =>
+          onRowClick={(registration) => setSelectedId(registration.id)}
+        />
+      )}
+
+      {selected && (
+        <RegistrationDetailModal
+          registration={selected}
+          workshopOptions={workshopOptions}
+          battleOptions={battleOptions}
+          onClose={() => setSelectedId(null)}
+          isSaving={updateRegistration.isPending}
+          isStatusSaving={updateStatus.isPending}
+          isDeleting={deleteRegistration.isPending}
+          onSave={(input) =>
+            updateRegistration.mutate(input, {
+              onSuccess: () => {
+                toast.success("Iscritto aggiornato.")
+                setSelectedId(null)
+              },
+              onError: (error) =>
+                toast.error("Salvataggio non riuscito.", {
+                  description: (error as Error).message,
+                }),
+            })
+          }
+          onStatusChange={(status) =>
             updateStatus.mutate(
-              { id, paymentStatus: status },
+              { id: selected.id, paymentStatus: status },
               {
                 onSuccess: (result) => {
                   if (result.emailStatus === "sent") {
@@ -166,15 +168,26 @@ export default function AdminPage() {
                     )
                   }
                 },
-                onError: (error) => {
+                onError: (error) =>
                   toast.error("Aggiornamento stato non riuscito.", {
                     description: (error as Error).message,
-                  })
-                },
+                  }),
               }
             )
           }
-          onNoteChange={(id, note) => updateNote.mutate({ id, noteAdmin: note })}
+          onNoteChange={(note) => updateNote.mutate({ id: selected.id, noteAdmin: note })}
+          onDelete={() =>
+            deleteRegistration.mutate(selected.id, {
+              onSuccess: () => {
+                toast.success("Iscritto eliminato.")
+                setSelectedId(null)
+              },
+              onError: (error) =>
+                toast.error("Eliminazione non riuscita.", {
+                  description: (error as Error).message,
+                }),
+            })
+          }
         />
       )}
     </div>
