@@ -24,7 +24,11 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
 import {
+  FALLBACK_NOTA_BATTLE,
+  FALLBACK_NOTA_PAGAMENTO,
+  FALLBACK_NOTA_WORKSHOP,
   FALLBACK_REGISTRATION_DEADLINE,
+  HIPHOP_2VS2_OPEN_KEY,
   NO_BATTLE_KEY,
   NO_WORKSHOP_KEY,
   ONSITE_SURCHARGE,
@@ -59,6 +63,9 @@ export function RegistrationForm() {
   const [bonificoInfo, setBonificoInfo] = React.useState<BonificoInfo>(
     FALLBACK_BONIFICO_INFO
   )
+  const [noteBattle, setNoteBattle] = React.useState(FALLBACK_NOTA_BATTLE)
+  const [noteWorkshop, setNoteWorkshop] = React.useState(FALLBACK_NOTA_WORKSHOP)
+  const [notePagamento, setNotePagamento] = React.useState(FALLBACK_NOTA_PAGAMENTO)
 
   const loadOptions = React.useCallback(async () => {
     setOptionsError(null)
@@ -82,7 +89,7 @@ export function RegistrationForm() {
 
     supabase
       .from("event_info")
-      .select("titolo, scadenza_iscrizioni")
+      .select("titolo, scadenza_iscrizioni, nota_battle, nota_workshop, nota_pagamento")
       .eq("id", 1)
       .single()
       .then(({ data, error }) => {
@@ -94,6 +101,9 @@ export function RegistrationForm() {
           ...prev,
           eventTitle: data.titolo || prev.eventTitle,
         }))
+        if (data.nota_battle) setNoteBattle(data.nota_battle)
+        if (data.nota_workshop) setNoteWorkshop(data.nota_workshop)
+        if (data.nota_pagamento) setNotePagamento(data.nota_pagamento)
       })
 
     // Vista pubblica su app_settings (ricevuta_iban / ricevuta_intestazione):
@@ -402,33 +412,21 @@ export function RegistrationForm() {
 
           <div className="mt-2 flex flex-col gap-2">
             <p className="text-xs font-semibold tracking-[0.1em] text-[#a855f7] uppercase">
-              Aka / Crew (per 2vs2)
+              Aka
             </p>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="aka">Aka *</Label>
-                <Input
-                  id="aka"
-                  aria-invalid={!!errors.aka}
-                  className="rounded-[2px] bg-[#151515]"
-                  {...register("aka")}
-                />
-                {errors.aka && (
-                  <p className="text-destructive text-sm">
-                    L&apos;aka è obbligatoria.
-                  </p>
-                )}
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="akaPartner2vs2">
-                  Crew / partner 2vs2 (opzionale)
-                </Label>
-                <Input
-                  id="akaPartner2vs2"
-                  className="rounded-[2px] bg-[#151515]"
-                  {...register("akaPartner2vs2")}
-                />
-              </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="aka">Aka *</Label>
+              <Input
+                id="aka"
+                aria-invalid={!!errors.aka}
+                className="rounded-[2px] bg-[#151515]"
+                {...register("aka")}
+              />
+              {errors.aka && (
+                <p className="text-destructive text-sm">
+                  L&apos;aka è obbligatoria.
+                </p>
+              )}
             </div>
           </div>
         </CardContent>
@@ -507,11 +505,24 @@ export function RegistrationForm() {
               </div>
             )}
           />
+          {battleCategorie.includes(HIPHOP_2VS2_OPEN_KEY) && (
+            <div className="mt-3 flex flex-col gap-2">
+              <Label htmlFor="akaPartner2vs2">Crew / partner 2vs2 *</Label>
+              <Input
+                id="akaPartner2vs2"
+                aria-invalid={!!errors.akaPartner2vs2}
+                className="rounded-[2px] bg-[#151515]"
+                {...register("akaPartner2vs2")}
+              />
+              {errors.akaPartner2vs2 && (
+                <p className="text-destructive text-sm">
+                  {errors.akaPartner2vs2.message}
+                </p>
+              )}
+            </div>
+          )}
           <p className="text-muted-foreground mt-3 text-xs leading-relaxed">
-            Nessun obbligo di scelta: puoi anche non selezionare nessuna
-            categoria. Costo in base al numero di categorie scelte:{" "}
-            {formatCurrency(15)} / {formatCurrency(20)} / {formatCurrency(25)}{" "}
-            / {formatCurrency(30)}.
+            {noteBattle}
           </p>
         </CardContent>
       </SectionCard>
@@ -595,8 +606,7 @@ export function RegistrationForm() {
             </p>
           )}
           <p className="text-muted-foreground mt-3 text-xs leading-relaxed">
-            Iscrizione a uno o entrambi i workshop, oppure &quot;Nessun
-            workshop&quot; se partecipi solo alla battle.
+            {noteWorkshop}
           </p>
         </CardContent>
       </SectionCard>
@@ -699,11 +709,7 @@ export function RegistrationForm() {
           </div>
 
           <p className="text-muted-foreground text-xs leading-relaxed">
-            Il posto è confermato solo dopo il pagamento. Scadenza iscrizioni:{" "}
-            {deadlineFormatter.format(deadline)} — dopo la scadenza: +
-            {formatCurrency(5)}. Le coordinate bancarie per il bonifico
-            saranno visibili nello step successivo e ti verranno inviate
-            anche via email.
+            {notePagamento}
           </p>
 
           <div className="flex flex-col gap-3 border-t border-white/10 pt-4">

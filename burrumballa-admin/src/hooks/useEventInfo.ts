@@ -28,6 +28,9 @@ export interface UpdateEventInfoInput {
   luogo: string | null
   testi_informativi: string | null
   scadenza_iscrizioni: string
+  nota_battle: string | null
+  nota_workshop: string | null
+  nota_pagamento: string | null
 }
 
 export function useUpdateEventInfo() {

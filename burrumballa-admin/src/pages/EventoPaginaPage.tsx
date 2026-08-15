@@ -7,6 +7,8 @@ import { toast } from "sonner"
 
 import { useEventInfo, useUpdateEventInfo } from "@/hooks/useEventInfo"
 import {
+  useCreateEventOption,
+  useDeleteEventOption,
   useEventOptionsStato,
   useUpdateEventOption,
 } from "@/hooks/useEventOptionsStato"
@@ -35,20 +37,37 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { EventOptionsSection } from "@/components/EventOptionsSection"
+import { EventOptionModal } from "@/components/EventOptionModal"
+import { EventInfoNoteField } from "@/components/EventInfoNoteField"
 import { EventPeopleSection } from "@/components/EventPeopleSection"
-import type { EventOptionUpdateInput } from "@/types/eventOption"
+import type {
+  EventOptionInsertInput,
+  EventOptionStato,
+  EventOptionTipo,
+  EventOptionUpdateInput,
+} from "@/types/eventOption"
 import type {
   EventPersonInsertInput,
   EventPersonUpdateInput,
 } from "@/types/eventPerson"
+
+type EventInfoNoteFieldKey = "nota_battle" | "nota_workshop" | "nota_pagamento"
+
+type OptionModalState =
+  | { mode: "create"; tipo: EventOptionTipo }
+  | { mode: "edit"; option: EventOptionStato }
+  | null
 
 export default function EventoPaginaPage() {
   const navigate = useNavigate()
   const eventInfoQuery = useEventInfo()
   const updateEventInfo = useUpdateEventInfo()
   const optionsQuery = useEventOptionsStato()
+  const createOption = useCreateEventOption()
   const updateOption = useUpdateEventOption()
-  const [savingOptionId, setSavingOptionId] = useState<string | null>(null)
+  const deleteOption = useDeleteEventOption()
+  const [optionModal, setOptionModal] = useState<OptionModalState>(null)
+  const [deletingOptionId, setDeletingOptionId] = useState<string | null>(null)
 
   const peopleQuery = useEventPeople()
   const imageFilesQuery = useSentiComeSuonaImageFiles()
@@ -99,6 +118,11 @@ export default function EventoPaginaPage() {
         luogo: values.luogo || null,
         testi_informativi: values.testi_informativi || null,
         scadenza_iscrizioni: scadenzaIso,
+        // Non gestite in questo form: si salvano da sole nelle rispettive
+        // sezioni (vedi handleSaveNoteField), qui si preservano invariate.
+        nota_battle: eventInfoQuery.data?.nota_battle ?? null,
+        nota_workshop: eventInfoQuery.data?.nota_workshop ?? null,
+        nota_pagamento: eventInfoQuery.data?.nota_pagamento ?? null,
       },
       {
         onSuccess: () => toast.success("Info evento salvate."),
@@ -110,15 +134,59 @@ export default function EventoPaginaPage() {
     )
   }
 
+  const handleSaveNoteField = (field: EventInfoNoteFieldKey, value: string) => {
+    if (!eventInfoQuery.data) return
+    const { id, updated_at, ...rest } = eventInfoQuery.data
+    updateEventInfo.mutate(
+      { ...rest, [field]: value.trim() || null },
+      {
+        onSuccess: () => toast.success("Nota salvata."),
+        onError: (error) =>
+          toast.error("Salvataggio nota non riuscito.", {
+            description: (error as Error).message,
+          }),
+      }
+    )
+  }
+
+  const handleCreateOption = (input: EventOptionInsertInput) => {
+    createOption.mutate(input, {
+      onSuccess: () => {
+        toast.success("Opzione creata.")
+        setOptionModal(null)
+      },
+      onError: (error) =>
+        toast.error("Creazione opzione non riuscita.", {
+          description: (error as Error).message,
+        }),
+    })
+  }
+
   const handleSaveOption = (input: EventOptionUpdateInput) => {
-    setSavingOptionId(input.id)
     updateOption.mutate(input, {
-      onSuccess: () => toast.success("Opzione salvata."),
+      onSuccess: () => {
+        toast.success("Opzione salvata.")
+        setOptionModal(null)
+      },
       onError: (error) =>
         toast.error("Salvataggio opzione non riuscito.", {
           description: (error as Error).message,
         }),
-      onSettled: () => setSavingOptionId(null),
+    })
+  }
+
+  const handleDeleteOption = (id: string) => {
+    setDeletingOptionId(id)
+    deleteOption.mutate(id, {
+      onSuccess: () => {
+        toast.success("Opzione eliminata.")
+        setOptionModal(null)
+      },
+      onError: (error) =>
+        toast.error("Eliminazione opzione non riuscita.", {
+          description: (error as Error).message,
+        }),
+      onSettled: () => setDeletingOptionId(null),
     })
   }
 
@@ -275,6 +343,17 @@ export default function EventoPaginaPage() {
                   {...register("testi_informativi")}
                 />
               </div>
+
+              <div className="border-t pt-4">
+                <EventInfoNoteField
+                  id="nota_pagamento"
+                  label="Nota pagamento"
+                  description="Testo mostrato nel form pubblico sotto il metodo di pagamento."
+                  value={eventInfoQuery.data?.nota_pagamento ?? ""}
+                  onSave={(value) => handleSaveNoteField("nota_pagamento", value)}
+                  isSaving={updateEventInfo.isPending}
+                />
+              </div>
             </CardContent>
           </Card>
 
@@ -319,10 +398,23 @@ export default function EventoPaginaPage() {
             </p>
           ) : (
             <EventOptionsSection
+              tipo="workshop"
               options={workshopOptions}
-              onSave={handleSaveOption}
-              savingId={savingOptionId}
+              onEdit={(option) => setOptionModal({ mode: "edit", option })}
+              onCreate={() => setOptionModal({ mode: "create", tipo: "workshop" })}
             />
+          )}
+          {eventInfoQuery.data && (
+            <div className="mt-4 border-t pt-4">
+              <EventInfoNoteField
+                id="nota_workshop"
+                label="Nota workshop"
+                description="Testo mostrato nel form pubblico sotto la scelta del workshop."
+                value={eventInfoQuery.data.nota_workshop ?? ""}
+                onSave={(value) => handleSaveNoteField("nota_workshop", value)}
+                isSaving={updateEventInfo.isPending}
+              />
+            </div>
           )}
         </CardContent>
       </Card>
@@ -336,10 +428,23 @@ export default function EventoPaginaPage() {
             <p className="text-muted-foreground text-sm">Caricamento opzioni...</p>
           ) : optionsQuery.isError ? null : (
             <EventOptionsSection
+              tipo="battle"
               options={battleOptions}
-              onSave={handleSaveOption}
-              savingId={savingOptionId}
+              onEdit={(option) => setOptionModal({ mode: "edit", option })}
+              onCreate={() => setOptionModal({ mode: "create", tipo: "battle" })}
             />
+          )}
+          {eventInfoQuery.data && (
+            <div className="mt-4 border-t pt-4">
+              <EventInfoNoteField
+                id="nota_battle"
+                label="Nota battle"
+                description="Testo mostrato nel form pubblico sotto le categorie battle."
+                value={eventInfoQuery.data.nota_battle ?? ""}
+                onSave={(value) => handleSaveNoteField("nota_battle", value)}
+                isSaving={updateEventInfo.isPending}
+              />
+            </div>
           )}
         </CardContent>
       </Card>
@@ -374,6 +479,25 @@ export default function EventoPaginaPage() {
           )}
         </CardContent>
       </Card>
+
+      {optionModal && (
+        <EventOptionModal
+          mode={optionModal.mode}
+          tipo={optionModal.mode === "create" ? optionModal.tipo : optionModal.option.tipo}
+          option={optionModal.mode === "edit" ? optionModal.option : undefined}
+          siblingWorkshops={workshopOptions}
+          onClose={() => setOptionModal(null)}
+          onCreate={handleCreateOption}
+          onSave={handleSaveOption}
+          onDelete={handleDeleteOption}
+          isSaving={createOption.isPending || updateOption.isPending}
+          isDeleting={
+            deleteOption.isPending &&
+            optionModal.mode === "edit" &&
+            deletingOptionId === optionModal.option.id
+          }
+        />
+      )}
     </div>
   )
 }
