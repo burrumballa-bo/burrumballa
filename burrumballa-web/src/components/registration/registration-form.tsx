@@ -24,6 +24,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
 import {
+  BATTLE_ADDITIONAL_CATEGORY_PRICE,
   FALLBACK_NOTA_BATTLE,
   FALLBACK_NOTA_PAGAMENTO,
   FALLBACK_NOTA_WORKSHOP,
@@ -149,6 +150,12 @@ export function RegistrationForm() {
   const workshop = watch("workshop")
   const battleCategorie = watch("battleCategorie")
   const paymentMethod = watch("paymentMethod")
+  // La prima categoria selezionata (in ordine cronologico) è l'unica a
+  // mostrare il prezzo pieno: tutte le altre, selezionate o no, mostrano il
+  // prezzo incrementale del bundle (+5).
+  const primaBattleSelezionata = battleCategorie.find(
+    (chiave) => chiave !== NO_BATTLE_KEY
+  )
 
   const totale = React.useMemo(
     () =>
@@ -495,7 +502,12 @@ export function RegistrationForm() {
                       ) : (
                         !isNoBattle && (
                           <span className="text-sm font-semibold text-[#f5d90a]">
-                            {formatCurrency(opzione.prezzo)}
+                            {formatCurrency(
+                              !primaBattleSelezionata ||
+                                opzione.chiave === primaBattleSelezionata
+                                ? opzione.prezzo
+                                : BATTLE_ADDITIONAL_CATEGORY_PRICE
+                            )}
                           </span>
                         )
                       )}
@@ -521,7 +533,7 @@ export function RegistrationForm() {
               )}
             </div>
           )}
-          <p className="text-muted-foreground mt-3 text-xs leading-relaxed">
+          <p className="text-white mt-3 text-xs leading-relaxed">
             {noteBattle}
           </p>
         </CardContent>

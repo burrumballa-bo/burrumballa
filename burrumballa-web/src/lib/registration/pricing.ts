@@ -25,6 +25,11 @@ export const FALLBACK_NOTA_PAGAMENTO =
 export const LATE_SURCHARGE = 5
 export const ONSITE_SURCHARGE = 5
 
+// Prezzo mostrato per le categorie battle non selezionate quando ne è già
+// stata scelta almeno una: riflette il costo incrementale del bundle
+// (15 → 20 → 25 → 30, sempre +5 per categoria aggiuntiva).
+export const BATTLE_ADDITIONAL_CATEGORY_PRICE = 5
+
 // Prezzo del workshop se l'opzione selezionata non riporta un prezzo (fallback).
 const WORKSHOP_FALLBACK_PRICE = 25
 
