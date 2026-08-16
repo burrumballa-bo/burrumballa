@@ -156,7 +156,7 @@ export default async function SentiComeSuonaPage() {
             <div className="flex flex-wrap gap-2">
               <span
                 className={cn(
-                  "bg-[#f5d90a] px-2.5 py-1.5 text-[10px] font-bold text-black",
+                  "bg-[#f5d90a] px-3 py-2 text-sm font-bold text-black",
                   DIAGONAL_CUT
                 )}
               >
