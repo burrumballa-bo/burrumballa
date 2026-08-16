@@ -85,6 +85,11 @@ export function EventOptionModal({
   const composto = watch("composto")
   const childIds = watch("child_ids")
 
+  // La chiave "no_workshop" è un placeholder riservato (gratuito, escluso
+  // da prezzo/disponibilità nel form pubblico): non deve poter diventare
+  // un pacchetto, altrimenti il pacchetto risulterebbe invisibile.
+  const isReservedNoWorkshop = option?.chiave === NO_WORKSHOP_KEY
+
   const candidateChildren = siblingWorkshops.filter(
     (w) => !w.composto && w.chiave !== NO_WORKSHOP_KEY && w.id !== option?.id
   )
@@ -102,7 +107,14 @@ export function EventOptionModal({
       label: values.label.trim(),
       prezzo: Number(values.prezzo),
       ordine: Number(values.ordine),
-      max_posti: values.max_posti === "" ? null : Number(values.max_posti),
+      // Non configurabile per i pacchetti: il campo è disabilitato in UI,
+      // ma forziamo comunque null qui per non fidarci del solo disabled.
+      max_posti:
+        tipo === "workshop" && values.composto
+          ? null
+          : values.max_posti === ""
+            ? null
+            : Number(values.max_posti),
       attivo: values.attivo,
       sold_out_manuale: values.sold_out_manuale,
       composto: tipo === "workshop" ? values.composto : false,
@@ -190,11 +202,20 @@ export function EventOptionModal({
               step="1"
               min="1"
               placeholder="Illimitato"
+              disabled={composto}
               aria-invalid={!!errors.max_posti}
               {...register("max_posti")}
             />
-            {errors.max_posti && (
-              <p className="text-destructive text-xs">{errors.max_posti.message}</p>
+            {composto ? (
+              <p className="text-muted-foreground text-xs">
+                Non configurabile per i pacchetti: il pacchetto va in
+                esaurimento quando uno dei workshop che lo compongono è
+                esaurito.
+              </p>
+            ) : (
+              errors.max_posti && (
+                <p className="text-destructive text-xs">{errors.max_posti.message}</p>
+              )
             )}
           </div>
         </div>
@@ -224,10 +245,20 @@ export function EventOptionModal({
               <Switch
                 id="option-composto"
                 checked={composto}
-                onCheckedChange={(value) => setValue("composto", value, { shouldValidate: true })}
+                disabled={isReservedNoWorkshop}
+                onCheckedChange={(value) => {
+                  setValue("composto", value, { shouldValidate: true })
+                  if (value) setValue("max_posti", "", { shouldValidate: true })
+                }}
               />
               <Label htmlFor="option-composto">Workshop composto (pacchetto)</Label>
             </div>
+            {isReservedNoWorkshop && (
+              <p className="text-muted-foreground text-xs">
+                &quot;Nessun workshop&quot; è un&apos;opzione riservata: non può
+                diventare un pacchetto.
+              </p>
+            )}
             {composto && (
               <div className="space-y-1.5 pt-1">
                 <p className="text-muted-foreground text-xs">

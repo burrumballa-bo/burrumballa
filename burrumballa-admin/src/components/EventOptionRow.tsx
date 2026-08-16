@@ -27,7 +27,9 @@ export function EventOptionRow({ option, onEdit }: EventOptionRowProps) {
       </TableCell>
       <TableCell className="text-sm tabular-nums">{formatCurrency(option.prezzo)}</TableCell>
       <TableCell className="text-sm tabular-nums">{option.ordine}</TableCell>
-      <TableCell className="text-sm tabular-nums">{option.max_posti ?? "Illimitato"}</TableCell>
+      <TableCell className="text-sm tabular-nums">
+        {option.composto ? "Da componenti" : (option.max_posti ?? "Illimitato")}
+      </TableCell>
       <TableCell className="text-center">
         <Badge variant={option.attivo ? "outline" : "secondary"}>
           {option.attivo ? "Sì" : "No"}
@@ -50,7 +52,7 @@ export function EventOptionRow({ option, onEdit }: EventOptionRowProps) {
         </TableCell>
       )}
       <TableCell className="text-sm whitespace-nowrap tabular-nums">
-        {option.iscritti} / {option.max_posti ?? "∞"}
+        {option.iscritti} / {option.composto ? "—" : (option.max_posti ?? "∞")}
       </TableCell>
       <TableCell>
         <Badge variant="outline" className={OPTION_AVAILABILITY_BADGE_CLASSES[availability]}>

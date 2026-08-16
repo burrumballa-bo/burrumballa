@@ -25,7 +25,7 @@ export function EventOptionCards({ options }: EventOptionCardsProps) {
             <CardContent className="space-y-1.5">
               <CardDescription>{option.label}</CardDescription>
               <CardTitle className="text-2xl">
-                {option.iscritti} / {option.max_posti ?? "∞"}
+                {option.iscritti} / {option.composto ? "—" : (option.max_posti ?? "∞")}
               </CardTitle>
               <Badge variant="outline" className={OPTION_AVAILABILITY_BADGE_CLASSES[availability]}>
                 {OPTION_AVAILABILITY_LABELS[availability]}
