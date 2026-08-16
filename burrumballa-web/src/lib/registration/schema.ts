@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-import { HIPHOP_2VS2_OPEN_KEY } from "./pricing"
+import { HIPHOP_2VS2_OPEN_KEY, NO_BATTLE_KEY, NO_WORKSHOP_KEY } from "./pricing"
 
 export const registrationSchema = z
   .object({
@@ -12,7 +12,9 @@ export const registrationSchema = z
     aka: z.string().trim().min(1),
     akaPartner2vs2: z.string().trim().optional(),
     email: z.string().trim().min(1).email(),
-    workshop: z.string().min(1),
+    // Facoltativo: si può inviare l'iscrizione senza scegliere un workshop,
+    // basta che sia selezionata almeno una categoria battle (vedi superRefine).
+    workshop: z.string(),
     battleCategorie: z.array(z.string()),
     paymentMethod: z.enum(["bonifico", "sul_posto"]),
     consensoRegolamento: z
@@ -39,6 +41,16 @@ export const registrationSchema = z
         message: "Il crew/partner 2vs2 è obbligatorio per la categoria Hip Hop 2vs2 Open.",
         path: ["akaPartner2vs2"],
       })
+    }
+
+    // Il workshop non è più obbligatorio di per sé, ma deve essere scelta
+    // almeno una cosa tra workshop e battle.
+    const haWorkshopReale = !!values.workshop && values.workshop !== NO_WORKSHOP_KEY
+    const haBattleReale = values.battleCategorie.some((c) => c !== NO_BATTLE_KEY)
+    if (!haWorkshopReale && !haBattleReale) {
+      const message = "Seleziona almeno un workshop o una categoria battle."
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message, path: ["workshop"] })
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message, path: ["battleCategorie"] })
     }
   })
 

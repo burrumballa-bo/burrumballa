@@ -172,7 +172,7 @@ export function RegistrationForm() {
     })
 
     const workshopValue =
-      values.workshop === NO_WORKSHOP_KEY ? null : values.workshop
+      !values.workshop || values.workshop === NO_WORKSHOP_KEY ? null : values.workshop
     const battleCategoriesValue = values.battleCategorie.filter(
       (chiave) => chiave !== NO_BATTLE_KEY
     )
@@ -438,7 +438,7 @@ export function RegistrationForm() {
             Battle
           </CardTitle>
           <CardDescription className="text-xs font-bold tracking-[0.12em] text-[#a855f7] uppercase">
-            Scegli le categorie (facoltativo)
+            Scegli le categorie a cui vuoi partecipare
           </CardDescription>
         </CardHeader>
         <CardContent className="px-5">
@@ -529,12 +529,12 @@ export function RegistrationForm() {
 
       <SectionCard accent="fuchsia">
         <CardHeader className="px-5">
-          <p className="text-xs font-bold tracking-[0.12em] text-[#a855f7] uppercase">
-            Workshop
-          </p>
           <CardTitle className="font-[family-name:var(--font-anton)] text-lg uppercase">
-            Scegli un&apos;opzione
+            Workshop
           </CardTitle>
+          <p className="text-xs font-bold tracking-[0.12em] text-[#a855f7] uppercase">
+            Scegli un&apos;opzione
+          </p>
         </CardHeader>
         <CardContent className="px-5">
           <Controller
@@ -602,7 +602,7 @@ export function RegistrationForm() {
           />
           {errors.workshop && (
             <p className="text-destructive mt-2 text-sm">
-              Seleziona un&apos;opzione workshop.
+              {errors.workshop.message}
             </p>
           )}
           <p className="text-muted-foreground mt-3 text-xs leading-relaxed">
