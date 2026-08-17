@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom"
-import { CalendarDays, LogOut, Plus, Settings } from "lucide-react"
+import { CalendarDays, LayoutTemplate, LogOut, Plus, Settings } from "lucide-react"
 import { toast } from "sonner"
 
 import { supabase } from "@/lib/supabase"
@@ -28,6 +28,10 @@ export default function AdminHomePage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Admin</h1>
         <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => navigate("/admin/contenuti")}>
+            <LayoutTemplate />
+            Contenuti sito
+          </Button>
           <Button variant="outline" onClick={() => navigate("/admin/impostazioni")}>
             <Settings />
             Impostazioni

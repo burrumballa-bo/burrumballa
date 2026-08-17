@@ -69,6 +69,29 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+
+  /* Sito pubblico (Home/Corsi/Eventi/Chi siamo): palette e font dedicati,
+     caricati solo dentro <SiteShell> — non toccano i token shadcn sopra,
+     usati dalle pagine legali e dal flusso di iscrizione. */
+  --color-bb-cream: #f4f1ea;
+  --color-bb-ink: #1a1a1a;
+  --color-bb-purple: #7e3fae;
+  --color-bb-pink: #ec1e89;
+  --color-bb-green: #8be03c;
+  --color-bb-orange: #f6a323;
+  --font-display: var(--font-archivo-black), sans-serif;
+  --font-display-alt: var(--font-anton), sans-serif;
+  --font-marker: var(--font-permanent-marker), cursive;
+  --font-site-body: var(--font-space-grotesk), ui-sans-serif, sans-serif;
+}
+
+@keyframes bb-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
 }
 
 @layer base {

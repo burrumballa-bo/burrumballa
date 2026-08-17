@@ -1,0 +1,166 @@
+// Forma dei contenuti CMS: stessa definizione di burrumballa-web/src/lib/cms/types.ts
+// (i due progetti sono deploy separati, la duplicazione è intenzionale).
+
+export interface HeroContent {
+  kicker: string
+  title: string
+  subtitle: string
+}
+
+export interface HomeHeroContent {
+  kicker: string
+  titleLine1: string
+  titleLine2: string
+  titleLine3: string
+  subtitle: string
+  badgeText: string
+  imageUrl: string | null
+}
+
+export interface HomeContent {
+  hero: HomeHeroContent
+  marquee: { text: string }
+  calendar: { kicker: string; title: string; subLabel: string }
+  corsiSection: { kicker: string; title: string }
+  eventsSection: { kicker: string; title: string }
+  aboutTeaser: { kicker: string; title: string; body: string; imageUrl: string | null }
+  ctaBand: { title: string; subtitle: string }
+}
+
+export interface CorsiContent {
+  hero: HeroContent
+  calendar: { kicker: string; title: string; subtitle: string }
+  join: { kicker: string; title: string; body: string; ctaLabel: string; note: string }
+}
+
+export interface EventiContent {
+  hero: HeroContent
+  ctaBand: { title: string; subtitle: string }
+}
+
+export interface ValoreItem {
+  title: string
+  body: string
+}
+
+export interface ChiSiamoContent {
+  hero: HeroContent
+  story: { title: string; paragraph1: string; paragraph2: string; imageUrl: string | null }
+  valori: { kicker: string; title: string; items: ValoreItem[] }
+  crew: { kicker: string; title: string; subtitle: string }
+  kids: { kicker: string; title: string; body: string; imageUrl: string | null }
+  place: {
+    title: string
+    body: string
+    imageUrl: string | null
+    locationName: string
+    addressLine1: string
+    addressLine2: string
+  }
+  ctaBand: { title: string; subtitle: string }
+}
+
+export interface FooterContent {
+  tagline: string
+  locationName: string
+  addressLine1: string
+  addressLine2: string
+  instagramHandle: string
+  contactNote: string
+  rightsNote: string
+}
+
+export interface Course {
+  id: string
+  slug: string
+  name: string
+  color: string
+  body: string | null
+  teachers: string | null
+  image_url: string | null
+  order_index: number
+  published: boolean
+  updated_at: string
+}
+
+export interface CourseLevel {
+  id: string
+  course_id: string
+  level: string
+  day_of_week: number
+  time: string
+  order_index: number
+}
+
+export interface CourseWithLevels extends Course {
+  levels: CourseLevel[]
+}
+
+export interface CourseInsertInput {
+  slug: string
+  name: string
+  color: string
+  body: string | null
+  teachers: string | null
+  image_url: string | null
+  order_index: number
+  published: boolean
+}
+
+export interface CourseUpdateInput extends CourseInsertInput {
+  id: string
+}
+
+export interface CourseLevelInsertInput {
+  course_id: string
+  level: string
+  day_of_week: number
+  time: string
+  order_index: number
+}
+
+export interface CourseLevelUpdateInput extends CourseLevelInsertInput {
+  id: string
+}
+
+export interface EventItem {
+  id: string
+  slug: string
+  title: string
+  subtitle: string | null
+  body: string | null
+  image_url: string | null
+  tags: string[]
+  event_date: string | null
+  event_end_date: string | null
+  event_time: string | null
+  note: string | null
+  color: string
+  featured: boolean
+  show_in_calendar: boolean
+  cta_label: string | null
+  cta_url: string | null
+  order_index: number
+  published: boolean
+  updated_at: string
+}
+
+export type EventInsertInput = Omit<EventItem, "id" | "updated_at">
+export interface EventUpdateInput extends EventInsertInput {
+  id: string
+}
+
+export interface CrewGroup {
+  id: string
+  title: string
+  body: string | null
+  image_url: string | null
+  order_index: number
+  published: boolean
+  updated_at: string
+}
+
+export type CrewGroupInsertInput = Omit<CrewGroup, "id" | "updated_at">
+export interface CrewGroupUpdateInput extends CrewGroupInsertInput {
+  id: string
+}
