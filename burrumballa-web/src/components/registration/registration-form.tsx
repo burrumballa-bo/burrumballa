@@ -319,7 +319,7 @@ export function RegistrationForm() {
         <CardContent className="flex flex-col gap-4 px-5">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-2">
-              <Label htmlFor="nome">Nome e cognome *</Label>
+              <Label htmlFor="nome">Nome *</Label>
               <Input
                 id="nome"
                 placeholder="Nome"
