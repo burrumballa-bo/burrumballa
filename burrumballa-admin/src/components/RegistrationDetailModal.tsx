@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { formatCurrency, formatDateTime } from "@/lib/format"
+import { formatCurrency, formatDateTime, isMinorenne } from "@/lib/format"
 import {
   PAYMENT_METHOD_LABELS,
   PAYMENT_STATUS_BADGE_CLASSES,
@@ -153,16 +153,27 @@ export function RegistrationDetailModal({
               onChange={(e) => setAkaPartner(e.target.value)}
             />
           </div>
-          <div className="space-y-1.5 sm:col-span-2">
+          <div className="space-y-1.5">
             <Label htmlFor="modal-data-nascita">Data di nascita</Label>
-            <Input
-              id="modal-data-nascita"
-              type="date"
-              value={dataNascita}
-              onChange={(e) => setDataNascita(e.target.value)}
-            />
+            <div className="flex items-center gap-2">
+              <Input
+                id="modal-data-nascita"
+                type="date"
+                className="w-auto"
+                value={dataNascita}
+                onChange={(e) => setDataNascita(e.target.value)}
+              />
+              {dataNascita && isMinorenne(dataNascita) && (
+                <Badge
+                  variant="outline"
+                  className="bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30"
+                >
+                  Minorenne
+                </Badge>
+              )}
+            </div>
           </div>
-          <div className="space-y-1.5 sm:col-span-2">
+          <div className="space-y-1.5">
             <Label htmlFor="modal-email">Email</Label>
             <Input
               id="modal-email"
