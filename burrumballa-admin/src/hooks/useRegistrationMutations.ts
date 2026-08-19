@@ -104,10 +104,10 @@ export interface UpdateRegistrationInput {
   aka: string | null
   aka_partner_2vs2: string | null
   email: string
+  data_nascita: string | null
   workshop: string | null
   battle_categories: string[]
   payment_method: PaymentMethod
-  consenso_immagini: boolean
 }
 
 // Aggiorna i dati anagrafici/scelte dell'iscrizione (modificabili
