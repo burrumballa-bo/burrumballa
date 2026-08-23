@@ -14,3 +14,14 @@ export function formatDateTime(value: string): string {
     minute: "2-digit",
   }).format(new Date(value))
 }
+
+export function isMinorenne(dataNascita: string): boolean {
+  const nascita = new Date(dataNascita)
+  const oggi = new Date()
+  let eta = oggi.getFullYear() - nascita.getFullYear()
+  const nonCompiutoQuestAnno =
+    oggi.getMonth() < nascita.getMonth() ||
+    (oggi.getMonth() === nascita.getMonth() && oggi.getDate() < nascita.getDate())
+  if (nonCompiutoQuestAnno) eta--
+  return eta < 18
+}

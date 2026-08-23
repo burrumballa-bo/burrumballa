@@ -9,6 +9,7 @@ export interface Registration {
   aka: string | null
   aka_partner_2vs2: string | null
   email: string
+  data_nascita: string | null
   workshop: string | null
   battle_categories: string[]
   payment_method: PaymentMethod
@@ -18,7 +19,6 @@ export interface Registration {
   surcharge_late: number
   surcharge_onsite: number
   amount_total: number
-  consenso_immagini: boolean
   note_admin: string | null
   email_conferma_bonifico_inviata_at: string | null
 }

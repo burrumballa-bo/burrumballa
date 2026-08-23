@@ -12,9 +12,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select } from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
-import { formatCurrency, formatDateTime } from "@/lib/format"
+import { formatCurrency, formatDateTime, isMinorenne } from "@/lib/format"
 import {
   PAYMENT_METHOD_LABELS,
   PAYMENT_STATUS_BADGE_CLASSES,
@@ -62,12 +61,12 @@ export function RegistrationDetailModal({
   const [aka, setAka] = useState(registration.aka ?? "")
   const [akaPartner, setAkaPartner] = useState(registration.aka_partner_2vs2 ?? "")
   const [email, setEmail] = useState(registration.email)
+  const [dataNascita, setDataNascita] = useState(registration.data_nascita ?? "")
   const [workshop, setWorkshop] = useState(registration.workshop ?? "")
   const [battleCategories, setBattleCategories] = useState<string[]>(
     registration.battle_categories
   )
   const [paymentMethod, setPaymentMethod] = useState(registration.payment_method)
-  const [consensoImmagini, setConsensoImmagini] = useState(registration.consenso_immagini)
   const [note, setNote] = useState(registration.note_admin ?? "")
   const [confirmingDelete, setConfirmingDelete] = useState(false)
 
@@ -81,10 +80,10 @@ export function RegistrationDetailModal({
     setAka(registration.aka ?? "")
     setAkaPartner(registration.aka_partner_2vs2 ?? "")
     setEmail(registration.email)
+    setDataNascita(registration.data_nascita ?? "")
     setWorkshop(registration.workshop ?? "")
     setBattleCategories(registration.battle_categories)
     setPaymentMethod(registration.payment_method)
-    setConsensoImmagini(registration.consenso_immagini)
     setNote(registration.note_admin ?? "")
     setConfirmingDelete(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -107,10 +106,10 @@ export function RegistrationDetailModal({
       aka: aka.trim() || null,
       aka_partner_2vs2: akaPartner.trim() || null,
       email: email.trim(),
+      data_nascita: dataNascita || null,
       workshop: workshop || null,
       battle_categories: battleCategories,
       payment_method: paymentMethod,
-      consenso_immagini: consensoImmagini,
     })
   }
 
@@ -154,7 +153,27 @@ export function RegistrationDetailModal({
               onChange={(e) => setAkaPartner(e.target.value)}
             />
           </div>
-          <div className="space-y-1.5 sm:col-span-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="modal-data-nascita">Data di nascita</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                id="modal-data-nascita"
+                type="date"
+                className="w-auto"
+                value={dataNascita}
+                onChange={(e) => setDataNascita(e.target.value)}
+              />
+              {dataNascita && isMinorenne(dataNascita) && (
+                <Badge
+                  variant="outline"
+                  className="bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30"
+                >
+                  Minorenne
+                </Badge>
+              )}
+            </div>
+          </div>
+          <div className="space-y-1.5">
             <Label htmlFor="modal-email">Email</Label>
             <Input
               id="modal-email"
@@ -213,15 +232,6 @@ export function RegistrationDetailModal({
               ))}
             </div>
           )}
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Switch
-            id="modal-consenso"
-            checked={consensoImmagini}
-            onCheckedChange={setConsensoImmagini}
-          />
-          <Label htmlFor="modal-consenso">Consenso immagini</Label>
         </div>
 
         <div className="flex justify-end">
