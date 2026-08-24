@@ -32,6 +32,17 @@ interface SiteNavProps {
 // più alto del disegno visibile dei glifi) così la SprayStroke, stirata
 // con inset asimmetrici tarati a occhio sul rendering reale, copre bene i
 // glifi senza sembrare più alta del necessario.
+//
+// L'ancora `relative` (+ padding) per lo SprayStroke sta su uno <span>
+// interno dimensionato al contenuto, non sul <Link>: nel menu mobile
+// `block` fa sì che il <Link>, dentro il `flex flex-col` del dropdown,
+// venga stirato a larghezza piena (stretch di default sul cross-axis).
+// Se l'ancora fosse sul Link, lo SprayStroke — che si allarga col
+// `-inset-x-3` al box del genitore — coprirebbe l'intera riga invece che
+// il solo testo. Lo span interno resta invece dimensionato al contenuto
+// (main-axis del Link, non stirato), quindi il Link esterno può restare
+// a tutta larghezza per un'area di tap comoda senza deformare
+// l'evidenziazione.
 function NavLink({
   href,
   label,
@@ -50,15 +61,17 @@ function NavLink({
       href={href}
       onClick={onClick}
       className={cn(
-        "font-marker relative inline-flex items-center px-1.5 py-2 text-[16px] leading-none tracking-wide transition-colors",
-        block && "block",
-        isActive ? "text-white" : "text-bb-ink hover:text-bb-purple",
+        "font-marker items-center text-[16px] leading-none tracking-wide transition-colors",
+        block ? "flex" : "inline-flex",
+        isActive ? "text-white" : "text-bb-ink hover:text-bb-pink",
       )}
     >
-      {isActive && (
-        <SprayStroke className="text-bb-pink pointer-events-none absolute -inset-x-3 -top-2 -bottom-3.5 -z-10 -rotate-1" />
-      )}
-      <span className="relative">{label}</span>
+      <span className="relative inline-flex items-center px-1.5 py-2">
+        {isActive && (
+          <SprayStroke className="text-bb-pink pointer-events-none absolute -inset-x-3 -top-2 -bottom-3.5 -z-10 -rotate-1" />
+        )}
+        <span className="relative">{label}</span>
+      </span>
     </Link>
   )
 }
@@ -98,7 +111,10 @@ export function SiteNav({ active, logoUrl }: SiteNavProps) {
       </div>
 
       {open && (
-        <div id="site-mobile-nav" className="border-bb-ink flex flex-col gap-1 border-t-[2.5px] px-6 py-4 md:hidden">
+        <div
+          id="site-mobile-nav"
+          className="border-bb-ink bg-bb-cream absolute top-full right-0 left-0 flex flex-col gap-1 border-t-[2.5px] px-6 py-4 md:hidden"
+        >
           {NAV_ITEMS.map((item) => (
             <NavLink
               key={item.key}

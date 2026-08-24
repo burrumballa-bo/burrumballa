@@ -22,24 +22,52 @@ export const metadata = {
     "Breaking, hip hop, house e popping: i corsi di danza urbana di Burrumballa al Circolo La Fattoria, Bologna.",
 };
 
-function LevelBadges({ course }: { course: CourseWithLevels }) {
+function levelBasis(cols: number) {
+  const gapRem = 0.625; // gap-2.5
+  return `calc(${(100 / cols).toFixed(4)}% - ${((gapRem * (cols - 1)) / cols).toFixed(4)}rem)`;
+}
+
+function LevelBadgesRow({
+  course,
+  cols,
+  className,
+}: {
+  course: CourseWithLevels;
+  cols: number;
+  className: string;
+}) {
+  const basis = levelBasis(cols);
+
   return (
-    <div
-      className="grid gap-2.5"
-      style={{
-        gridTemplateColumns: `repeat(${Math.min(course.levels.length, 3) || 1}, minmax(0, 1fr))`,
-      }}
-    >
+    <div className={`flex-wrap justify-center gap-2.5 ${className}`}>
       {course.levels.map((level) => (
         <div
           key={level.id}
-          className="border-bb-ink bg-bb-surface rounded border-2 p-3"
+          className="border-bb-ink bg-bb-surface flex min-h-[92px] flex-col justify-center rounded border-2 p-3"
+          style={{ flexShrink: 0, flexBasis: basis }}
         >
           <div className="font-display text-sm">{level.level}</div>
-          <div className="text-bb-ink/65 mt-1 text-xs">{level.time}</div>
+          <div className="mt-1 text-xs">{level.time}</div>
         </div>
       ))}
     </div>
+  );
+}
+
+// Sotto sm: sempre 2 colonne. Da sm in su: fino a 3. Due griglie separate
+// (una nascosta per breakpoint) perché il basis per-colonna è un calc()
+// dinamico via style inline, che non può variare per breakpoint con le
+// sole classi Tailwind.
+function LevelBadges({ course }: { course: CourseWithLevels }) {
+  const total = course.levels.length;
+  const mobileCols = Math.min(total, 2) || 1;
+  const desktopCols = Math.min(total, 3) || 1;
+
+  return (
+    <>
+      <LevelBadgesRow course={course} cols={mobileCols} className="flex sm:hidden" />
+      <LevelBadgesRow course={course} cols={desktopCols} className="hidden sm:flex" />
+    </>
   );
 }
 
@@ -71,7 +99,12 @@ function FeaturedDiscipline({
             className="border-bb-ink relative block h-[300px] w-full border-[3px] object-cover md:h-[340px]"
           />
         </div>
-        <div className={reversed ? "md:order-1" : ""}>
+        <div
+          className={`border-bb-ink rounded-[5px] border-[3px] p-6 backdrop-blur-md md:p-8 ${reversed ? "md:order-1" : ""}`}
+          style={{
+            backgroundColor: `color-mix(in srgb, ${course.color} 25%, transparent)`,
+          }}
+        >
           <div
             className="font-display-alt text-[46px] leading-[0.9] md:text-[62px]"
             style={{
@@ -82,14 +115,12 @@ function FeaturedDiscipline({
             {course.name.toUpperCase()}
           </div>
           {course.body && (
-            <p className="text-bb-ink/75 mt-3.5 max-w-[440px] text-[15px] leading-relaxed">
+            <p className="mt-3.5 max-w-[440px] text-[15px] leading-relaxed">
               {course.body}
             </p>
           )}
           {dateRange && (
-            <div className="text-bb-ink/65 mt-2 text-xs font-semibold">
-              {dateRange}
-            </div>
+            <div className="mt-2 text-xs font-semibold">{dateRange}</div>
           )}
           {course.teachers && (
             <Kicker className="mb-4">{course.teachers}</Kicker>
@@ -139,7 +170,7 @@ export default async function CorsiPage() {
         <h1 className="font-display mt-2.5 text-[46px] leading-[0.92] tracking-[-2px] sm:text-[58px] md:text-[70px] md:tracking-[-3px]">
           {content.hero.title}
         </h1>
-        <p className="text-bb-ink/75 mt-4.5 max-w-[560px] text-[17px] leading-relaxed">
+        <p className="mt-4.5 max-w-[560px] text-[17px] leading-relaxed">
           {content.hero.subtitle}
         </p>
         {courses.length > 0 && (
@@ -179,7 +210,7 @@ export default async function CorsiPage() {
               {content.calendar.title}
             </h2>
           </div>
-          <div className="text-bb-ink/65 max-w-[300px] text-right text-[13px]">
+          <div className="max-w-[300px] text-right text-[13px]">
             {content.calendar.subtitle}
           </div>
         </div>

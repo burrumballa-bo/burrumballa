@@ -1,27 +1,33 @@
-import Link from "next/link"
+import Link from "next/link";
 
-import { Kicker } from "@/components/site/Kicker"
-import { Media } from "@/components/site/Media"
-import { SiteShell } from "@/components/site/SiteShell"
-import { textColorFor } from "@/lib/color"
-import { getChiSiamoContent, getCrewGroups, getFooterContent } from "@/lib/cms/queries"
+import { Kicker } from "@/components/site/Kicker";
+import { Media } from "@/components/site/Media";
+import { SiteShell } from "@/components/site/SiteShell";
+import { textColorFor } from "@/lib/color";
+import {
+  getChiSiamoContent,
+  getCrewGroups,
+  getFooterContent,
+} from "@/lib/cms/queries";
+import { rowNeedsCentering } from "@/lib/gridWrap";
+import { cn } from "@/lib/utils";
 
-export const revalidate = 60
+export const revalidate = 60;
 
 export const metadata = {
   title: "Chi siamo",
   description:
     "Burrumballa: scuola di danza urbana e collettivo hip hop nato a Bologna, al Circolo La Fattoria.",
-}
+};
 
-const VALORI_PALETTE = ["#ec1e89", "#7e3fae", "#8be03c", "#f6a323"]
+const VALORI_PALETTE = ["#ec1e89", "#7e3fae", "#8be03c", "#f6a323"];
 
 export default async function ChiSiamoPage() {
   const [content, footer, crewGroups] = await Promise.all([
     getChiSiamoContent(),
     getFooterContent(),
     getCrewGroups(),
-  ])
+  ]);
 
   return (
     <SiteShell active="chi-siamo" footer={footer}>
@@ -33,7 +39,7 @@ export default async function ChiSiamoPage() {
         <h1 className="font-display mt-3 max-w-[880px] text-[38px] leading-[0.95] tracking-[-1.5px] sm:text-[48px] md:text-[64px] md:tracking-[-2.5px]">
           {content.hero.title}
         </h1>
-        <p className="text-bb-ink/75 mt-5.5 max-w-[620px] text-[18px] leading-relaxed">
+        <p className="mt-5.5 max-w-[620px] text-[18px] leading-relaxed">
           {content.hero.subtitle}
         </p>
       </div>
@@ -42,7 +48,10 @@ export default async function ChiSiamoPage() {
       <div className="mx-auto max-w-[1200px] px-6 pt-5">
         <div className="grid grid-cols-1 items-center gap-9 md:grid-cols-[1.1fr_0.9fr]">
           <div className="relative">
-            <div className="bg-bb-purple absolute inset-[14px_-10px_-10px_14px]" aria-hidden="true" />
+            <div
+              className="bg-bb-purple absolute inset-[14px_-10px_-10px_14px]"
+              aria-hidden="true"
+            />
             <Media
               src={content.story.imageUrl}
               alt=""
@@ -54,10 +63,10 @@ export default async function ChiSiamoPage() {
             <div className="font-display-alt text-[36px] leading-[0.95] md:text-[44px]">
               {content.story.title}
             </div>
-            <p className="text-bb-ink/75 mt-4 text-[15px] leading-relaxed">
+            <p className="mt-4 text-[15px] leading-relaxed">
               {content.story.paragraph1}
             </p>
-            <p className="text-bb-ink/75 mt-4 text-[15px] leading-relaxed">
+            <p className="mt-4 text-[15px] leading-relaxed">
               {content.story.paragraph2}
             </p>
           </div>
@@ -70,22 +79,47 @@ export default async function ChiSiamoPage() {
         <h2 className="font-display mt-1 mb-6 text-[30px] tracking-[-1.5px] md:text-[40px]">
           {content.valori.title}
         </h2>
-        <div className="grid grid-cols-2 gap-3.5 md:grid-cols-4">
-          {content.valori.items.map((item, index) => {
-            const color = VALORI_PALETTE[index % VALORI_PALETTE.length]
-            return (
-              <div
-                key={item.title}
-                className="border-bb-ink min-h-[180px] rounded border-[3px] p-5.5"
-                style={{ background: color, color: textColorFor(color) }}
-              >
-                <div className="font-display text-[34px]">{String(index + 1).padStart(2, "0")}</div>
-                <div className="font-display-alt mt-2 mb-1.5 text-[22px]">{item.title}</div>
-                <p className="text-[13px] leading-relaxed opacity-95">{item.body}</p>
-              </div>
-            )
-          })}
-        </div>
+        {(() => {
+          const total = content.valori.items.length;
+          const baseFix = rowNeedsCentering(total, 2);
+          const mdFix = rowNeedsCentering(total, 4);
+          return (
+            <div
+              className={cn(
+                "gap-3.5",
+                baseFix ? "flex flex-wrap justify-center" : "grid grid-cols-2",
+                mdFix
+                  ? "md:flex md:flex-wrap md:justify-center"
+                  : "md:grid md:grid-cols-4",
+              )}
+            >
+              {content.valori.items.map((item, index) => {
+                const color = VALORI_PALETTE[index % VALORI_PALETTE.length];
+                return (
+                  <div
+                    key={item.title}
+                    className={cn(
+                      "border-bb-ink min-h-[180px] rounded border-[3px] p-5.5",
+                      baseFix && "shrink-0 basis-[calc(50%-0.4375rem)]",
+                      mdFix && "md:shrink-0 md:basis-[calc(25%-0.65625rem)]",
+                    )}
+                    style={{ background: color, color: textColorFor(color) }}
+                  >
+                    <div className="font-display text-[34px]">
+                      {String(index + 1).padStart(2, "0")}
+                    </div>
+                    <div className="font-display-alt mt-2 mb-1.5 text-[22px]">
+                      {item.title}
+                    </div>
+                    <p className="text-[13px] leading-relaxed opacity-95">
+                      {item.body}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
       </div>
 
       {/* CREW */}
@@ -95,25 +129,45 @@ export default async function ChiSiamoPage() {
           <h2 className="font-display mt-1 mb-1.5 text-[30px] tracking-[-1.5px] md:text-[40px]">
             {content.crew.title}
           </h2>
-          <p className="text-bb-ink/65 mb-6 max-w-[560px] text-sm">{content.crew.subtitle}</p>
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-            {crewGroups.map((group) => (
-              <div key={group.id} className="border-bb-ink bg-bb-surface overflow-hidden rounded-[5px] border-[3px]">
-                <Media
-                  src={group.image_url}
-                  alt={group.title}
-                  fallbackColor="#7e3fae"
-                  className="border-bb-ink block h-[300px] w-full border-b-[3px] object-cover"
-                />
-                <div className="p-4.5">
-                  <div className="font-display text-[17px]">{group.title}</div>
-                  {group.body && (
-                    <div className="text-bb-ink/65 mt-1 text-[13px]">{group.body}</div>
-                  )}
-                </div>
+          <p className="mb-6 max-w-[560px] text-sm">{content.crew.subtitle}</p>
+          {(() => {
+            const mdFix = rowNeedsCentering(crewGroups.length, 2);
+            return (
+              <div
+                className={cn(
+                  "grid grid-cols-1 gap-5",
+                  mdFix
+                    ? "md:flex md:flex-wrap md:justify-center"
+                    : "md:grid md:grid-cols-2",
+                )}
+              >
+                {crewGroups.map((group) => (
+                  <div
+                    key={group.id}
+                    className={cn(
+                      "border-bb-ink bg-bb-surface overflow-hidden rounded-[5px] border-[3px]",
+                      mdFix && "md:shrink-0 md:basis-[calc(50%-0.625rem)]",
+                    )}
+                  >
+                    <Media
+                      src={group.image_url}
+                      alt={group.title}
+                      fallbackColor="#7e3fae"
+                      className="border-bb-ink block h-[300px] w-full border-b-[3px] object-cover"
+                    />
+                    <div className="p-4.5">
+                      <div className="font-display text-[17px]">
+                        {group.title}
+                      </div>
+                      {group.body && (
+                        <div className="mt-1 text-[13px]">{group.body}</div>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            );
+          })()}
         </div>
       )}
 
@@ -173,7 +227,9 @@ export default async function ChiSiamoPage() {
           <h2 className="font-display text-[30px] tracking-[-2px] md:text-[42px]">
             {content.ctaBand.title}
           </h2>
-          <p className="mt-2 mb-5 text-[15px] opacity-95">{content.ctaBand.subtitle}</p>
+          <p className="mt-2 mb-5 text-[15px] opacity-95">
+            {content.ctaBand.subtitle}
+          </p>
           <Link
             href="/corsi"
             className="bg-bb-ink text-bb-cream inline-block rounded-[3px] px-6.5 py-3.5 text-[15px] font-bold"
@@ -183,5 +239,5 @@ export default async function ChiSiamoPage() {
         </div>
       </div>
     </SiteShell>
-  )
+  );
 }

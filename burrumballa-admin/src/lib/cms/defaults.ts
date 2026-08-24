@@ -140,14 +140,16 @@ export const DEFAULT_FOOTER_CONTENT: FooterContent = {
   rightsNote: "Tutti i diritti riservati",
 }
 
-// Palette del tema scuro: colori "underground" scelti di default, editabili
-// da questa stessa pagina (Contenuti — Tema). I colori del tema chiaro
-// restano hardcoded nel CSS del sito — solo lo scuro è gestito da qui.
+// Tema di default: scuro, sfondo nero — deve restare identico alla copia in
+// burrumballa-web/src/lib/cms/defaults.ts (usata come fallback finché non
+// esiste una riga "theme" salvata). Mode e logo si scelgono da Impostazioni
+// generali, i colori del tema scuro da questa stessa pagina (Contenuti —
+// Tema); i colori del tema chiaro restano hardcoded nel CSS del sito.
 export const DEFAULT_THEME_CONTENT: ThemeContent = {
-  mode: "light",
-  headerLogo: "black",
+  mode: "dark",
+  headerLogo: "white",
   dark: {
-    background: "#121014",
+    background: "#000000",
     text: "#f3efe6",
     purple: "#7e3fae",
     pink: "#ec1e89",

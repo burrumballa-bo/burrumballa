@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 
 import { Chip } from "@/components/site/Chip";
@@ -19,6 +18,8 @@ import {
   getHomeContent,
 } from "@/lib/cms/queries";
 import { textColorFor } from "@/lib/color";
+import { rowNeedsCentering } from "@/lib/gridWrap";
+import { cn } from "@/lib/utils";
 
 export const revalidate = 60;
 
@@ -90,7 +91,7 @@ export default async function HomePage() {
                 </span>
               </span>
             </h1>
-            <p className="text-bb-ink/75 mt-5 max-w-[430px] text-[16px] leading-relaxed">
+            <p className="mt-5 max-w-[430px] text-[16px] leading-relaxed">
               {content.hero.subtitle}
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
@@ -149,20 +150,29 @@ export default async function HomePage() {
         aria-labelledby="chi-siamo-breve-title"
         className="mx-auto max-w-300 px-6 pt-12 pb-2"
       >
-        <Kicker color="#8be03c">{content.about.kicker}</Kicker>
-        <h2
-          id="chi-siamo-breve-title"
-          className="font-display mt-1 text-[28px] tracking-[-1.5px] md:text-[36px] text-center"
-        >
-          {content.about.title}
-        </h2>
-        <p className="mt-3.5 text-[16px] leading-relaxed text-center">
-          {content.about.body}
-        </p>
+        <div className="bg-bb-purple/25 border-bb-ink rounded border-[3px] p-8 text-center text-white backdrop-blur-md md:p-10">
+          <h2
+            id="chi-siamo-breve-title"
+            className="font-display mt-1 text-[28px] tracking-[-1.5px] md:text-[36px] text-center"
+          >
+            {content.about.title}
+          </h2>
+          <p className="mt-3.5 text-[16px] leading-relaxed text-center">
+            {content.about.body}
+          </p>
+        </div>
 
         {/* CHI SIAMO TEASER */}
         <div className="mx-auto mt-12 max-w-300">
           <div className="bg-bb-ink text-bb-cream grid grid-cols-1 overflow-hidden rounded md:grid-cols-2">
+            <div className="relative min-h-55 md:min-h-70">
+              <Media
+                src={content.aboutTeaser.imageUrl}
+                alt=""
+                fallbackColor="#7e3fae"
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            </div>
             <div className="p-8 md:p-11">
               <Kicker color="#8be03c">{content.aboutTeaser.kicker}</Kicker>
               <h2 className="font-display mt-2 mb-4 text-[30px] leading-none tracking-[-1px] md:text-[38px]">
@@ -177,14 +187,6 @@ export default async function HomePage() {
               >
                 Scopri chi siamo →
               </Link>
-            </div>
-            <div className="relative min-h-55 md:min-h-70">
-              <Media
-                src={content.aboutTeaser.imageUrl}
-                alt=""
-                fallbackColor="#7e3fae"
-                className="absolute inset-0 h-full w-full object-cover"
-              />
             </div>
           </div>
         </div>
@@ -207,34 +209,55 @@ export default async function HomePage() {
               Tutti i corsi →
             </Link>
           </div>
-          <div className="grid grid-cols-2 gap-3.5 md:grid-cols-4">
-            {courses.map((course) => {
-              const levels = Array.from(
-                new Set(course.levels.map((l) => l.level)),
-              );
-              return (
-                <Link
-                  key={course.id}
-                  href={`/corsi/${course.slug}`}
-                  className="border-bb-ink flex min-h-[180px] flex-col justify-between rounded border-[3px] p-5"
-                  style={{
-                    background: course.color,
-                    color: textColorFor(course.color),
-                  }}
-                >
-                  <div className="font-display-alt text-[26px] leading-[0.95] md:text-[30px]">
-                    {course.name.toUpperCase()}
-                  </div>
-                  <div>
-                    <div className="text-xs leading-relaxed opacity-90">
-                      {levels.join(" · ")}
-                    </div>
-                    <div className="font-display mt-2 text-[13px]">→</div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
+          {(() => {
+            const total = courses.length;
+            const baseFix = rowNeedsCentering(total, 2);
+            const mdFix = rowNeedsCentering(total, 3);
+            return (
+              <div
+                className={cn(
+                  "gap-3.5",
+                  baseFix
+                    ? "flex flex-wrap justify-center"
+                    : "grid grid-cols-2",
+                  mdFix
+                    ? "md:flex md:flex-wrap md:justify-center"
+                    : "md:grid md:grid-cols-3",
+                )}
+              >
+                {courses.map((course) => {
+                  const levels = Array.from(
+                    new Set(course.levels.map((l) => l.level)),
+                  );
+                  return (
+                    <Link
+                      key={course.id}
+                      href={`/corsi/${course.slug}`}
+                      className={cn(
+                        "border-bb-ink flex min-h-[180px] flex-col justify-between rounded border-[3px] p-5",
+                        baseFix && "shrink-0 basis-[calc(50%-0.4375rem)]",
+                        mdFix && "md:shrink-0 md:basis-[calc(25%-0.65625rem)]",
+                      )}
+                      style={{
+                        background: course.color,
+                        color: textColorFor(course.color),
+                      }}
+                    >
+                      <div className="font-display-alt text-[26px] leading-[0.95] md:text-[30px]">
+                        {course.name.toUpperCase()}
+                      </div>
+                      <div>
+                        <div className="text-xs leading-relaxed opacity-90">
+                          {levels.join(" · ")}
+                        </div>
+                        <div className="font-display mt-2 text-[13px]">→</div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            );
+          })()}
         </div>
       )}
 
@@ -271,9 +294,7 @@ export default async function HomePage() {
                 <div className="p-3.5">
                   <div className="font-display text-lg">{event.title}</div>
                   {event.subtitle && (
-                    <div className="text-bb-ink/65 mt-1 text-[13px]">
-                      {event.subtitle}
-                    </div>
+                    <div className="mt-1 text-[13px]">{event.subtitle}</div>
                   )}
                 </div>
               </Link>
@@ -284,27 +305,6 @@ export default async function HomePage() {
 
       {/* CALENDARIO */}
       <div className="relative mx-auto max-w-[1200px] px-6 pt-10 pb-4">
-        {/* Sfondo della sezione: il murales "Burrumballa" (asset fornito),
-            grande e ben visibile — sopra il muro (dietro solo alle card,
-            che restano leggibili sopra) invece che un watermark sbiadito.
-            Centrato rispetto alla sezione (non ancorato a un angolo);
-            `object-contain` + nessun overflow-hidden sul contenitore così
-            resta sempre tutto visibile, mai tagliato. L'etichetta data qui
-            sopra ha un text-shadow dedicato (vedi sotto) per restare
-            leggibile anche a opacità alta. */}
-        <div
-          className="pointer-events-none absolute top-1/2 left-1/2 -z-10 h-96 w-96 max-w-[85%] -translate-x-1/2 -translate-y-1/2 rotate-1 opacity-90 sm:h-125 sm:w-125"
-          aria-hidden="true"
-        >
-          <Image
-            src="/decor/burrumballa-murales.png"
-            alt=""
-            fill
-            className="object-contain"
-            sizes="(min-width: 640px) 500px, 380px"
-          />
-        </div>
-
         <div className="mb-2 flex flex-wrap items-end justify-between gap-5">
           <div>
             <Kicker>{content.calendar.kicker}</Kicker>
@@ -318,7 +318,7 @@ export default async function HomePage() {
           </div>
         </div>
 
-        {/* <div className="text-bb-ink/75 my-3.5 flex items-center gap-4 text-xs font-semibold">
+        {/* <div className="my-3.5 flex items-center gap-4 text-xs font-semibold">
           <span className="flex items-center gap-1.5">
             <span className="border-bb-purple bg-bb-cream inline-block h-3.5 w-3.5 border-2" />
             Lezione

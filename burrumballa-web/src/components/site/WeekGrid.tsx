@@ -26,6 +26,11 @@ export function WeekGrid({
   eventLabel = "EVENTO",
 }: WeekGridProps) {
   const weekHasNoActivity = days.every((day) => day.isRest)
+  // Sabato e domenica senza nulla in programma non occupano una colonna: si
+  // nascondono solo se privi di attività, non in blocco.
+  const visibleDays = days.filter(
+    (day) => !(day.isRest && (day.weekdayLabel === "SAB" || day.weekdayLabel === "DOM"))
+  )
 
   return (
     <div className="overflow-x-auto pb-2 lg:overflow-visible lg:pb-0">
@@ -33,12 +38,12 @@ export function WeekGrid({
         className="grid min-w-(--week-grid-min-w) gap-x-2.5 gap-y-4 pt-2 lg:min-w-0"
         style={
           {
-            gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))`,
-            "--week-grid-min-w": `${Math.round((720 * days.length) / 7)}px`,
+            gridTemplateColumns: `repeat(${visibleDays.length}, minmax(0, 1fr))`,
+            "--week-grid-min-w": `${Math.round((720 * visibleDays.length) / 7)}px`,
           } as CSSProperties
         }
       >
-        {days.map((day, dayIndex) => {
+        {visibleDays.map((day, dayIndex) => {
           const accent = ACCENT_CYCLE[dayIndex % ACCENT_CYCLE.length]
           const rotation = ROTATIONS[dayIndex % 2]
 
@@ -74,23 +79,13 @@ export function WeekGrid({
 
         {weekHasNoActivity ? (
           <div
-            className="flex items-center justify-center rounded-[2px] border-2 px-2.5 py-8 text-center"
-            style={{
-              gridColumn: "1 / -1",
-              borderColor: "color-mix(in srgb, var(--color-bb-ink) 30%, transparent)",
-              background: "color-mix(in srgb, var(--color-bb-ink) 6%, var(--color-bb-cream))",
-              boxShadow: "4px 4px 0 color-mix(in srgb, var(--color-bb-ink) 22%, transparent)",
-            }}
+            className="flex items-center justify-center rounded-[2px] border-2 border-transparent px-2.5 py-8 text-center"
+            style={{ gridColumn: "1 / -1" }}
           >
-            <div
-              className="text-[12px] leading-tight font-semibold"
-              style={{ color: "color-mix(in srgb, var(--color-bb-ink) 50%, transparent)" }}
-            >
-              {restLabel}
-            </div>
+            <div className="invisible text-[12px] leading-tight font-semibold">{restLabel}</div>
           </div>
         ) : (
-          days.map((day, dayIndex) => (
+          visibleDays.map((day, dayIndex) => (
             <div key={dayIndex} className="flex min-w-0 flex-col gap-4">
               {day.items.map((item, itemIndex) => {
                 const cardStyle = {

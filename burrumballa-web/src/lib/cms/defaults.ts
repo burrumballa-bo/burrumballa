@@ -141,14 +141,16 @@ export const DEFAULT_FOOTER_CONTENT: FooterContent = {
   rightsNote: "Tutti i diritti riservati",
 }
 
-// Palette del tema scuro: colori "underground" scelti di default, editabili
-// da /admin/contenuti/tema. I colori del tema chiaro restano hardcoded in
-// globals.css — solo lo scuro è gestito da qui.
+// Tema di default: scuro, sfondo nero — il sito pubblico è un muro
+// underground/ostile (vedi WallBackground), non più il tema chiaro
+// originale. Mode e logo si scelgono da /admin/contenuti/impostazioni-
+// generali, i colori del tema scuro da /admin/contenuti/tema; i colori del
+// tema chiaro restano hardcoded in globals.css.
 export const DEFAULT_THEME_CONTENT: ThemeContent = {
-  mode: "light",
-  headerLogo: "black",
+  mode: "dark",
+  headerLogo: "white",
   dark: {
-    background: "#121014",
+    background: "#000000",
     text: "#f3efe6",
     purple: "#7e3fae",
     pink: "#ec1e89",

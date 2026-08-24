@@ -122,7 +122,13 @@ export function CourseLevelsPanel({ course }: CourseLevelsPanelProps) {
               </Select>
             </TableCell>
             <TableCell className="w-28">
-              <Input aria-label="Nuovo orario" placeholder="18:00" {...register("time")} />
+              <Input
+                aria-label="Nuovo orario"
+                placeholder="18:00"
+                aria-invalid={!!errors.time}
+                {...register("time")}
+              />
+              {errors.time && <p className="text-destructive mt-1 text-xs">{errors.time.message}</p>}
             </TableCell>
             <TableCell className="w-20">
               <Input type="number" step="1" aria-label="Nuovo ordine" {...register("order_index")} />

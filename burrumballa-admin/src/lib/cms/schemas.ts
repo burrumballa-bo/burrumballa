@@ -51,13 +51,24 @@ export const emptyCourseFormValues: CourseFormValues = {
   published: true,
 }
 
+const timeString = z
+  .string()
+  .trim()
+  .min(1, "L'orario è obbligatorio.")
+  .transform((value, ctx) => {
+    const match = value.match(/^([01]?\d|2[0-3])(?::([0-5]\d))?$/)
+    if (!match) {
+      ctx.addIssue({ code: "custom", message: "Usa il formato HH:MM (es. 18:30)." })
+      return z.NEVER
+    }
+    const [, hours, minutes] = match
+    return `${hours.padStart(2, "0")}:${minutes ?? "00"}`
+  })
+
 export const courseLevelSchema = z.object({
   level: z.string().trim().min(1, "Il livello è obbligatorio."),
   day_of_week: z.string().trim().min(1, "Il giorno è obbligatorio."),
-  time: z
-    .string()
-    .trim()
-    .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Usa il formato HH:MM (es. 18:30)."),
+  time: timeString,
   order_index: intString("L'ordine"),
 })
 export type CourseLevelFormValues = z.infer<typeof courseLevelSchema>
