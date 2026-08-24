@@ -20,6 +20,7 @@ export const DEFAULT_HOME_CONTENT: HomeContent = {
       "Breaking, hip hop, house e popping. Dal principiante all'avanzato, in una crew vera al Circolo La Fattoria.",
     badgeText: "EST. BOLOGNA",
     imageUrl: null,
+    triangleImageUrl: null,
   },
   marquee: {
     text: "ISCRIZIONI APERTE ✦ OPEN CLASS ✦ BATTLE NIGHT ✦ APERICREATIVO ✦ FREEDAY TRAINING ✦ ",
@@ -143,7 +144,8 @@ export const DEFAULT_FOOTER_CONTENT: FooterContent = {
 // da questa stessa pagina (Contenuti — Tema). I colori del tema chiaro
 // restano hardcoded nel CSS del sito — solo lo scuro è gestito da qui.
 export const DEFAULT_THEME_CONTENT: ThemeContent = {
-  darkModeEnabled: true,
+  mode: "light",
+  headerLogo: "black",
   dark: {
     background: "#121014",
     text: "#f3efe6",

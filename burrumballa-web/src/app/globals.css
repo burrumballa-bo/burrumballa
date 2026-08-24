@@ -36,6 +36,13 @@
   --bb-green-value: #8be03c;
   --bb-orange-value: #f6a323;
   --bb-surface-value: #ffffff;
+
+  /* Colore del contorno (-webkit-text-stroke) del terzo rigo dell'hero
+     ("È CASA."): segue l'ink in chiaro, ma va forzato bianco in scuro
+     (vedi .dark sotto) perché lì il contorno finisce sopra alla trama di
+     mattoni chiari e si legge male senza uno sfondo pieno dietro (la
+     SprayBlob accoppiata in page.tsx). */
+  --hero-stroke-color: var(--color-bb-ink);
 }
 
 .dark {
@@ -64,6 +71,7 @@
      orange-value) viene iniettato a runtime da <SiteShell> con i colori
      salvati in /admin/contenuti/tema. */
   --bb-surface-value: #1c1a20;
+  --hero-stroke-color: #ffffff;
 }
 
 @theme inline {

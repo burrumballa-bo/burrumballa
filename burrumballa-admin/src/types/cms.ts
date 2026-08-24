@@ -15,6 +15,7 @@ export interface HomeHeroContent {
   subtitle: string
   badgeText: string
   imageUrl: string | null
+  triangleImageUrl: string | null
 }
 
 export interface HomeContent {
@@ -37,9 +38,14 @@ export interface ThemeColors {
   orange: string
 }
 
+export type ThemeMode = "light" | "dark"
+
+export type HeaderLogoVariant = "black" | "white"
+
 export interface ThemeContent {
-  darkModeEnabled: boolean
+  mode: ThemeMode
   dark: ThemeColors
+  headerLogo: HeaderLogoVariant
 }
 
 export interface CorsiContent {

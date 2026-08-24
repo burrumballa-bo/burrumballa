@@ -1,3 +1,5 @@
+import Image from "next/image"
+
 interface WindowHoleProps {
   className: string
 }
@@ -11,24 +13,6 @@ function WindowHole({ className }: WindowHoleProps) {
       <rect x="1.5" y="1.5" width="45" height="61" rx="1" strokeWidth="2.5" />
       <line x1="24" y1="1.5" x2="24" y2="62.5" className="stroke-bb-ink/20" strokeWidth="1.5" />
       <line x1="1.5" y1="32" x2="46.5" y2="32" className="stroke-bb-ink/20" strokeWidth="1.5" />
-    </svg>
-  )
-}
-
-interface PlasterPatchProps {
-  className: string
-}
-
-// Toppa di intonaco: una macchia organica dello stesso colore dello sfondo
-// che "cancella" la muratura in quel punto, con un paio di crepe sottili.
-function PlasterPatch({ className }: PlasterPatchProps) {
-  return (
-    <svg viewBox="0 0 160 110" className={`fill-bb-cream ${className}`} aria-hidden="true">
-      <path d="M16 20 C 42 2, 92 -4, 124 14 C 152 28, 158 58, 138 80 C 116 102, 68 108, 38 96 C 8 84, -6 46, 16 20 Z" />
-      <g className="stroke-bb-ink/15" strokeWidth="1.5" fill="none">
-        <path d="M32 42 L62 32 L58 62" />
-        <path d="M92 26 L112 54 L96 80" />
-      </g>
     </svg>
   )
 }
@@ -54,17 +38,36 @@ function WallTag({ text, className, colorClassName, rotate }: WallTagProps) {
 }
 
 const TAGS: Array<{ text: string; className: string; colorClassName: string; rotate: number }> = [
-  { text: "HIP HOP", className: "top-[6%] right-[5%] text-lg", colorClassName: "text-bb-pink/60", rotate: -6 },
-  { text: "BREAKING", className: "top-[22%] left-[2%] text-base", colorClassName: "text-bb-orange/60", rotate: 8 },
-  { text: "CREW", className: "top-[45%] right-[3%] text-xl", colorClassName: "text-bb-green/55", rotate: -9 },
-  { text: "HOUSE", className: "top-[63%] left-[3%] text-lg", colorClassName: "text-bb-purple/60", rotate: 5 },
-  { text: "808", className: "top-[88%] right-[4%] text-base", colorClassName: "text-bb-pink/55", rotate: 7 },
+  { text: "HIP HOP", className: "top-[5%] right-[6%] text-lg", colorClassName: "text-bb-pink/70", rotate: -6 },
+  { text: "BREAKING", className: "top-[15%] left-[3%] text-base", colorClassName: "text-bb-orange/70", rotate: 8 },
+  { text: "FUNK", className: "top-[27%] right-[2%] text-base", colorClassName: "text-bb-purple/70", rotate: -4 },
+  { text: "CREW", className: "top-[38%] left-[5%] text-xl", colorClassName: "text-bb-green/65", rotate: -9 },
+  { text: "HOUSE", className: "top-[50%] right-[4%] text-lg", colorClassName: "text-bb-purple/70", rotate: 5 },
+  { text: "POPPING", className: "top-[61%] left-[2%] text-base", colorClassName: "text-bb-pink/65", rotate: 6 },
+  { text: "808", className: "top-[73%] right-[5%] text-base", colorClassName: "text-bb-orange/70", rotate: 7 },
+  { text: "VIBES", className: "top-[84%] left-[4%] text-lg", colorClassName: "text-bb-green/65", rotate: -5 },
+  { text: "CIPHER", className: "top-[94%] right-[3%] text-base", colorClassName: "text-bb-pink/70", rotate: -7 },
+]
+
+// Decorazioni "centrali": stanno dentro la colonna dei contenuti (non solo
+// nei margini laterali), quindi in gran parte dei viewport finiscono dietro
+// a card/sezioni opache — è voluto: sbucano solo nei varchi (padding tra
+// sezioni, spazi vuoti), a bassa opacità, per non competere col contenuto.
+// Niente qui nel primo ~20% di altezza (hero + header) per lasciarlo pulito.
+const CENTRAL_TAGS: Array<{ text: string; className: string; colorClassName: string; rotate: number }> = [
+  { text: "STYLE", className: "top-[24%] left-[68%] text-base", colorClassName: "text-bb-pink/35", rotate: 6 },
+  { text: "GRAFFITI", className: "top-[36%] left-[45%] text-base", colorClassName: "text-bb-purple/40", rotate: 4 },
+  { text: "SKATERS", className: "top-[47%] left-[20%] text-base", colorClassName: "text-bb-green/35", rotate: -4 },
+  { text: "RESPECT", className: "top-[59%] left-[75%] text-base", colorClassName: "text-bb-orange/35", rotate: -6 },
+  { text: "COOL", className: "top-[71%] left-[35%] text-base", colorClassName: "text-bb-pink/30", rotate: -8 },
+  { text: "BROOKLYN", className: "top-[85%] left-[58%] text-base", colorClassName: "text-bb-purple/35", rotate: 14 },
 ]
 
 // Sfondo decorativo delle 4 pagine del sito pubblico (montato una volta in
 // SiteShell, non per pagina): una trama di mattoni ripetuta (stile
-// muratura da vicolo/underground), con qualche finestra, una toppa
-// d'intonaco e delle tag colorate ai lati. Va sempre dentro un contenitore
+// muratura da vicolo/underground), con finestre e tag colorate — alcune
+// nei margini laterali, altre dentro la colonna dei contenuti — più un
+// "adesivo" fotografico incollato al muro. Va sempre dentro un contenitore
 // `relative isolate` che ne determini l'altezza (vedi SiteShell) — usa i
 // token bb-ink/bb-cream/bb-*, quindi si adatta da solo al tema scuro senza
 // bisogno di varianti `dark:`.
@@ -85,24 +88,43 @@ export function WallBackground() {
         <rect width="100%" height="100%" fill="url(#bb-wall-bricks)" />
       </svg>
 
-      {/* Finestre, intonaco e tag vivono nei margini laterali fuori dal
-          container centrale (max-w-1200px): quel margine esiste solo
-          quando il viewport supera i 1200px, quindi sotto quella soglia
-          (tablet, mobile, e anche molti laptop) il contenuto è full-width
-          e questi dettagli finirebbero sopra a testo o barre opache (es.
-          la marquee). Restano nascosti finché non c'è margine reale (~120px
-          per lato) per contenerli. Solo la trama di mattoni, sicura a ogni
+      {/* Finestre e tag di margine vivono fuori dal container centrale
+          (max-w-1200px): quel margine esiste solo quando il viewport
+          supera i 1200px, quindi sotto quella soglia (tablet, mobile, e
+          anche molti laptop) il contenuto è full-width e questi dettagli
+          finirebbero sopra a testo o barre opache (es. la marquee).
+          Restano nascosti finché non c'è margine reale (~120px per lato)
+          per contenerli. Solo la trama di mattoni, sicura a ogni
           larghezza, resta visibile anche sotto soglia. */}
       <div className="hidden min-[1440px]:contents">
-        <WindowHole className="absolute top-[14%] left-[5%] h-16 w-12" />
-        <WindowHole className="absolute top-[72%] right-[6%] h-16 w-12" />
-
-        <PlasterPatch className="absolute top-[53%] right-[1%] h-24 w-32" />
+        <WindowHole className="absolute top-[14%] right-[5%] h-28 w-21" />
+        <WindowHole className="absolute top-[52%] left-[3%] h-24 w-18" />
+        <WindowHole className="absolute top-[86%] right-[4%] h-24 w-18" />
 
         {TAGS.map((tag) => (
           <WallTag key={tag.text} {...tag} className={`absolute ${tag.className}`} />
         ))}
+
+        {/* "Adesivo" incollato al muro: leggermente ruotato, con un bordo
+            chiaro e un'ombra per staccare dalla trama di mattoni, come una
+            foto/flyer attaccata. Altezza scelta per stare nel muro libero
+            della sezione "chi siamo", lontano dalle card sotto. */}
+        <div className="absolute top-[20%] right-[2%] h-40 w-31 -rotate-6 overflow-hidden rounded-sm border-2 border-white/80 shadow-[0_10px_30px_rgba(0,0,0,0.45)]">
+          <Image
+            src="/decor/wall-sticker.png"
+            alt=""
+            fill
+            className="object-cover"
+            sizes="200px"
+          />
+        </div>
       </div>
+
+      {/* Decorazioni centrali: nessun gate di viewport, sono pensate per
+          sbucare nei varchi del contenuto a qualunque larghezza. */}
+      {CENTRAL_TAGS.map((tag) => (
+        <WallTag key={tag.text} {...tag} className={`absolute ${tag.className}`} />
+      ))}
     </div>
   )
 }

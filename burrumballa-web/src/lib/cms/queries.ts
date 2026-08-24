@@ -65,6 +65,34 @@ export const getFooterContent = (): Promise<FooterContent> =>
 export const getThemeContent = (): Promise<ThemeContent> =>
   getPageContent("theme", DEFAULT_THEME_CONTENT)
 
+const ASSETS_BUCKET = "assets"
+const HEADER_LOGO_SIGNED_URL_TTL_SECONDS = 60 * 60
+const HEADER_LOGO_FILE_BY_VARIANT: Record<ThemeContent["headerLogo"], string> = {
+  black: "logo_black.png",
+  white: "logo_white.png",
+}
+
+// Il bucket "assets" e' privato: la select anonima e' permessa solo per
+// questi due file grazie alla policy "assets_select_anon_header_logo" (vedi
+// supabase/migrations), stesso pattern della cartella 'senti_come_suona/'
+// in lib/senti-come-suona-assets.ts. Fallisce in modo silenzioso come le
+// altre query CMS: senza logo, l'header ricade sul placeholder.
+export async function getHeaderLogoUrl(
+  variant: ThemeContent["headerLogo"]
+): Promise<string | null> {
+  try {
+    const supabase = getAnonClient()
+    const { data, error } = await supabase.storage
+      .from(ASSETS_BUCKET)
+      .createSignedUrl(HEADER_LOGO_FILE_BY_VARIANT[variant], HEADER_LOGO_SIGNED_URL_TTL_SECONDS)
+
+    if (error || !data) return null
+    return data.signedUrl
+  } catch {
+    return null
+  }
+}
+
 const COURSE_WITH_RELATIONS_SELECT =
   "*, levels:course_levels(*), teacherProfiles:course_teachers(*)"
 

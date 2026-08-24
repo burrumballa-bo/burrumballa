@@ -155,6 +155,7 @@ export const homeContentSchema = z.object({
     subtitle: optionalText,
     badgeText: optionalText,
     imageUrl: nullableImageUrl,
+    triangleImageUrl: nullableImageUrl,
   }),
   marquee: z.object({ text: optionalText }),
   about: z.object({
@@ -242,8 +243,7 @@ export const footerContentSchema = z.object({
 })
 export type FooterContentFormValues = z.infer<typeof footerContentSchema>
 
-export const themeContentSchema = z.object({
-  darkModeEnabled: z.boolean(),
+export const themeColorsSchema = z.object({
   dark: z.object({
     background: hexColor,
     text: hexColor,
@@ -253,4 +253,10 @@ export const themeContentSchema = z.object({
     orange: hexColor,
   }),
 })
-export type ThemeContentFormValues = z.infer<typeof themeContentSchema>
+export type ThemeColorsFormValues = z.infer<typeof themeColorsSchema>
+
+export const themeGeneralSettingsSchema = z.object({
+  mode: z.enum(["light", "dark"]),
+  headerLogo: z.enum(["black", "white"]),
+})
+export type ThemeGeneralSettingsFormValues = z.infer<typeof themeGeneralSettingsSchema>

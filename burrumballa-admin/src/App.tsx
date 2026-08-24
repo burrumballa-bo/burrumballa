@@ -6,13 +6,14 @@ import ImpostazioniPage from "@/pages/ImpostazioniPage"
 import EventDashboardPage from "@/pages/EventDashboardPage"
 import EventoPaginaPage from "@/pages/EventoPaginaPage"
 import EventoIscrittiPage from "@/pages/EventoIscrittiPage"
-import ContenutiPage from "@/pages/ContenutiPage"
 import ContenutiHomePage from "@/pages/contenuti/ContenutiHomePage"
 import ContenutiCorsiPage from "@/pages/contenuti/ContenutiCorsiPage"
+import ContenutiClassiPage from "@/pages/contenuti/ContenutiClassiPage"
 import ContenutiEventiPage from "@/pages/contenuti/ContenutiEventiPage"
 import ContenutiChiSiamoPage from "@/pages/contenuti/ContenutiChiSiamoPage"
 import ContenutiFooterPage from "@/pages/contenuti/ContenutiFooterPage"
 import ContenutiTemaPage from "@/pages/contenuti/ContenutiTemaPage"
+import ContenutiImpostazioniGeneraliPage from "@/pages/contenuti/ContenutiImpostazioniGeneraliPage"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
 
 function App() {
@@ -61,14 +62,6 @@ function App() {
         }
       />
       <Route
-        path="/admin/contenuti"
-        element={
-          <ProtectedRoute>
-            <ContenutiPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
         path="/admin/contenuti/home"
         element={
           <ProtectedRoute>
@@ -81,6 +74,14 @@ function App() {
         element={
           <ProtectedRoute>
             <ContenutiCorsiPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/contenuti/classi"
+        element={
+          <ProtectedRoute>
+            <ContenutiClassiPage />
           </ProtectedRoute>
         }
       />
@@ -113,6 +114,14 @@ function App() {
         element={
           <ProtectedRoute>
             <ContenutiTemaPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/contenuti/impostazioni-generali"
+        element={
+          <ProtectedRoute>
+            <ContenutiImpostazioniGeneraliPage />
           </ProtectedRoute>
         }
       />

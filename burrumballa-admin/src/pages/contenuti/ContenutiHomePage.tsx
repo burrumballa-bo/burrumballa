@@ -49,7 +49,7 @@ export default function ContenutiHomePage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6 md:p-8">
       <div className="flex items-center gap-3">
-        <Button variant="outline" size="icon" onClick={() => navigate("/admin/contenuti")}>
+        <Button variant="outline" size="icon" onClick={() => navigate("/admin")}>
           <ArrowLeft />
         </Button>
         <h1 className="text-2xl font-semibold">Contenuti — Home</h1>
@@ -92,6 +92,13 @@ export default function ContenutiHomePage() {
               label="Immagine hero"
               value={watch("hero.imageUrl")}
               onChange={(url) => setValue("hero.imageUrl", url, { shouldDirty: true })}
+              folder="pages/home"
+            />
+            <MediaUploadField
+              label="Immagine triangolo (angolo in alto a destra)"
+              hint="Copre solo il triangolo in alto a destra della hero, sopra il muro ma dietro a testo e bottoni. Lascia vuoto per non mostrarla."
+              value={watch("hero.triangleImageUrl")}
+              onChange={(url) => setValue("hero.triangleImageUrl", url, { shouldDirty: true })}
               folder="pages/home"
             />
           </CardContent>

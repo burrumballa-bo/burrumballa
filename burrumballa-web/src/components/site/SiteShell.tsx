@@ -1,6 +1,6 @@
 import type { ReactNode } from "react"
 
-import { getThemeContent } from "@/lib/cms/queries"
+import { getHeaderLogoUrl, getThemeContent } from "@/lib/cms/queries"
 import type { FooterContent, ThemeColors } from "@/lib/cms/types"
 import { isValidHexColor } from "@/lib/color"
 import { siteFontVariables } from "./fonts"
@@ -46,18 +46,20 @@ function buildDarkThemeCss(colors: ThemeColors): string {
 // <body> invece che solo dietro al contenuto della pagina.
 export async function SiteShell({ active, footer, children }: SiteShellProps) {
   const theme = await getThemeContent()
+  const isDark = theme.mode === "dark"
+  const logoUrl = await getHeaderLogoUrl(theme.headerLogo)
 
   return (
-    <div className={`${siteFontVariables} bg-bb-cream text-bb-ink font-site-body min-h-screen overflow-x-hidden`}>
-      {theme.darkModeEnabled && (
-        <style dangerouslySetInnerHTML={{ __html: buildDarkThemeCss(theme.dark) }} />
-      )}
-      <SiteNav active={active} darkModeEnabled={theme.darkModeEnabled} />
-      <div className="relative isolate">
+    <div
+      className={`${siteFontVariables} ${isDark ? "dark" : ""} bg-bb-cream text-bb-ink font-site-body min-h-screen overflow-x-hidden`}
+    >
+      {isDark && <style dangerouslySetInnerHTML={{ __html: buildDarkThemeCss(theme.dark) }} />}
+      <SiteNav active={active} logoUrl={logoUrl} />
+      <div className="relative isolate pb-12 md:pb-12.5">
         <WallBackground />
         {children}
       </div>
-      <SiteFooter content={footer} />
+      <SiteFooter content={footer} logoUrl={logoUrl} />
     </div>
   )
 }

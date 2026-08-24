@@ -9,7 +9,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { CoursesSection } from "@/components/CoursesSection"
 import { useSitePage, useUpdateSitePage } from "@/hooks/useSitePage"
 import { DEFAULT_CORSI_CONTENT } from "@/lib/cms/defaults"
 import { corsiContentSchema, type CorsiContentFormValues } from "@/lib/cms/schemas"
@@ -39,7 +38,7 @@ export default function ContenutiCorsiPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6 md:p-8">
       <div className="flex items-center gap-3">
-        <Button variant="outline" size="icon" onClick={() => navigate("/admin/contenuti")}>
+        <Button variant="outline" size="icon" onClick={() => navigate("/admin")}>
           <ArrowLeft />
         </Button>
         <h1 className="text-2xl font-semibold">Contenuti — Corsi</h1>
@@ -130,18 +129,6 @@ export default function ContenutiCorsiPage() {
           </div>
         </form>
       )}
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Discipline</CardTitle>
-          <CardDescription>
-            Le 4 discipline (nome, colore, descrizione, immagine, orari) mostrate su Home e Corsi.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <CoursesSection />
-        </CardContent>
-      </Card>
     </div>
   )
 }

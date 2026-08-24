@@ -1,7 +1,12 @@
-import Link from "next/link"
+"use client"
 
+import { Menu, X } from "lucide-react"
+import Link from "next/link"
+import { useState } from "react"
+
+import { cn } from "@/lib/utils"
 import { Logomark } from "./Logomark"
-import { ThemeToggle } from "./ThemeToggle"
+import { SprayStroke } from "./SprayStroke"
 
 const NAV_ITEMS = [
   { key: "home", href: "/", label: "Home" },
@@ -14,37 +19,98 @@ export type SiteSection = (typeof NAV_ITEMS)[number]["key"]
 
 interface SiteNavProps {
   active: SiteSection
-  darkModeEnabled?: boolean
+  logoUrl?: string | null
 }
 
-export function SiteNav({ active, darkModeEnabled = false }: SiteNavProps) {
+// Voce di nav in font Permanent Marker (lo stesso del Kicker): quella
+// attiva prende come sfondo una SprayStroke grande quanto la scritta, stile
+// bomboletta, con il testo che passa a bianco per restare leggibile sul
+// rosa pieno sotto (bianco fisso, non un token bb-*, perché il rosa del
+// brand non cambia con il tema mentre i token sì).
+//
+// `leading-none` sul testo riduce il line-box di Permanent Marker (molto
+// più alto del disegno visibile dei glifi) così la SprayStroke, stirata
+// con inset asimmetrici tarati a occhio sul rendering reale, copre bene i
+// glifi senza sembrare più alta del necessario.
+function NavLink({
+  href,
+  label,
+  isActive,
+  onClick,
+  block = false,
+}: {
+  href: string
+  label: string
+  isActive: boolean
+  onClick?: () => void
+  block?: boolean
+}) {
+  return (
+    <Link
+      href={href}
+      onClick={onClick}
+      className={cn(
+        "font-marker relative inline-flex items-center px-1.5 py-2 text-[16px] leading-none tracking-wide transition-colors",
+        block && "block",
+        isActive ? "text-white" : "text-bb-ink hover:text-bb-purple",
+      )}
+    >
+      {isActive && (
+        <SprayStroke className="text-bb-pink pointer-events-none absolute -inset-x-3 -top-2 -bottom-3.5 -z-10 -rotate-1" />
+      )}
+      <span className="relative">{label}</span>
+    </Link>
+  )
+}
+
+export function SiteNav({ active, logoUrl }: SiteNavProps) {
+  const [open, setOpen] = useState(false)
+
   return (
     <div className="border-bb-ink bg-bb-cream sticky top-0 z-50 border-b-[3px]">
       <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-4 px-6 py-3">
         <Link href="/" className="flex items-center gap-3">
-          <Logomark />
+          {logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- immagine da signed URL Supabase
+            <img src={logoUrl} alt="Burrumballa" className="h-[42px] w-auto" />
+          ) : (
+            <Logomark />
+          )}
           <span className="font-display text-[19px] tracking-[-1px]">BURRUMBALLA</span>
         </Link>
 
-        <div className="flex items-center gap-5 text-[13px] font-semibold tracking-[.3px]">
+        <div className="hidden items-center gap-6 md:flex">
           {NAV_ITEMS.map((item) => (
-            <Link
+            <NavLink key={item.key} href={item.href} label={item.label} isActive={item.key === active} />
+          ))}
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          aria-controls="site-mobile-nav"
+          aria-label={open ? "Chiudi il menu" : "Apri il menu"}
+          className="border-bb-ink flex h-10 w-10 items-center justify-center rounded-[3px] border-[2.5px] md:hidden"
+        >
+          {open ? <X size={20} /> : <Menu size={20} />}
+        </button>
+      </div>
+
+      {open && (
+        <div id="site-mobile-nav" className="border-bb-ink flex flex-col gap-1 border-t-[2.5px] px-6 py-4 md:hidden">
+          {NAV_ITEMS.map((item) => (
+            <NavLink
               key={item.key}
               href={item.href}
-              className={`hidden md:inline ${item.key === active ? "border-bb-ink border-b-2 pb-0.5" : ""}`}
-            >
-              {item.label}
-            </Link>
+              label={item.label}
+              isActive={item.key === active}
+              onClick={() => setOpen(false)}
+              block
+            />
           ))}
-          <Link
-            href="/corsi"
-            className="bg-bb-ink text-bb-cream rounded-[3px] px-4 py-2 font-bold whitespace-nowrap"
-          >
-            Iscriviti →
-          </Link>
-          {darkModeEnabled && <ThemeToggle />}
         </div>
-      </div>
+      )}
     </div>
   )
 }

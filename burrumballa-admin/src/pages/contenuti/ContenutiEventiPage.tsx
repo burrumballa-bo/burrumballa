@@ -39,7 +39,7 @@ export default function ContenutiEventiPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6 md:p-8">
       <div className="flex items-center gap-3">
-        <Button variant="outline" size="icon" onClick={() => navigate("/admin/contenuti")}>
+        <Button variant="outline" size="icon" onClick={() => navigate("/admin")}>
           <ArrowLeft />
         </Button>
         <h1 className="text-2xl font-semibold">Contenuti — Eventi</h1>
