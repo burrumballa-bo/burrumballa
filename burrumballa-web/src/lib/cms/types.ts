@@ -22,11 +22,26 @@ export interface HomeHeroContent {
 export interface HomeContent {
   hero: HomeHeroContent
   marquee: { text: string }
+  about: { kicker: string; title: string; body: string }
   calendar: { kicker: string; title: string; subLabel: string }
   corsiSection: { kicker: string; title: string }
   eventsSection: { kicker: string; title: string }
   aboutTeaser: { kicker: string; title: string; body: string; imageUrl: string | null }
   ctaBand: { title: string; subtitle: string }
+}
+
+export interface ThemeColors {
+  background: string
+  text: string
+  purple: string
+  pink: string
+  green: string
+  orange: string
+}
+
+export interface ThemeContent {
+  darkModeEnabled: boolean
+  dark: ThemeColors
 }
 
 export interface CorsiContent {
@@ -79,7 +94,10 @@ export interface Course {
   color: string
   body: string | null
   teachers: string | null
+  classes_info: string | null
   image_url: string | null
+  start_date: string | null
+  end_date: string | null
   order_index: number
   published: boolean
 }
@@ -93,8 +111,18 @@ export interface CourseLevel {
   order_index: number
 }
 
+export interface CourseTeacher {
+  id: string
+  course_id: string
+  name: string
+  photo_url: string | null
+  bio: string | null
+  order_index: number
+}
+
 export interface CourseWithLevels extends Course {
   levels: CourseLevel[]
+  teacherProfiles: CourseTeacher[]
 }
 
 export interface EventItem {

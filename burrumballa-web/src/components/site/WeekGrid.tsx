@@ -38,7 +38,9 @@ export function WeekGrid({
                 style={{
                   borderColor: accent,
                   background: day.isRest ? "var(--color-bb-cream)" : "var(--color-bb-ink)",
-                  color: day.isRest ? "#999" : "#fff",
+                  color: day.isRest
+                    ? "color-mix(in srgb, var(--color-bb-ink) 55%, transparent)"
+                    : "var(--color-bb-cream)",
                   boxShadow: day.isRest ? "none" : `4px 4px 0 ${accent}`,
                   transform: `rotate(${rotation}deg)`,
                 }}
@@ -49,7 +51,7 @@ export function WeekGrid({
                 )}
                 {day.isToday && (
                   <div
-                    className="bg-bb-green text-bb-ink font-display absolute -top-2 -right-2 rounded-[2px] px-1.5 py-0.5 text-[8px] tracking-wide"
+                    className="bg-bb-green font-display absolute -top-2 -right-2 rounded-[2px] px-1.5 py-0.5 text-[8px] tracking-wide text-[#1a1a1a]"
                     style={{ transform: "rotate(6deg)" }}
                   >
                     {todayLabel}
@@ -96,7 +98,7 @@ export function WeekGrid({
                   )
                 })}
                 {day.isRest && (
-                  <div className="mt-1.5 text-center text-[11px] text-neutral-400 italic">
+                  <div className="text-bb-ink/40 mt-1.5 text-center text-[11px] italic">
                     {restLabel}
                   </div>
                 )}

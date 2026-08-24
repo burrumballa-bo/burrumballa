@@ -6,6 +6,7 @@ import {
   DEFAULT_EVENTI_CONTENT,
   DEFAULT_FOOTER_CONTENT,
   DEFAULT_HOME_CONTENT,
+  DEFAULT_THEME_CONTENT,
 } from "./defaults"
 import { mergeWithDefaults } from "./merge"
 import type {
@@ -17,6 +18,7 @@ import type {
   EventiContent,
   FooterContent,
   HomeContent,
+  ThemeContent,
 } from "./types"
 
 // Stesso pattern di lib/org-info.ts: client anonimo creato per singola
@@ -60,24 +62,54 @@ export const getChiSiamoContent = (): Promise<ChiSiamoContent> =>
 export const getFooterContent = (): Promise<FooterContent> =>
   getPageContent("footer", DEFAULT_FOOTER_CONTENT)
 
+export const getThemeContent = (): Promise<ThemeContent> =>
+  getPageContent("theme", DEFAULT_THEME_CONTENT)
+
+const COURSE_WITH_RELATIONS_SELECT =
+  "*, levels:course_levels(*), teacherProfiles:course_teachers(*)"
+
+function sortByOrderIndex<T extends { order_index: number }>(items: T[] | null | undefined): T[] {
+  return [...(items ?? [])].sort((a, b) => a.order_index - b.order_index)
+}
+
 export async function getCourses(): Promise<CourseWithLevels[]> {
   try {
     const supabase = getAnonClient()
     const { data, error } = await supabase
       .from("courses")
-      .select("*, levels:course_levels(*)")
+      .select(COURSE_WITH_RELATIONS_SELECT)
       .eq("published", true)
       .order("order_index", { ascending: true })
 
     if (error || !data) return []
     return data.map((course) => ({
       ...course,
-      levels: [...(course.levels ?? [])].sort(
-        (a: { order_index: number }, b: { order_index: number }) => a.order_index - b.order_index
-      ),
+      levels: sortByOrderIndex(course.levels),
+      teacherProfiles: sortByOrderIndex(course.teacherProfiles),
     }))
   } catch {
     return []
+  }
+}
+
+export async function getCourseBySlug(slug: string): Promise<CourseWithLevels | null> {
+  try {
+    const supabase = getAnonClient()
+    const { data, error } = await supabase
+      .from("courses")
+      .select(COURSE_WITH_RELATIONS_SELECT)
+      .eq("slug", slug)
+      .eq("published", true)
+      .maybeSingle()
+
+    if (error || !data) return null
+    return {
+      ...data,
+      levels: sortByOrderIndex(data.levels),
+      teacherProfiles: sortByOrderIndex(data.teacherProfiles),
+    }
+  } catch {
+    return null
   }
 }
 

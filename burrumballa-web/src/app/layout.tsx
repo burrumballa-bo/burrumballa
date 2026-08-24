@@ -60,14 +60,26 @@ export default async function RootLayout({
     "@context": "https://schema.org",
     "@type": "DanceSchool",
     name: orgInfo.intestazione ?? "Burrumballa",
+    description: DESCRIPTION,
     url: SITE_URL,
     ...(orgInfo.indirizzo ? { address: orgInfo.indirizzo } : {}),
     ...(orgInfo.email_contatto ? { email: orgInfo.email_contatto } : {}),
   }
 
+  // Applica il tema scuro salvato in localStorage (o la preferenza di
+  // sistema se l'utente non ha ancora scelto) prima del primo paint, così
+  // la pagina non "lampeggia" chiara per poi scurirsi dopo l'idratazione.
+  const themeInitScript = `(function(){try{var t=localStorage.getItem("bb-theme");var d=t?t==="dark":window.matchMedia("(prefers-color-scheme: dark)").matches;if(d)document.documentElement.classList.add("dark")}catch(e){}})();`
+
   return (
-    <html lang="it">
+    // suppressHydrationWarning: lo script inline sotto imposta .dark su
+    // <html> prima dell'idratazione (per evitare il flash del tema
+    // chiaro), quindi il markup lato server e quello risolto dal browser
+    // divergono di proposito solo su questo attributo — stesso pattern
+    // documentato da Next.js per i toggle di tema client-side.
+    <html lang="it" suppressHydrationWarning>
       <body>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

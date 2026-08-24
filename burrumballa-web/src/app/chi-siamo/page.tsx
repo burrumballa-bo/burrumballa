@@ -33,7 +33,7 @@ export default async function ChiSiamoPage() {
         <h1 className="font-display mt-3 max-w-[880px] text-[38px] leading-[0.95] tracking-[-1.5px] sm:text-[48px] md:text-[64px] md:tracking-[-2.5px]">
           {content.hero.title}
         </h1>
-        <p className="mt-5.5 max-w-[620px] text-[18px] leading-relaxed text-neutral-700">
+        <p className="text-bb-ink/75 mt-5.5 max-w-[620px] text-[18px] leading-relaxed">
           {content.hero.subtitle}
         </p>
       </div>
@@ -54,10 +54,10 @@ export default async function ChiSiamoPage() {
             <div className="font-display-alt text-[36px] leading-[0.95] md:text-[44px]">
               {content.story.title}
             </div>
-            <p className="mt-4 text-[15px] leading-relaxed text-neutral-700">
+            <p className="text-bb-ink/75 mt-4 text-[15px] leading-relaxed">
               {content.story.paragraph1}
             </p>
-            <p className="mt-4 text-[15px] leading-relaxed text-neutral-700">
+            <p className="text-bb-ink/75 mt-4 text-[15px] leading-relaxed">
               {content.story.paragraph2}
             </p>
           </div>
@@ -95,10 +95,10 @@ export default async function ChiSiamoPage() {
           <h2 className="font-display mt-1 mb-1.5 text-[30px] tracking-[-1.5px] md:text-[40px]">
             {content.crew.title}
           </h2>
-          <p className="mb-6 max-w-[560px] text-sm text-neutral-600">{content.crew.subtitle}</p>
+          <p className="text-bb-ink/65 mb-6 max-w-[560px] text-sm">{content.crew.subtitle}</p>
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             {crewGroups.map((group) => (
-              <div key={group.id} className="border-bb-ink overflow-hidden rounded-[5px] border-[3px] bg-white">
+              <div key={group.id} className="border-bb-ink bg-bb-surface overflow-hidden rounded-[5px] border-[3px]">
                 <Media
                   src={group.image_url}
                   alt={group.title}
@@ -108,7 +108,7 @@ export default async function ChiSiamoPage() {
                 <div className="p-4.5">
                   <div className="font-display text-[17px]">{group.title}</div>
                   {group.body && (
-                    <div className="mt-1 text-[13px] text-neutral-600">{group.body}</div>
+                    <div className="text-bb-ink/65 mt-1 text-[13px]">{group.body}</div>
                   )}
                 </div>
               </div>
@@ -119,13 +119,13 @@ export default async function ChiSiamoPage() {
 
       {/* KIDS */}
       <div className="mx-auto max-w-[1200px] px-6 pt-14">
-        <div className="bg-bb-ink grid grid-cols-1 overflow-hidden rounded-[5px] text-white md:grid-cols-2">
+        <div className="bg-bb-ink text-bb-cream grid grid-cols-1 overflow-hidden rounded-[5px] md:grid-cols-2">
           <div className="flex flex-col justify-center p-8 md:p-10.5">
             <Kicker color="#8be03c">{content.kids.kicker}</Kicker>
             <h2 className="font-display mt-2 mb-3.5 text-[30px] leading-[1] tracking-[-1px] md:text-[38px]">
               {content.kids.title}
             </h2>
-            <p className="max-w-[420px] text-[15px] leading-relaxed text-neutral-300">
+            <p className="text-bb-cream/75 max-w-[420px] text-[15px] leading-relaxed">
               {content.kids.body}
             </p>
           </div>
@@ -176,7 +176,7 @@ export default async function ChiSiamoPage() {
           <p className="mt-2 mb-5 text-[15px] opacity-95">{content.ctaBand.subtitle}</p>
           <Link
             href="/corsi"
-            className="bg-bb-ink inline-block rounded-[3px] px-6.5 py-3.5 text-[15px] font-bold text-white"
+            className="bg-bb-ink text-bb-cream inline-block rounded-[3px] px-6.5 py-3.5 text-[15px] font-bold"
           >
             Iscriviti →
           </Link>

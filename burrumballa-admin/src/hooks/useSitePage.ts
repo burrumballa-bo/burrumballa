@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { supabase } from "@/lib/supabase"
 import { mergeWithDefaults } from "@/lib/cms/merge"
 
-export type SitePageId = "home" | "corsi" | "eventi" | "chi-siamo" | "footer"
+export type SitePageId = "home" | "corsi" | "eventi" | "chi-siamo" | "footer" | "theme"
 
 // Una riga `site_pages` per pagina: il contenuto jsonb viene sempre
 // unito sopra i default tipizzati, così il form ha sempre tutti i campi

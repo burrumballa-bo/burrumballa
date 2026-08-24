@@ -1,4 +1,11 @@
-import type { ChiSiamoContent, CorsiContent, EventiContent, FooterContent, HomeContent } from "./types"
+import type {
+  ChiSiamoContent,
+  CorsiContent,
+  EventiContent,
+  FooterContent,
+  HomeContent,
+  ThemeContent,
+} from "./types"
 
 // Copy di default (allineata al mockup e al seed della migrazione): usata
 // come fallback quando `site_pages` non è raggiungibile o una riga non
@@ -17,6 +24,11 @@ export const DEFAULT_HOME_CONTENT: HomeContent = {
   },
   marquee: {
     text: "ISCRIZIONI APERTE ✦ OPEN CLASS ✦ BATTLE NIGHT ✦ APERICREATIVO ✦ FREEDAY TRAINING ✦ ",
+  },
+  about: {
+    kicker: "chi siamo",
+    title: "Burrumballa, scuola di danza hip hop a Bologna",
+    body: "Burrumballa è una scuola di danza urbana e collettivo hip hop nato al Circolo La Fattoria di Bologna. Corsi di breaking, hip hop, house e popping per bambini, ragazzi e adulti di ogni livello, più eventi, battle e serate aperte a tutto il quartiere: non una palestra, una crew vera.",
   },
   calendar: { kicker: "il programma", title: "Cosa succede", subLabel: "Lezioni ed eventi" },
   corsiSection: { kicker: "quattro discipline, tutti i livelli", title: "I corsi" },
@@ -126,4 +138,19 @@ export const DEFAULT_FOOTER_CONTENT: FooterContent = {
   instagramHandle: "burrumballa",
   contactNote: "Tessera ARCI obbligatoria",
   rightsNote: "Tutti i diritti riservati",
+}
+
+// Palette del tema scuro: colori "underground" scelti di default, editabili
+// da /admin/contenuti/tema. I colori del tema chiaro restano hardcoded in
+// globals.css — solo lo scuro è gestito da qui.
+export const DEFAULT_THEME_CONTENT: ThemeContent = {
+  darkModeEnabled: true,
+  dark: {
+    background: "#121014",
+    text: "#f3efe6",
+    purple: "#7e3fae",
+    pink: "#ec1e89",
+    green: "#8be03c",
+    orange: "#f6a323",
+  },
 }

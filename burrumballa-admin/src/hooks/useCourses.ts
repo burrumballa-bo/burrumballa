@@ -4,9 +4,15 @@ import type {
   CourseInsertInput,
   CourseLevelInsertInput,
   CourseLevelUpdateInput,
+  CourseTeacherInsertInput,
+  CourseTeacherUpdateInput,
   CourseUpdateInput,
   CourseWithLevels,
 } from "@/types/cms"
+
+function sortByOrderIndex<T extends { order_index: number }>(items: T[] | null | undefined): T[] {
+  return [...(items ?? [])].sort((a, b) => a.order_index - b.order_index)
+}
 
 export function useCourses() {
   return useQuery({
@@ -14,15 +20,14 @@ export function useCourses() {
     queryFn: async (): Promise<CourseWithLevels[]> => {
       const { data, error } = await supabase
         .from("courses")
-        .select("*, levels:course_levels(*)")
+        .select("*, levels:course_levels(*), teacherProfiles:course_teachers(*)")
         .order("order_index", { ascending: true })
 
       if (error) throw error
       return (data ?? []).map((course) => ({
         ...course,
-        levels: [...(course.levels ?? [])].sort(
-          (a: { order_index: number }, b: { order_index: number }) => a.order_index - b.order_index
-        ),
+        levels: sortByOrderIndex(course.levels),
+        teacherProfiles: sortByOrderIndex(course.teacherProfiles),
       }))
     },
   })
@@ -88,6 +93,39 @@ export function useDeleteCourseLevel() {
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("course_levels").delete().eq("id", id)
+      if (error) throw error
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["courses"] }),
+  })
+}
+
+export function useCreateCourseTeacher() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: CourseTeacherInsertInput) => {
+      const { error } = await supabase.from("course_teachers").insert(input)
+      if (error) throw error
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["courses"] }),
+  })
+}
+
+export function useUpdateCourseTeacher() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...values }: CourseTeacherUpdateInput) => {
+      const { error } = await supabase.from("course_teachers").update(values).eq("id", id)
+      if (error) throw error
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["courses"] }),
+  })
+}
+
+export function useDeleteCourseTeacher() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("course_teachers").delete().eq("id", id)
       if (error) throw error
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["courses"] }),

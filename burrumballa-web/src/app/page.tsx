@@ -38,11 +38,14 @@ export default async function HomePage() {
             <br />
             {content.hero.titleLine2}
             <br />
-            <span className="text-transparent" style={{ WebkitTextStroke: "2.5px #1a1a1a" }}>
+            <span
+              className="text-transparent"
+              style={{ WebkitTextStroke: "2.5px var(--color-bb-ink)" }}
+            >
               {content.hero.titleLine3}
             </span>
           </h1>
-          <p className="mt-5 max-w-[430px] text-[16px] leading-relaxed text-neutral-700">
+          <p className="text-bb-ink/75 mt-5 max-w-[430px] text-[16px] leading-relaxed">
             {content.hero.subtitle}
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
@@ -91,8 +94,26 @@ export default async function HomePage() {
 
       <Marquee text={content.marquee.text} />
 
+      {/* CHI SIAMO — sezione SEO/AI: testo pieno, leggibile da motori di
+          ricerca e assistenti AI, sopra il programma. */}
+      <section
+        aria-labelledby="chi-siamo-breve-title"
+        className="mx-auto max-w-[1200px] px-6 pt-12 pb-2"
+      >
+        <Kicker color="#8be03c">{content.about.kicker}</Kicker>
+        <h2
+          id="chi-siamo-breve-title"
+          className="font-display mt-1 max-w-[760px] text-[28px] tracking-[-1.5px] md:text-[36px]"
+        >
+          {content.about.title}
+        </h2>
+        <p className="text-bb-ink/75 mt-3.5 max-w-[680px] text-[16px] leading-relaxed">
+          {content.about.body}
+        </p>
+      </section>
+
       {/* CALENDARIO */}
-      <div className="mx-auto max-w-[1200px] px-6 pt-14 pb-4">
+      <div className="mx-auto max-w-[1200px] px-6 pt-10 pb-4">
         <div className="mb-2 flex flex-wrap items-end justify-between gap-5">
           <div>
             <Kicker>{content.calendar.kicker}</Kicker>
@@ -101,12 +122,12 @@ export default async function HomePage() {
             </h2>
           </div>
           <div className="text-right">
-            <div className="text-[13px] text-neutral-600">{content.calendar.subLabel}</div>
+            <div className="text-bb-ink/65 text-[13px]">{content.calendar.subLabel}</div>
             <div className="font-display mt-0.5 text-[15px]">{rangeLabel}</div>
           </div>
         </div>
 
-        <div className="my-3.5 flex items-center gap-4 text-xs font-semibold text-neutral-700">
+        <div className="text-bb-ink/75 my-3.5 flex items-center gap-4 text-xs font-semibold">
           <span className="flex items-center gap-1.5">
             <span className="border-bb-purple bg-bb-cream inline-block h-3.5 w-3.5 border-2" />
             Lezione
@@ -172,7 +193,7 @@ export default async function HomePage() {
               <Link
                 key={event.id}
                 href="/eventi"
-                className="border-bb-ink block overflow-hidden rounded border-[3px] bg-white"
+                className="border-bb-ink bg-bb-surface block overflow-hidden rounded border-[3px]"
               >
                 <Media
                   src={event.image_url}
@@ -183,7 +204,7 @@ export default async function HomePage() {
                 <div className="p-3.5">
                   <div className="font-display text-lg">{event.title}</div>
                   {event.subtitle && (
-                    <div className="mt-1 text-[13px] text-neutral-600">{event.subtitle}</div>
+                    <div className="text-bb-ink/65 mt-1 text-[13px]">{event.subtitle}</div>
                   )}
                 </div>
               </Link>
@@ -200,12 +221,12 @@ export default async function HomePage() {
             <h2 className="font-display mt-2 mb-4 text-[30px] leading-[1] tracking-[-1px] md:text-[38px]">
               {content.aboutTeaser.title}
             </h2>
-            <p className="max-w-[420px] text-[15px] leading-relaxed text-neutral-300">
+            <p className="text-bb-cream/75 max-w-[420px] text-[15px] leading-relaxed">
               {content.aboutTeaser.body}
             </p>
             <Link
               href="/chi-siamo"
-              className="bg-bb-green text-bb-ink mt-5 inline-block rounded-[3px] px-5 py-3 text-sm font-bold"
+              className="bg-bb-green mt-5 inline-block rounded-[3px] px-5 py-3 text-sm font-bold text-[#1a1a1a]"
             >
               Scopri chi siamo →
             </Link>
@@ -230,7 +251,7 @@ export default async function HomePage() {
           <p className="mt-2.5 mb-5 text-[16px] opacity-95">{content.ctaBand.subtitle}</p>
           <Link
             href="/corsi"
-            className="bg-bb-ink inline-block rounded-[3px] px-7 py-4 text-base font-bold text-white"
+            className="bg-bb-ink text-bb-cream inline-block rounded-[3px] px-7 py-4 text-base font-bold"
           >
             Iscriviti a un corso →
           </Link>

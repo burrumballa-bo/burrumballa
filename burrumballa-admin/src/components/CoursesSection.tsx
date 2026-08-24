@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { CourseLevelsPanel } from "@/components/CourseLevelsPanel"
 import { CourseModal } from "@/components/CourseModal"
+import { CourseTeachersPanel } from "@/components/CourseTeachersPanel"
 import {
   useCourses,
   useCreateCourse,
@@ -94,8 +95,18 @@ export function CoursesSection() {
               </div>
             </CardHeader>
             {isExpanded && (
-              <CardContent>
-                <CourseLevelsPanel course={course} />
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <h3 className="text-sm font-medium">Orari</h3>
+                  <CourseLevelsPanel course={course} />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-sm font-medium">Insegnanti</h3>
+                  <p className="text-muted-foreground text-xs">
+                    Foto, nome e bio mostrati nella pagina di dettaglio del corso (/corsi/{course.slug}).
+                  </p>
+                  <CourseTeachersPanel course={course} />
+                </div>
               </CardContent>
             )}
           </Card>

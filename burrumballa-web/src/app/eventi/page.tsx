@@ -30,7 +30,7 @@ function FeaturedEventCard({ event }: { event: EventItem }) {
         className="block h-full min-h-[280px] w-full object-cover md:border-r-[3px] md:border-bb-ink"
       />
       <div className="flex flex-col justify-center p-8 text-white md:p-10" style={{ background: event.color }}>
-        <span className="bg-bb-green text-bb-ink font-display self-start rounded-[2px] px-2.5 py-1 text-[11px]">
+        <span className="bg-bb-green font-display self-start rounded-[2px] px-2.5 py-1 text-[11px] text-[#1a1a1a]">
           IN EVIDENZA
         </span>
         <div className="font-display-alt mt-3.5 text-[38px] leading-[0.9] md:text-[54px]">
@@ -69,7 +69,7 @@ function FeaturedEventCard({ event }: { event: EventItem }) {
 function EventCard({ event }: { event: EventItem }) {
   const bottomLine = eventBottomLine(event)
   const content = (
-    <div className="border-bb-ink grid h-full grid-cols-1 overflow-hidden rounded-[5px] border-[3px] bg-white sm:grid-cols-[0.9fr_1.1fr]">
+    <div className="border-bb-ink bg-bb-surface grid h-full grid-cols-1 overflow-hidden rounded-[5px] border-[3px] sm:grid-cols-[0.9fr_1.1fr]">
       <Media
         src={event.image_url}
         alt={event.title}
@@ -86,7 +86,7 @@ function EventCard({ event }: { event: EventItem }) {
           {event.title.toUpperCase()}
         </div>
         {event.body && (
-          <p className="text-[13px] leading-relaxed text-neutral-600">{event.body}</p>
+          <p className="text-bb-ink/65 text-[13px] leading-relaxed">{event.body}</p>
         )}
         {bottomLine && <div className="mt-2.5 text-xs font-bold">{bottomLine}</div>}
       </div>
@@ -122,7 +122,7 @@ export default async function EventiPage() {
         <h1 className="font-display mt-2.5 text-[46px] leading-[0.92] tracking-[-2px] sm:text-[58px] md:text-[70px] md:tracking-[-3px]">
           {content.hero.title}
         </h1>
-        <p className="mt-4.5 max-w-[560px] text-[17px] leading-relaxed text-neutral-700">
+        <p className="text-bb-ink/75 mt-4.5 max-w-[560px] text-[17px] leading-relaxed">
           {content.hero.subtitle}
         </p>
       </div>
@@ -150,7 +150,7 @@ export default async function EventiPage() {
           <p className="mt-2 mb-5 text-[15px]">{content.ctaBand.subtitle}</p>
           <Link
             href="/corsi"
-            className="bg-bb-ink inline-block rounded-[3px] px-6.5 py-3.5 text-[15px] font-bold text-white"
+            className="bg-bb-ink text-bb-cream inline-block rounded-[3px] px-6.5 py-3.5 text-[15px] font-bold"
           >
             Iscriviti →
           </Link>

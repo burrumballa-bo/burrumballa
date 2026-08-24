@@ -12,6 +12,7 @@ import ContenutiCorsiPage from "@/pages/contenuti/ContenutiCorsiPage"
 import ContenutiEventiPage from "@/pages/contenuti/ContenutiEventiPage"
 import ContenutiChiSiamoPage from "@/pages/contenuti/ContenutiChiSiamoPage"
 import ContenutiFooterPage from "@/pages/contenuti/ContenutiFooterPage"
+import ContenutiTemaPage from "@/pages/contenuti/ContenutiTemaPage"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
 
 function App() {
@@ -104,6 +105,14 @@ function App() {
         element={
           <ProtectedRoute>
             <ContenutiFooterPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/contenuti/tema"
+        element={
+          <ProtectedRoute>
+            <ContenutiTemaPage />
           </ProtectedRoute>
         }
       />

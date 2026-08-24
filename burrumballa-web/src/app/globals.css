@@ -23,6 +23,19 @@
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
+
+  /* Valori "runtime" della palette bb-* del sito pubblico, referenziati
+     con var() da @theme inline più sotto (vedi commento lì): un livello
+     di indirezione necessario perché l'override sotto .dark abbia un
+     effetto sulle utility Tailwind già compilate (bg-bb-cream ecc.), non
+     solo sulla custom property in sé. */
+  --bb-cream-value: #f4f1ea;
+  --bb-ink-value: #1a1a1a;
+  --bb-purple-value: #7e3fae;
+  --bb-pink-value: #ec1e89;
+  --bb-green-value: #8be03c;
+  --bb-orange-value: #f6a323;
+  --bb-surface-value: #ffffff;
 }
 
 .dark {
@@ -44,6 +57,13 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
+
+  /* Superficie delle card (bg-bb-surface) del sito pubblico: unico token
+     bb-* non configurabile da admin (derivato, non un colore di brand).
+     Il resto della palette scura (--bb-cream/ink/purple/pink/green/
+     orange-value) viene iniettato a runtime da <SiteShell> con i colori
+     salvati in /admin/contenuti/tema. */
+  --bb-surface-value: #1c1a20;
 }
 
 @theme inline {
@@ -72,13 +92,17 @@
 
   /* Sito pubblico (Home/Corsi/Eventi/Chi siamo): palette e font dedicati,
      caricati solo dentro <SiteShell> — non toccano i token shadcn sopra,
-     usati dalle pagine legali e dal flusso di iscrizione. */
-  --color-bb-cream: #f4f1ea;
-  --color-bb-ink: #1a1a1a;
-  --color-bb-purple: #7e3fae;
-  --color-bb-pink: #ec1e89;
-  --color-bb-green: #8be03c;
-  --color-bb-orange: #f6a323;
+     usati dalle pagine legali e dal flusso di iscrizione. Ogni colore
+     punta a --bb-*-value (sopra) invece di un letterale: con un valore
+     letterale @theme inline lo "inlinerebbe" in ogni utility a build
+     time, rendendo inutile qualunque override a runtime sotto .dark. */
+  --color-bb-cream: var(--bb-cream-value);
+  --color-bb-ink: var(--bb-ink-value);
+  --color-bb-purple: var(--bb-purple-value);
+  --color-bb-pink: var(--bb-pink-value);
+  --color-bb-green: var(--bb-green-value);
+  --color-bb-orange: var(--bb-orange-value);
+  --color-bb-surface: var(--bb-surface-value);
   --font-display: var(--font-archivo-black), sans-serif;
   --font-display-alt: var(--font-anton), sans-serif;
   --font-marker: var(--font-permanent-marker), cursive;

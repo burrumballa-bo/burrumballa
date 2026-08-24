@@ -18,16 +18,24 @@ const slug = z
   .min(1, "Lo slug è obbligatorio.")
   .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, "Usa solo minuscole, numeri e trattini (es. hip-hop).")
 
-export const courseSchema = z.object({
-  slug,
-  name: z.string().trim().min(1, "Il nome è obbligatorio."),
-  color: hexColor,
-  body: z.string().trim(),
-  teachers: z.string().trim(),
-  image_url: z.string().trim(),
-  order_index: intString("L'ordine"),
-  published: z.boolean(),
-})
+export const courseSchema = z
+  .object({
+    slug,
+    name: z.string().trim().min(1, "Il nome è obbligatorio."),
+    color: hexColor,
+    body: z.string().trim(),
+    teachers: z.string().trim(),
+    classes_info: z.string().trim(),
+    image_url: z.string().trim(),
+    start_date: z.string().trim(),
+    end_date: z.string().trim(),
+    order_index: intString("L'ordine"),
+    published: z.boolean(),
+  })
+  .refine(
+    (values) => !values.start_date || !values.end_date || values.end_date >= values.start_date,
+    { message: "La data di fine non può essere prima della data di inizio.", path: ["end_date"] }
+  )
 export type CourseFormValues = z.infer<typeof courseSchema>
 export const emptyCourseFormValues: CourseFormValues = {
   slug: "",
@@ -35,7 +43,10 @@ export const emptyCourseFormValues: CourseFormValues = {
   color: "#7e3fae",
   body: "",
   teachers: "",
+  classes_info: "",
   image_url: "",
+  start_date: "",
+  end_date: "",
   order_index: "0",
   published: true,
 }
@@ -54,6 +65,20 @@ export const emptyCourseLevelFormValues: CourseLevelFormValues = {
   level: "",
   day_of_week: "1",
   time: "18:00",
+  order_index: "0",
+}
+
+export const courseTeacherSchema = z.object({
+  name: z.string().trim().min(1, "Il nome è obbligatorio."),
+  photo_url: z.string().trim(),
+  bio: z.string().trim(),
+  order_index: intString("L'ordine"),
+})
+export type CourseTeacherFormValues = z.infer<typeof courseTeacherSchema>
+export const emptyCourseTeacherFormValues: CourseTeacherFormValues = {
+  name: "",
+  photo_url: "",
+  bio: "",
   order_index: "0",
 }
 
@@ -132,6 +157,11 @@ export const homeContentSchema = z.object({
     imageUrl: nullableImageUrl,
   }),
   marquee: z.object({ text: optionalText }),
+  about: z.object({
+    kicker: optionalText,
+    title: required("Il titolo della sezione chi siamo"),
+    body: optionalText,
+  }),
   calendar: z.object({ kicker: optionalText, title: required("Il titolo del calendario"), subLabel: optionalText }),
   corsiSection: z.object({ kicker: optionalText, title: required("Il titolo della sezione corsi") }),
   eventsSection: z.object({ kicker: optionalText, title: required("Il titolo della sezione eventi") }),
@@ -211,3 +241,16 @@ export const footerContentSchema = z.object({
   rightsNote: optionalText,
 })
 export type FooterContentFormValues = z.infer<typeof footerContentSchema>
+
+export const themeContentSchema = z.object({
+  darkModeEnabled: z.boolean(),
+  dark: z.object({
+    background: hexColor,
+    text: hexColor,
+    purple: hexColor,
+    pink: hexColor,
+    green: hexColor,
+    orange: hexColor,
+  }),
+})
+export type ThemeContentFormValues = z.infer<typeof themeContentSchema>

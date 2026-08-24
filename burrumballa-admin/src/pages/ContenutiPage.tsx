@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom"
-import { ArrowLeft, FileText, Home, Info, LayoutTemplate, PartyPopper } from "lucide-react"
+import { ArrowLeft, FileText, Home, Info, LayoutTemplate, Moon, PartyPopper } from "lucide-react"
 
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -34,6 +34,12 @@ const SECTIONS = [
     icon: FileText,
     title: "Footer",
     description: "Testo, indirizzo e contatti mostrati in fondo a ogni pagina.",
+  },
+  {
+    path: "/admin/contenuti/tema",
+    icon: Moon,
+    title: "Tema",
+    description: "Attiva/disattiva il tema scuro e personalizzane i colori.",
   },
 ]
 

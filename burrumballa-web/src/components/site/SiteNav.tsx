@@ -1,6 +1,7 @@
 import Link from "next/link"
 
 import { Logomark } from "./Logomark"
+import { ThemeToggle } from "./ThemeToggle"
 
 const NAV_ITEMS = [
   { key: "home", href: "/", label: "Home" },
@@ -13,9 +14,10 @@ export type SiteSection = (typeof NAV_ITEMS)[number]["key"]
 
 interface SiteNavProps {
   active: SiteSection
+  darkModeEnabled?: boolean
 }
 
-export function SiteNav({ active }: SiteNavProps) {
+export function SiteNav({ active, darkModeEnabled = false }: SiteNavProps) {
   return (
     <div className="border-bb-ink bg-bb-cream sticky top-0 z-50 border-b-[3px]">
       <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-4 px-6 py-3">
@@ -40,6 +42,7 @@ export function SiteNav({ active }: SiteNavProps) {
           >
             Iscriviti →
           </Link>
+          {darkModeEnabled && <ThemeToggle />}
         </div>
       </div>
     </div>

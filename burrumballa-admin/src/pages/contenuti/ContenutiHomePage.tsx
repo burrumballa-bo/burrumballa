@@ -99,6 +99,38 @@ export default function ContenutiHomePage() {
 
         <Card>
           <CardHeader>
+            <CardTitle>Sezione &quot;chi siamo&quot; (SEO)</CardTitle>
+            <CardDescription>
+              Paragrafo breve mostrato in home sopra il programma, pensato per motori di
+              ricerca e assistenti AI: scrivi chi è Burrumballa, cosa offre e dove si trova,
+              in modo diretto.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="about-kicker">Kicker</Label>
+              <Input id="about-kicker" {...register("about.kicker")} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="about-title">Titolo</Label>
+              <Input
+                id="about-title"
+                aria-invalid={!!errors.about?.title}
+                {...register("about.title")}
+              />
+              {errors.about?.title && (
+                <p className="text-destructive text-sm">{errors.about.title.message}</p>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="about-body">Testo</Label>
+              <Textarea id="about-body" rows={3} {...register("about.body")} />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle>Striscia scorrevole</CardTitle>
             <CardDescription>Il testo animato sotto l&apos;hero.</CardDescription>
           </CardHeader>

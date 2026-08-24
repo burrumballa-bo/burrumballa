@@ -41,9 +41,35 @@ function isSameDay(a: Date, b: Date): boolean {
   )
 }
 
-function classItemsForWeekday(courses: CourseWithLevels[], weekday: number): CalendarItem[] {
+// Parsing come data locale (non UTC) di un campo "YYYY-MM-DD": evita scarti
+// di fuso orario, stesso accorgimento di formatDateOnly lato admin.
+function parseLocalDate(value: string): Date {
+  const [y, m, d] = value.split("-").map(Number)
+  return new Date(y, m - 1, d)
+}
+
+// Un corso senza start_date/end_date è "sempre attivo" (corso continuativo,
+// comportamento di oggi). Confronto solo sulla data, non sull'orario.
+function isCourseActiveOn(course: CourseWithLevels, date: Date): boolean {
+  const day = new Date(date)
+  day.setHours(0, 0, 0, 0)
+  if (course.start_date && day < parseLocalDate(course.start_date)) return false
+  if (course.end_date && day > parseLocalDate(course.end_date)) return false
+  return true
+}
+
+// `referenceDate` è passata solo dalla vista con date reali (buildRollingCalendar):
+// filtra i corsi non ancora iniziati/già finiti in quel giorno. La vista
+// "il settimanale" di Corsi resta uno schema ricorrente senza date reali,
+// quindi non applica questo filtro (nessun referenceDate).
+function classItemsForWeekday(
+  courses: CourseWithLevels[],
+  weekday: number,
+  referenceDate?: Date
+): CalendarItem[] {
   const items: CalendarItem[] = []
   for (const course of courses) {
+    if (referenceDate && !isCourseActiveOn(course, referenceDate)) continue
     for (const level of course.levels) {
       if (level.day_of_week !== weekday) continue
       items.push({
@@ -91,7 +117,7 @@ export function buildRollingCalendar(
     const date = new Date(monday)
     date.setDate(monday.getDate() + i)
     const items = [
-      ...classItemsForWeekday(courses, date.getDay()),
+      ...classItemsForWeekday(courses, date.getDay(), date),
       ...eventItemsForDate(events, date),
     ].sort((a, b) => a.time.localeCompare(b.time))
 
@@ -134,4 +160,18 @@ export function formatDateRangeLabel(start: Date, days: number): string {
 
 export function startOfCurrentWeek(today: Date = new Date()): Date {
   return startOfWeekMonday(today)
+}
+
+// Etichetta "Dal 15 set al 20 dic" per un corso con inizio/fine facoltativi
+// (campi "YYYY-MM-DD"): parsing come data locale per evitare scarti di
+// fuso orario, stesso accorgimento di formatDateOnly lato admin.
+export function formatCourseDateRange(
+  startDate: string | null,
+  endDate: string | null
+): string | null {
+  if (!startDate && !endDate) return null
+  const fmt = (d: Date) => `${d.getDate()} ${MONTH_LABELS[d.getMonth()]}`
+  if (startDate && endDate) return `Dal ${fmt(parseLocalDate(startDate))} al ${fmt(parseLocalDate(endDate))}`
+  if (startDate) return `Dal ${fmt(parseLocalDate(startDate))}`
+  return `Fino al ${fmt(parseLocalDate(endDate as string))}`
 }

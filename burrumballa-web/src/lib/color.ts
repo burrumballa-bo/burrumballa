@@ -15,3 +15,11 @@ export function isLightColor(hex: string): boolean {
 export function textColorFor(hex: string): string {
   return isLightColor(hex) ? "#1a1a1a" : "#ffffff"
 }
+
+// Valida un colore esadecimale prima di interpolarlo in un tag <style>:
+// i colori del tema scuro arrivano da site_pages (scritti solo da admin
+// autenticati), ma si valida comunque per non emettere CSS malformato o
+// iniettabile se la riga fosse mai modificata a mano nel DB.
+export function isValidHexColor(value: string): boolean {
+  return /^#[0-9a-fA-F]{6}$/.test(value)
+}

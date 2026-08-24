@@ -50,7 +50,10 @@ export function CourseModal({
       color: course?.color ?? "#7e3fae",
       body: course?.body ?? "",
       teachers: course?.teachers ?? "",
+      classes_info: course?.classes_info ?? "",
       image_url: course?.image_url ?? "",
+      start_date: course?.start_date ?? "",
+      end_date: course?.end_date ?? "",
       order_index: course ? String(course.order_index) : "0",
       published: course?.published ?? true,
     },
@@ -66,7 +69,10 @@ export function CourseModal({
       color: values.color.trim(),
       body: values.body.trim() || null,
       teachers: values.teachers.trim() || null,
+      classes_info: values.classes_info.trim() || null,
       image_url: values.image_url.trim() || null,
+      start_date: values.start_date || null,
+      end_date: values.end_date || null,
       order_index: Number(values.order_index),
       published: values.published,
     }
@@ -132,6 +138,43 @@ export function CourseModal({
         <div className="space-y-1.5">
           <Label htmlFor="course-teachers">Insegnanti (facoltativo)</Label>
           <Input id="course-teachers" placeholder="es. con Pizzo & Still" {...register("teachers")} />
+          <p className="text-muted-foreground text-xs">
+            Riga breve mostrata sotto il titolo su Home e Corsi. Le schede con foto e bio dei
+            singoli insegnanti si gestiscono più sotto, dopo aver salvato il corso.
+          </p>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="course-classes-info">Spiegazione delle classi (facoltativa)</Label>
+          <Textarea
+            id="course-classes-info"
+            rows={3}
+            placeholder="Cosa aspettarsi dalle lezioni, come sono organizzati i livelli..."
+            {...register("classes_info")}
+          />
+          <p className="text-muted-foreground text-xs">
+            Testo mostrato nella pagina di dettaglio del corso, sopra l&apos;elenco degli orari.
+          </p>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="course-start-date">Data inizio (facoltativa)</Label>
+            <Input id="course-start-date" type="date" {...register("start_date")} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="course-end-date">Data fine (facoltativa)</Label>
+            <Input
+              id="course-end-date"
+              type="date"
+              aria-invalid={!!errors.end_date}
+              {...register("end_date")}
+            />
+            {errors.end_date && <p className="text-destructive text-xs">{errors.end_date.message}</p>}
+          </div>
+          <p className="text-muted-foreground text-xs sm:col-span-2">
+            Lascia vuoto per un corso continuativo, senza una data di fine prevista.
+          </p>
         </div>
 
         <MediaUploadField

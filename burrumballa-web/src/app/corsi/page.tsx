@@ -1,10 +1,11 @@
 import Link from "next/link"
 
+import { CorsiJoinBand } from "@/components/site/CorsiJoinBand"
 import { Kicker } from "@/components/site/Kicker"
 import { Media } from "@/components/site/Media"
 import { SiteShell } from "@/components/site/SiteShell"
 import { WeekGrid } from "@/components/site/WeekGrid"
-import { buildWeeklySchedule } from "@/lib/calendar"
+import { buildWeeklySchedule, formatCourseDateRange } from "@/lib/calendar"
 import { textColorFor } from "@/lib/color"
 import { getCorsiContent, getCourses, getFooterContent } from "@/lib/cms/queries"
 import type { CourseWithLevels } from "@/lib/cms/types"
@@ -24,9 +25,9 @@ function LevelBadges({ course }: { course: CourseWithLevels }) {
       style={{ gridTemplateColumns: `repeat(${Math.min(course.levels.length, 3) || 1}, minmax(0, 1fr))` }}
     >
       {course.levels.map((level) => (
-        <div key={level.id} className="border-bb-ink rounded border-2 bg-white p-3">
+        <div key={level.id} className="border-bb-ink bg-bb-surface rounded border-2 p-3">
           <div className="font-display text-sm">{level.level}</div>
-          <div className="mt-1 text-xs text-neutral-600">{level.time}</div>
+          <div className="text-bb-ink/65 mt-1 text-xs">{level.time}</div>
         </div>
       ))}
     </div>
@@ -34,6 +35,8 @@ function LevelBadges({ course }: { course: CourseWithLevels }) {
 }
 
 function FeaturedDiscipline({ course, reversed }: { course: CourseWithLevels; reversed: boolean }) {
+  const dateRange = formatCourseDateRange(course.start_date, course.end_date)
+
   return (
     <div id={course.slug} className="mx-auto max-w-[1200px] px-6 pt-14 scroll-mt-20">
       <div className="grid grid-cols-1 items-center gap-9 md:grid-cols-[1fr_1.3fr]">
@@ -49,37 +52,31 @@ function FeaturedDiscipline({ course, reversed }: { course: CourseWithLevels; re
         <div className={reversed ? "md:order-1" : ""}>
           <div
             className="font-display-alt text-[46px] leading-[0.9] md:text-[62px]"
-            style={{ color: course.color, WebkitTextStroke: "1.5px #1a1a1a" }}
+            style={{ color: course.color, WebkitTextStroke: "1.5px var(--color-bb-ink)" }}
           >
             {course.name.toUpperCase()}
           </div>
           {course.body && (
-            <p className="mt-3.5 max-w-[440px] text-[15px] leading-relaxed text-neutral-700">
+            <p className="text-bb-ink/75 mt-3.5 max-w-[440px] text-[15px] leading-relaxed">
               {course.body}
             </p>
+          )}
+          {dateRange && (
+            <div className="text-bb-ink/65 mt-2 text-xs font-semibold">{dateRange}</div>
           )}
           {course.teachers && <Kicker className="mb-4">{course.teachers}</Kicker>}
           <div className={course.teachers ? "" : "mt-5"}>
             <LevelBadges course={course} />
           </div>
+          <Link
+            href={`/corsi/${course.slug}`}
+            className="border-bb-ink font-display mt-5 inline-block rounded-[3px] border-2 px-4 py-2.5 text-[13px]"
+            style={{ background: course.color, color: textColorFor(course.color) }}
+          >
+            Scopri il corso →
+          </Link>
         </div>
       </div>
-    </div>
-  )
-}
-
-function CompactDiscipline({ course }: { course: CourseWithLevels }) {
-  return (
-    <div
-      id={course.slug}
-      className="border-bb-ink scroll-mt-20 rounded-lg border-[3px] p-7"
-      style={{ background: course.color, color: textColorFor(course.color) }}
-    >
-      <div className="font-display-alt text-[42px] leading-[0.9] md:text-[50px]">
-        {course.name.toUpperCase()}
-      </div>
-      {course.body && <p className="mt-3 mb-4.5 text-[15px] leading-relaxed">{course.body}</p>}
-      <LevelBadges course={course} />
     </div>
   )
 }
@@ -91,8 +88,6 @@ export default async function CorsiPage() {
     getCourses(),
   ])
 
-  const featured = courses.slice(0, 2)
-  const compact = courses.slice(2)
   const weekDays = buildWeeklySchedule(courses)
 
   return (
@@ -105,7 +100,7 @@ export default async function CorsiPage() {
         <h1 className="font-display mt-2.5 text-[46px] leading-[0.92] tracking-[-2px] sm:text-[58px] md:text-[70px] md:tracking-[-3px]">
           {content.hero.title}
         </h1>
-        <p className="mt-4.5 max-w-[560px] text-[17px] leading-relaxed text-neutral-700">
+        <p className="text-bb-ink/75 mt-4.5 max-w-[560px] text-[17px] leading-relaxed">
           {content.hero.subtitle}
         </p>
         {courses.length > 0 && (
@@ -133,7 +128,7 @@ export default async function CorsiPage() {
               {content.calendar.title}
             </h2>
           </div>
-          <div className="max-w-[300px] text-right text-[13px] text-neutral-600">
+          <div className="text-bb-ink/65 max-w-[300px] text-right text-[13px]">
             {content.calendar.subtitle}
           </div>
         </div>
@@ -141,40 +136,13 @@ export default async function CorsiPage() {
       </div>
 
       {/* DISCIPLINE */}
-      {featured.map((course, index) => (
+      {courses.map((course, index) => (
         <FeaturedDiscipline key={course.id} course={course} reversed={index % 2 === 1} />
       ))}
 
-      {compact.length > 0 && (
-        <div className="mx-auto grid max-w-[1200px] grid-cols-1 gap-6 px-6 pt-14 md:grid-cols-2">
-          {compact.map((course) => (
-            <CompactDiscipline key={course.id} course={course} />
-          ))}
-        </div>
-      )}
-
       {/* ISCRIVITI */}
       <div className="mx-auto mt-14 max-w-[1200px] px-6">
-        <div className="bg-bb-ink grid grid-cols-1 items-center gap-8 rounded p-8 text-white md:grid-cols-[1.3fr_1fr] md:p-10">
-          <div>
-            <Kicker color="#8be03c">{content.join.kicker}</Kicker>
-            <h2 className="font-display mt-2 mb-3 text-[32px] leading-[1] tracking-[-1.5px] md:text-[40px]">
-              {content.join.title}
-            </h2>
-            <p className="max-w-[440px] text-[15px] leading-relaxed text-neutral-300">
-              {content.join.body}
-            </p>
-          </div>
-          <div className="flex flex-col gap-3">
-            <Link
-              href="/eventi"
-              className="bg-bb-green text-bb-ink rounded-[3px] px-5.5 py-4 text-center text-base font-bold"
-            >
-              {content.join.ctaLabel} →
-            </Link>
-            <div className="text-center text-[13px] text-neutral-400">{content.join.note}</div>
-          </div>
-        </div>
+        <CorsiJoinBand content={content.join} />
       </div>
     </SiteShell>
   )
