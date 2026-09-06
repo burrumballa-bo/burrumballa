@@ -58,7 +58,7 @@ export function CopyableRow({
         type="button"
         onClick={handleCopy}
         aria-label={`Copia ${label.toLowerCase()}`}
-        className="text-muted-foreground hover:border-[#f5d90a] hover:text-[#f5d90a] flex size-7 shrink-0 items-center justify-center rounded-[2px] border border-white/15 transition-colors"
+        className="text-muted-foreground hover:border-[#f5d90a] hover:text-[#f5d90a] flex size-7 shrink-0 items-center justify-center border border-white/15 transition-colors"
       >
         {copied ? (
           <Check className="size-3.5 text-[#7ef58a]" />
@@ -91,7 +91,7 @@ export function SectionCard({
   return (
     <Card
       className={cn(
-        "gap-5 rounded-[2px] border-x-0 border-b-0 bg-[#050505] px-0 py-6 shadow-none",
+        "gap-5 border-x-0 border-b-0 bg-[#050505] px-0 py-6 shadow-none",
         accentColor,
         className
       )}

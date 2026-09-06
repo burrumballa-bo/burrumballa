@@ -8,7 +8,19 @@ const PREVIEW_COOKIE = "bb_preview"
 const PREVIEW_PARAM = "masca"
 const PREVIEW_COOKIE_MAX_AGE = 60 * 60 * 24 * 90 // 90 giorni
 
-const PUBLIC_PREFIXES = ["/eventi/senti-come-suona", "/coming-soon"]
+// /icon e /apple-icon sono le icone generate da app/icon.tsx e
+// app/apple-icon.tsx, /logo/* il proxy del logo header: sono asset, non
+// pagine, e a differenza dei file statici non hanno un'estensione nel path,
+// quindi il `.*\..*` del matcher qui sotto non li esclude. Senza questa
+// riga il gate coming-soon risponderebbe HTML al posto dell'immagine e il
+// browser mostrerebbe l'icona generica.
+const PUBLIC_PREFIXES = [
+  "/eventi/senti-come-suona",
+  "/coming-soon",
+  "/icon",
+  "/apple-icon",
+  "/logo",
+]
 
 function isPublicPath(pathname: string): boolean {
   return PUBLIC_PREFIXES.some(

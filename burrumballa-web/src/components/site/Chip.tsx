@@ -17,7 +17,7 @@ export function Chip({
 }: ChipProps) {
   return (
     <span
-      className={`font-display border-bb-ink inline-block rounded-[2px] border-2 px-3 py-1.5 text-xs ${className}`}
+      className={`font-display border-bb-ink inline-block border-2 px-3 py-1.5 text-xs ${className}`}
       style={{ background, color, transform: `rotate(${rotate}deg)` }}
     >
       {children}

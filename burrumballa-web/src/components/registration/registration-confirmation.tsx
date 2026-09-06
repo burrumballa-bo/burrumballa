@@ -77,7 +77,7 @@ export function RegistrationConfirmation({
       </CardHeader>
       <CardContent className="flex flex-col gap-4 px-5">
         {isBonifico && (
-          <div className="flex flex-col gap-3 rounded-[2px] border border-[#7c1fd6]/50 bg-[#7c1fd6]/10 p-4">
+          <div className="flex flex-col gap-3 border border-[#7c1fd6]/50 bg-[#7c1fd6]/10 p-4">
             <div className="flex items-center gap-2 text-sm font-semibold">
               <Banknote className="size-4 text-[#a855f7]" />
               Completa il pagamento con bonifico
@@ -106,7 +106,7 @@ export function RegistrationConfirmation({
           </div>
         )}
 
-        <div className="flex flex-col gap-2 rounded-[2px] border border-white/10 bg-[#111] p-4">
+        <div className="flex flex-col gap-2 border border-white/10 bg-[#111] p-4">
           <p className="mb-1 text-xs font-bold tracking-[0.12em] text-[#a855f7] uppercase">
             Riepilogo iscrizione
           </p>
@@ -176,7 +176,7 @@ export function RegistrationConfirmation({
           <Button
             variant="outline"
             onClick={onReset}
-            className="w-full rounded-[2px] border-white/20 bg-transparent sm:w-auto"
+            className="w-full border-white/20 bg-transparent sm:w-auto"
           >
             Nuova iscrizione
           </Button>
@@ -184,7 +184,7 @@ export function RegistrationConfirmation({
           <Button
             asChild
             variant="outline"
-            className="w-full rounded-[2px] border-white/20 bg-transparent sm:w-auto"
+            className="w-full border-white/20 bg-transparent sm:w-auto"
           >
             <Link href="/eventi/senti-come-suona#iscrizione">
               Nuova iscrizione
@@ -194,7 +194,7 @@ export function RegistrationConfirmation({
         <Button
           asChild
           className={cn(
-            "w-full rounded-[2px] bg-[#f5d90a] font-bold text-black uppercase hover:bg-[#f5d90a]/90 sm:w-auto",
+            "w-full bg-[#f5d90a] font-bold text-black uppercase hover:bg-[#f5d90a]/90 sm:w-auto",
             DIAGONAL_CUT
           )}
         >

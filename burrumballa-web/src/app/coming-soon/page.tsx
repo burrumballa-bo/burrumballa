@@ -22,7 +22,7 @@ export default function ComingSoonPage() {
       className={`${siteFontVariables} bg-bb-cream text-bb-ink font-site-body relative isolate flex min-h-screen items-center justify-center overflow-x-clip px-6`}
     >
       <WallBackground />
-      <div className="bg-bb-cream/90 border-bb-ink relative flex max-w-md flex-col items-center rounded border-[3px] p-10 text-center backdrop-blur-sm">
+      <div className="bg-bb-cream/90 border-bb-ink relative flex max-w-md flex-col items-center border-[3px] p-10 text-center backdrop-blur-sm">
         <Logomark size={56} />
         <h1 className="font-display mt-6 text-[32px] leading-[0.95] tracking-[-1.5px] sm:text-[38px]">
           STIAMO
@@ -36,7 +36,7 @@ export default function ComingSoonPage() {
         </p>
         <Link
           href="/eventi/senti-come-suona"
-          className="bg-bb-ink text-bb-cream mt-6 inline-block rounded-[3px] px-5 py-3 text-[15px] font-bold"
+          className="bg-bb-ink text-bb-cream mt-6 inline-block px-5 py-3 text-[15px] font-bold"
         >
           Intanto, scopri Senti Come Suona →
         </Link>

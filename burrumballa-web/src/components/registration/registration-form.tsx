@@ -325,7 +325,7 @@ export function RegistrationForm() {
                 placeholder="Nome"
                 autoComplete="given-name"
                 aria-invalid={!!errors.nome}
-                className="rounded-[2px] bg-[#151515]"
+                className="bg-[#151515]"
                 {...register("nome")}
               />
               {errors.nome && (
@@ -343,7 +343,7 @@ export function RegistrationForm() {
                 placeholder="Cognome"
                 autoComplete="family-name"
                 aria-invalid={!!errors.cognome}
-                className="rounded-[2px] bg-[#151515]"
+                className="bg-[#151515]"
                 {...register("cognome")}
               />
               {errors.cognome && (
@@ -362,7 +362,7 @@ export function RegistrationForm() {
                 type="date"
                 autoComplete="bday"
                 aria-invalid={!!errors.dataNascita}
-                className="rounded-[2px] bg-[#151515]"
+                className="bg-[#151515]"
                 {...register("dataNascita")}
               />
               {errors.dataNascita && (
@@ -378,7 +378,7 @@ export function RegistrationForm() {
                 type="tel"
                 autoComplete="tel"
                 aria-invalid={!!errors.telefono}
-                className="rounded-[2px] bg-[#151515]"
+                className="bg-[#151515]"
                 {...register("telefono")}
               />
               {errors.telefono && (
@@ -397,7 +397,7 @@ export function RegistrationForm() {
                 type="email"
                 autoComplete="email"
                 aria-invalid={!!errors.email}
-                className="rounded-[2px] bg-[#151515]"
+                className="bg-[#151515]"
                 {...register("email")}
               />
               {errors.email && (
@@ -411,7 +411,7 @@ export function RegistrationForm() {
               <Input
                 id="citta"
                 autoComplete="address-level2"
-                className="rounded-[2px] bg-[#151515]"
+                className="bg-[#151515]"
                 {...register("citta")}
               />
             </div>
@@ -426,7 +426,7 @@ export function RegistrationForm() {
               <Input
                 id="aka"
                 aria-invalid={!!errors.aka}
-                className="rounded-[2px] bg-[#151515]"
+                className="bg-[#151515]"
                 {...register("aka")}
               />
               {errors.aka && (
@@ -463,7 +463,7 @@ export function RegistrationForm() {
                       key={opzione.chiave}
                       htmlFor={`battle-${opzione.chiave}`}
                       className={cn(
-                        "flex items-center justify-between gap-3 rounded-[2px] border border-white/10 bg-[#151515] p-2.5 transition-colors",
+                        "flex items-center justify-between gap-3 border border-white/10 bg-[#151515] p-2.5 transition-colors",
                         disabled
                           ? "cursor-not-allowed opacity-60"
                           : "cursor-pointer hover:border-white/25"
@@ -496,7 +496,7 @@ export function RegistrationForm() {
                         <p className="text-sm font-semibold">{opzione.label}</p>
                       </div>
                       {disabled ? (
-                        <Badge variant="destructive" className="rounded-[2px]">
+                        <Badge variant="destructive">
                           SOLD OUT
                         </Badge>
                       ) : (
@@ -523,7 +523,7 @@ export function RegistrationForm() {
               <Input
                 id="akaPartner2vs2"
                 aria-invalid={!!errors.akaPartner2vs2}
-                className="rounded-[2px] bg-[#151515]"
+                className="bg-[#151515]"
                 {...register("akaPartner2vs2")}
               />
               {errors.akaPartner2vs2 && (
@@ -566,7 +566,7 @@ export function RegistrationForm() {
                       key={opzione.chiave}
                       htmlFor={`workshop-${opzione.chiave}`}
                       className={cn(
-                        "flex items-center justify-between gap-3 rounded-[2px] border p-2.5 transition-colors",
+                        "flex items-center justify-between gap-3 border p-2.5 transition-colors",
                         field.value === opzione.chiave
                           ? "border-[#f5d90a] bg-[#1a1a1a]"
                           : "border-white/10 bg-[#151515]",
@@ -602,7 +602,7 @@ export function RegistrationForm() {
                         </div>
                       </div>
                       {disabled && (
-                        <Badge variant="destructive" className="rounded-[2px]">
+                        <Badge variant="destructive">
                           SOLD OUT
                         </Badge>
                       )}
@@ -676,7 +676,7 @@ export function RegistrationForm() {
                   <label
                     htmlFor="payment-bonifico"
                     className={cn(
-                      "flex cursor-pointer items-start gap-3 rounded-[2px] border p-2.5",
+                      "flex cursor-pointer items-start gap-3 border p-2.5",
                       field.value === "bonifico"
                         ? "border-[#f5d90a] bg-[#1a1a1a]"
                         : "border-white/15 bg-[#151515]"
@@ -697,7 +697,7 @@ export function RegistrationForm() {
                   <label
                     htmlFor="payment-sul_posto"
                     className={cn(
-                      "flex cursor-pointer items-start gap-3 rounded-[2px] border p-2.5",
+                      "flex cursor-pointer items-start gap-3 border p-2.5",
                       field.value === "sul_posto"
                         ? "border-[#f5d90a] bg-[#1a1a1a]"
                         : "border-white/15 bg-[#151515]"
@@ -807,7 +807,7 @@ export function RegistrationForm() {
             type="submit"
             disabled={isSubmitting || submitDisabledByZeroBalance}
             className={cn(
-              "h-auto w-full rounded-[2px] bg-[#f5d90a] py-3.5 text-sm font-bold tracking-[0.05em] text-black uppercase hover:bg-[#f5d90a]/90",
+              "h-auto w-full bg-[#f5d90a] py-3.5 text-sm font-bold tracking-[0.05em] text-black uppercase hover:bg-[#f5d90a]/90",
               DIAGONAL_CUT
             )}
           >

@@ -11,6 +11,7 @@ import { buildWeeklySchedule, formatCourseDateRange } from "@/lib/calendar";
 import {
   getCorsiContent,
   getCourseBySlug,
+  getCourses,
   getFooterContent,
 } from "@/lib/cms/queries";
 import type { CourseTeacher, CourseWithLevels } from "@/lib/cms/types";
@@ -19,6 +20,11 @@ import { rowNeedsCentering } from "@/lib/gridWrap";
 import { cn } from "@/lib/utils";
 
 export const revalidate = 60;
+
+export async function generateStaticParams() {
+  const courses = await getCourses();
+  return courses.map((course) => ({ slug: course.slug }));
+}
 
 interface CorsoPageProps {
   params: Promise<{ slug: string }>;
@@ -43,7 +49,7 @@ function CourseHero({ course }: { course: CourseWithLevels }) {
   const textColor = textColorFor(course.color);
 
   return (
-    <div className="border-bb-ink grid grid-cols-1 overflow-hidden rounded-[5px] border-[3px] md:grid-cols-[1fr_1.1fr]">
+    <div className="border-bb-ink grid grid-cols-1 overflow-hidden border-[3px] md:grid-cols-[1fr_1.1fr]">
       <Media
         src={course.image_url}
         alt={course.name}
@@ -109,7 +115,7 @@ function TeacherCard({
   return (
     <div
       className={cn(
-        "border-bb-ink bg-bb-surface overflow-hidden rounded-[5px] border-[3px]",
+        "border-bb-ink bg-bb-surface overflow-hidden border-[3px]",
         className,
       )}
     >

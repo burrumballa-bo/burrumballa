@@ -104,7 +104,7 @@ export function SiteNav({ active, logoUrl }: SiteNavProps) {
           aria-expanded={open}
           aria-controls="site-mobile-nav"
           aria-label={open ? "Chiudi il menu" : "Apri il menu"}
-          className="border-bb-ink flex h-10 w-10 items-center justify-center rounded-[3px] border-[2.5px] md:hidden"
+          className="border-bb-ink flex h-10 w-10 items-center justify-center border-[2.5px] md:hidden"
         >
           {open ? <X size={20} /> : <Menu size={20} />}
         </button>

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react"
 
-import { getHeaderLogoUrl, getThemeContent } from "@/lib/cms/queries"
+import { getHeaderLogoSrc, getThemeContent } from "@/lib/cms/queries"
 import type { FooterContent, ThemeColors } from "@/lib/cms/types"
 import { isValidHexColor } from "@/lib/color"
 import { siteFontVariables } from "./fonts"
@@ -57,7 +57,7 @@ function buildDarkThemeCss(colors: ThemeColors): string {
 export async function SiteShell({ active, footer, children }: SiteShellProps) {
   const theme = await getThemeContent()
   const isDark = theme.mode === "dark"
-  const logoUrl = await getHeaderLogoUrl(theme.headerLogo)
+  const logoUrl = await getHeaderLogoSrc(theme.headerLogo)
 
   return (
     <div

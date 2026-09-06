@@ -4,7 +4,12 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --radius: 0.625rem;
+  /* Angoli vivi ovunque: il sito è tutto squadrato (bordi spessi, niente
+     stondature), quindi anche i componenti shadcn (button, input, card,
+     badge…) che derivano il loro border-radius da questo token devono
+     restare a 90°. Le utility `rounded-full` (Logomark, radio) non passano
+     da qui e restano circolari di proposito. */
+  --radius: 0rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);

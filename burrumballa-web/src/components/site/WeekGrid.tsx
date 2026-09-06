@@ -50,7 +50,7 @@ export function WeekGrid({
           return (
             <div
               key={dayIndex}
-              className="relative min-w-0 rounded-[2px] border-2 px-1 py-2.5 text-center"
+              className="relative min-w-0 border-2 px-1 py-2.5 text-center"
               style={{
                 borderColor: accent,
                 background: day.isRest ? "var(--color-bb-cream)" : "var(--color-bb-ink)",
@@ -67,7 +67,7 @@ export function WeekGrid({
               )}
               {day.isToday && (
                 <div
-                  className="bg-bb-green font-display absolute -top-2 -right-2 rounded-[2px] px-1.5 py-0.5 text-[8px] tracking-wide text-[#1a1a1a]"
+                  className="bg-bb-green font-display absolute -top-2 -right-2 px-1.5 py-0.5 text-[8px] tracking-wide text-[#1a1a1a]"
                   style={{ transform: "rotate(6deg)" }}
                 >
                   {todayLabel}
@@ -79,7 +79,7 @@ export function WeekGrid({
 
         {weekHasNoActivity ? (
           <div
-            className="flex items-center justify-center rounded-[2px] border-2 border-transparent px-2.5 py-8 text-center"
+            className="flex items-center justify-center border-2 border-transparent px-2.5 py-8 text-center"
             style={{ gridColumn: "1 / -1" }}
           >
             <div className="invisible text-[12px] leading-tight font-semibold">{restLabel}</div>
@@ -96,7 +96,7 @@ export function WeekGrid({
                   transform: `rotate(${(itemIndex % 2 === 0 ? -1 : 1) * 1.2}deg)`,
                 }
                 const card = (
-                  <div className="rounded-[2px] border-2 px-2.5 py-2" style={cardStyle}>
+                  <div className="border-2 px-2.5 py-2" style={cardStyle}>
                     <div className="flex items-center gap-1.5">
                       <span
                         className="text-[10px] font-extrabold tabular-nums"

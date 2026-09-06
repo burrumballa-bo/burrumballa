@@ -9,7 +9,7 @@ interface LogomarkProps {
 export function Logomark({ size = 42, borderColor = "#1a1a1a", className = "" }: LogomarkProps) {
   return (
     <span
-      className={`font-display bg-bb-purple inline-flex shrink-0 items-center justify-center rounded-full text-white ${className}`}
+      className={`font-display bg-bb-purple inline-flex shrink-0 items-center justify-center text-white ${className}`}
       style={{
         width: size,
         height: size,

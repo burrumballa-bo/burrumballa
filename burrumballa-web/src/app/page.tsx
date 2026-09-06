@@ -97,13 +97,13 @@ export default async function HomePage() {
             <div className="mt-6 flex flex-wrap gap-3">
               <Link
                 href="/corsi"
-                className="bg-bb-ink text-bb-cream rounded-[3px] px-5 py-3.5 text-[15px] font-bold"
+                className="bg-bb-ink text-bb-cream px-5 py-3.5 text-[15px] font-bold"
               >
                 Iscriviti a un corso →
               </Link>
               <Link
                 href="/corsi"
-                className="border-bb-ink rounded-[3px] border-[2.5px] px-5 py-3.5 text-[15px] font-bold"
+                className="border-bb-ink border-[2.5px] px-5 py-3.5 text-[15px] font-bold"
               >
                 Lezione di prova
               </Link>
@@ -150,7 +150,7 @@ export default async function HomePage() {
         aria-labelledby="chi-siamo-breve-title"
         className="mx-auto max-w-300 px-6 pt-12 pb-2"
       >
-        <div className="bg-bb-purple/25 border-bb-ink rounded border-[3px] p-8 text-center text-white backdrop-blur-md md:p-10">
+        <div className="bg-bb-purple/25 border-bb-ink border-[3px] p-8 text-center text-white backdrop-blur-md md:p-10">
           <h2
             id="chi-siamo-breve-title"
             className="font-display mt-1 text-[28px] tracking-[-1.5px] md:text-[36px] text-center"
@@ -164,7 +164,7 @@ export default async function HomePage() {
 
         {/* CHI SIAMO TEASER */}
         <div className="mx-auto mt-12 max-w-300">
-          <div className="bg-bb-ink text-bb-cream grid grid-cols-1 overflow-hidden rounded md:grid-cols-2">
+          <div className="bg-bb-ink text-bb-cream grid grid-cols-1 overflow-hidden md:grid-cols-2">
             <div className="relative min-h-55 md:min-h-70">
               <Media
                 src={content.aboutTeaser.imageUrl}
@@ -183,7 +183,7 @@ export default async function HomePage() {
               </p>
               <Link
                 href="/chi-siamo"
-                className="bg-bb-green mt-5 inline-block rounded-[3px] px-5 py-3 text-sm font-bold text-[#1a1a1a]"
+                className="bg-bb-green mt-5 inline-block px-5 py-3 text-sm font-bold text-[#1a1a1a]"
               >
                 Scopri chi siamo →
               </Link>
@@ -234,7 +234,7 @@ export default async function HomePage() {
                       key={course.id}
                       href={`/corsi/${course.slug}`}
                       className={cn(
-                        "border-bb-ink flex min-h-[180px] flex-col justify-between rounded border-[3px] p-5",
+                        "border-bb-ink flex min-h-[180px] flex-col justify-between border-[3px] p-5",
                         baseFix && "shrink-0 basis-[calc(50%-0.4375rem)]",
                         mdFix && "md:shrink-0 md:basis-[calc(25%-0.65625rem)]",
                       )}
@@ -283,7 +283,7 @@ export default async function HomePage() {
               <Link
                 key={event.id}
                 href="/eventi"
-                className="border-bb-ink bg-bb-surface block overflow-hidden rounded border-[3px]"
+                className="border-bb-ink bg-bb-surface block overflow-hidden border-[3px]"
               >
                 <Media
                   src={event.image_url}
@@ -340,7 +340,7 @@ export default async function HomePage() {
 
       {/* CTA BAND */}
       <div className="mx-auto mt-10 max-w-[1200px] px-6">
-        <div className="bg-bb-pink border-bb-ink rounded border-[3px] p-8 text-center text-white md:p-10">
+        <div className="bg-bb-pink border-bb-ink border-[3px] p-8 text-center text-white md:p-10">
           <h2 className="font-display text-[34px] tracking-[-2px] md:text-[46px]">
             {content.ctaBand.title}
           </h2>
@@ -349,7 +349,7 @@ export default async function HomePage() {
           </p>
           <Link
             href="/corsi"
-            className="bg-bb-ink text-bb-cream inline-block rounded-[3px] px-7 py-4 text-base font-bold"
+            className="bg-bb-ink text-bb-cream inline-block px-7 py-4 text-base font-bold"
           >
             Iscriviti a un corso →
           </Link>

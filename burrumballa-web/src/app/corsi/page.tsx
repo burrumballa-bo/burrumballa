@@ -43,7 +43,7 @@ function LevelBadgesRow({
       {course.levels.map((level) => (
         <div
           key={level.id}
-          className="border-bb-ink bg-bb-surface flex min-h-[92px] flex-col justify-center rounded border-2 p-3"
+          className="border-bb-ink bg-bb-surface flex min-h-[92px] flex-col justify-center border-2 p-3"
           style={{ flexShrink: 0, flexBasis: basis }}
         >
           <div className="font-display text-sm">{level.level}</div>
@@ -100,7 +100,7 @@ function FeaturedDiscipline({
           />
         </div>
         <div
-          className={`border-bb-ink rounded-[5px] border-[3px] p-6 backdrop-blur-md md:p-8 ${reversed ? "md:order-1" : ""}`}
+          className={`border-bb-ink border-[3px] p-6 backdrop-blur-md md:p-8 ${reversed ? "md:order-1" : ""}`}
           style={{
             backgroundColor: `color-mix(in srgb, ${course.color} 25%, transparent)`,
           }}
@@ -130,7 +130,7 @@ function FeaturedDiscipline({
           </div>
           <Link
             href={`/corsi/${course.slug}`}
-            className="border-bb-ink font-display mt-5 inline-block rounded-[3px] border-2 px-4 py-2.5 text-[13px]"
+            className="border-bb-ink font-display mt-5 inline-block border-2 px-4 py-2.5 text-[13px]"
             style={{
               background: course.color,
               color: textColorFor(course.color),
@@ -179,7 +179,7 @@ export default async function CorsiPage() {
               <a
                 key={course.id}
                 href={`#${course.slug}`}
-                className="border-bb-ink font-display rounded-[2px] border-2 px-3.5 py-2 text-[13px]"
+                className="border-bb-ink font-display border-2 px-3.5 py-2 text-[13px]"
                 style={{
                   background: course.color,
                   color: textColorFor(course.color),

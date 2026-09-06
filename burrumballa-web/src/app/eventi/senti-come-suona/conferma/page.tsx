@@ -81,7 +81,7 @@ export default function ConfermaIscrizionePage() {
             <Button
               asChild
               className={cn(
-                "w-fit rounded-[2px] bg-[#f5d90a] font-bold text-black uppercase hover:bg-[#f5d90a]/90",
+                "w-fit bg-[#f5d90a] font-bold text-black uppercase hover:bg-[#f5d90a]/90",
                 DIAGONAL_CUT
               )}
             >

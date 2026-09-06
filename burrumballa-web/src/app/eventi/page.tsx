@@ -30,7 +30,7 @@ function eventBottomLine(event: EventItem): string | null {
 
 function FeaturedEventCard({ event }: { event: EventItem }) {
   const content = (
-    <div className="border-bb-ink grid grid-cols-1 overflow-hidden rounded-[5px] border-[3px] md:grid-cols-[1fr_1.1fr]">
+    <div className="border-bb-ink grid grid-cols-1 overflow-hidden border-[3px] md:grid-cols-[1fr_1.1fr]">
       <Media
         src={event.image_url}
         alt={event.title}
@@ -41,7 +41,7 @@ function FeaturedEventCard({ event }: { event: EventItem }) {
         className="flex flex-col justify-center p-8 text-white md:p-10"
         style={{ background: event.color }}
       >
-        <span className="bg-bb-green font-display self-start rounded-[2px] px-2.5 py-1 text-[11px] text-[#1a1a1a]">
+        <span className="bg-bb-green font-display self-start px-2.5 py-1 text-[11px] text-[#1a1a1a]">
           IN EVIDENZA
         </span>
         <div className="font-display-alt mt-3.5 text-[38px] leading-[0.9] md:text-[54px]">
@@ -93,7 +93,7 @@ function EventCard({
 }) {
   const bottomLine = eventBottomLine(event);
   const content = (
-    <div className="border-bb-ink bg-bb-surface grid h-full grid-cols-1 overflow-hidden rounded-[5px] border-[3px] sm:grid-cols-[0.9fr_1.1fr]">
+    <div className="border-bb-ink bg-bb-surface grid h-full grid-cols-1 overflow-hidden border-[3px] sm:grid-cols-[0.9fr_1.1fr]">
       <Media
         src={event.image_url}
         alt={event.title}
@@ -191,14 +191,14 @@ export default async function EventiPage() {
 
       {/* CTA BAND */}
       <div className="mx-auto mt-10 max-w-[1200px] px-6">
-        <div className="bg-bb-green border-bb-ink rounded border-[3px] p-9 text-center">
+        <div className="bg-bb-green border-bb-ink border-[3px] p-9 text-center">
           <h2 className="font-display text-[28px] tracking-[-1.5px] md:text-[38px]">
             {content.ctaBand.title}
           </h2>
           <p className="mt-2 mb-5 text-[15px]">{content.ctaBand.subtitle}</p>
           <Link
             href="/corsi"
-            className="bg-bb-ink text-bb-cream inline-block rounded-[3px] px-6.5 py-3.5 text-[15px] font-bold"
+            className="bg-bb-ink text-bb-cream inline-block px-6.5 py-3.5 text-[15px] font-bold"
           >
             Iscriviti →
           </Link>

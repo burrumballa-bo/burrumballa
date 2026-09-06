@@ -39,7 +39,11 @@ export default async function ChiSiamoPage() {
         <h1 className="font-display mt-3 max-w-[880px] text-[38px] leading-[0.95] tracking-[-1.5px] sm:text-[48px] md:text-[64px] md:tracking-[-2.5px]">
           {content.hero.title}
         </h1>
-        <p className="mt-5.5 max-w-[620px] text-[18px] leading-relaxed">
+        {/* Stesso pannello "glass" della fascia Chi siamo in home e delle
+            card disciplina in /corsi: viola al 25% + backdrop-blur sopra al
+            muro di WallBackground. Il testo non forza un colore così resta
+            leggibile sia in tema chiaro che scuro (bb-ink si inverte). */}
+        <p className="bg-bb-purple/25 border-bb-ink mt-5.5 max-w-[620px] border-[3px] p-5 text-[18px] leading-relaxed backdrop-blur-md md:p-6">
           {content.hero.subtitle}
         </p>
       </div>
@@ -59,7 +63,7 @@ export default async function ChiSiamoPage() {
               className="border-bb-ink relative block h-[320px] w-full border-[3px] object-cover md:h-[380px]"
             />
           </div>
-          <div>
+          <div className="bg-bb-purple/25 border-bb-ink border-[3px] p-6 backdrop-blur-md md:p-8">
             <div className="font-display-alt text-[36px] leading-[0.95] md:text-[44px]">
               {content.story.title}
             </div>
@@ -99,7 +103,7 @@ export default async function ChiSiamoPage() {
                   <div
                     key={item.title}
                     className={cn(
-                      "border-bb-ink min-h-[180px] rounded border-[3px] p-5.5",
+                      "border-bb-ink min-h-[180px] border-[3px] p-5.5",
                       baseFix && "shrink-0 basis-[calc(50%-0.4375rem)]",
                       mdFix && "md:shrink-0 md:basis-[calc(25%-0.65625rem)]",
                     )}
@@ -145,7 +149,7 @@ export default async function ChiSiamoPage() {
                   <div
                     key={group.id}
                     className={cn(
-                      "border-bb-ink bg-bb-surface overflow-hidden rounded-[5px] border-[3px]",
+                      "border-bb-ink bg-bb-surface overflow-hidden border-[3px]",
                       mdFix && "md:shrink-0 md:basis-[calc(50%-0.625rem)]",
                     )}
                   >
@@ -173,7 +177,7 @@ export default async function ChiSiamoPage() {
 
       {/* KIDS */}
       <div className="mx-auto max-w-[1200px] px-6 pt-14">
-        <div className="bg-bb-ink text-bb-cream grid grid-cols-1 overflow-hidden rounded-[5px] md:grid-cols-2">
+        <div className="bg-bb-ink text-bb-cream grid grid-cols-1 overflow-hidden md:grid-cols-2">
           <div className="flex flex-col justify-center p-8 md:p-10.5">
             <Kicker color="#8be03c">{content.kids.kicker}</Kicker>
             <h2 className="font-display mt-2 mb-3.5 text-[30px] leading-[1] tracking-[-1px] md:text-[38px]">
@@ -197,7 +201,7 @@ export default async function ChiSiamoPage() {
       {/* CIRCOLO / SEDE */}
       <div className="mx-auto max-w-[1200px] px-6 pt-14">
         <div className="grid grid-cols-1 items-stretch gap-6 md:grid-cols-2">
-          <div className="border-bb-ink overflow-hidden rounded-[5px] border-[3px]">
+          <div className="border-bb-ink overflow-hidden border-[3px]">
             <Media
               src={content.place.imageUrl}
               alt={content.place.locationName}
@@ -205,7 +209,7 @@ export default async function ChiSiamoPage() {
               className="block h-full min-h-[260px] w-full object-cover"
             />
           </div>
-          <div className="bg-bb-purple border-bb-ink flex flex-col justify-center rounded-[5px] border-[3px] p-8 text-white">
+          <div className="bg-bb-purple border-bb-ink flex flex-col justify-center border-[3px] p-8 text-white">
             <div className="font-display-alt text-[30px] leading-[0.95] md:text-[34px]">
               {content.place.title}
             </div>
@@ -223,7 +227,7 @@ export default async function ChiSiamoPage() {
 
       {/* CTA */}
       <div className="mx-auto mt-11 max-w-[1200px] px-6">
-        <div className="bg-bb-pink border-bb-ink rounded border-[3px] p-9 text-center text-white">
+        <div className="bg-bb-pink border-bb-ink border-[3px] p-9 text-center text-white">
           <h2 className="font-display text-[30px] tracking-[-2px] md:text-[42px]">
             {content.ctaBand.title}
           </h2>
@@ -232,7 +236,7 @@ export default async function ChiSiamoPage() {
           </p>
           <Link
             href="/corsi"
-            className="bg-bb-ink text-bb-cream inline-block rounded-[3px] px-6.5 py-3.5 text-[15px] font-bold"
+            className="bg-bb-ink text-bb-cream inline-block px-6.5 py-3.5 text-[15px] font-bold"
           >
             Iscriviti →
           </Link>
