@@ -107,6 +107,29 @@ export async function getHeaderLogoSrc(
   return signedUrl ? `/logo/${variant}` : null;
 }
 
+// Il file vero e proprio, inline come data URI. Serve a chi deve incorporare
+// i bytes invece di puntare a una URL: Satori (il motore dentro
+// ImageResponse, vedi app/icon.tsx) risolve le immagini nel momento in cui
+// disegna, e una signed URL da 60 secondi non e' una cosa a cui vale la pena
+// affidarsi durante una build.
+export async function getHeaderLogoDataUri(
+  variant: ThemeContent["headerLogo"],
+): Promise<string | null> {
+  try {
+    const signedUrl = await getHeaderLogoSignedUrl(variant);
+    if (!signedUrl) return null;
+
+    const response = await fetch(signedUrl);
+    if (!response.ok) return null;
+
+    const base64 = Buffer.from(await response.arrayBuffer()).toString("base64");
+    const contentType = response.headers.get("content-type") ?? "image/png";
+    return `data:${contentType};base64,${base64}`;
+  } catch {
+    return null;
+  }
+}
+
 const COURSE_WITH_RELATIONS_SELECT =
   "*, levels:course_levels(*), teacherProfiles:course_teachers(*)";
 
