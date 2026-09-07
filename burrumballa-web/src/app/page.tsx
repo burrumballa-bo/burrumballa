@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { Chip } from "@/components/site/Chip";
+import { FaqAccordion } from "@/components/site/FaqAccordion";
 import { Kicker } from "@/components/site/Kicker";
 import { Marquee } from "@/components/site/Marquee";
 import { Media } from "@/components/site/Media";
@@ -35,6 +36,20 @@ export default async function HomePage() {
   const rangeLabel = formatDateRangeLabel(monday, 14);
   const calendarDays = buildRollingCalendar(courses, events, 2);
   const previewEvents = events.slice(0, 3);
+
+  // Dati strutturati FAQPage: stessa logica del JSON-LD DanceSchool in
+  // layout.tsx, ma qui va costruito a runtime perché le domande arrivano dal
+  // CMS. È quello che permette a Google e agli assistenti AI di riusare le
+  // risposte direttamente in SERP.
+  const faqJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: content.faq.items.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: { "@type": "Answer", text: item.answer },
+    })),
+  };
 
   return (
     <SiteShell active="home" footer={footer}>
@@ -240,7 +255,7 @@ export default async function HomePage() {
                       )}
                       style={{
                         background: course.color,
-                        color: textColorFor(course.color),
+                        color: "#ffffff",
                       }}
                     >
                       <div className="font-display-alt text-[26px] leading-[0.95] md:text-[30px]">
@@ -337,6 +352,45 @@ export default async function HomePage() {
         </div>
         <WeekGrid days={calendarDays.slice(7, 14)} showDates />
       </div>
+
+      {/* FAQ — domande e risposte configurabili da Contenuti — Home.
+          Impaginazione in colonna anche su desktop: prima il blocco di
+          intestazione (stesso vetro scuro del box "chi siamo" qui sopra),
+          poi l'elenco delle domande a tutta larghezza. */}
+      {content.faq.items.length > 0 && (
+        <section
+          aria-labelledby="faq-title"
+          className="mx-auto max-w-[1200px] px-6 pt-14 pb-4"
+        >
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+          />
+          <div className="bg-bb-purple/25 border-bb-ink border-[3px] p-8 text-center text-white backdrop-blur-md md:p-10">
+            <Kicker color="#8be03c" className="-rotate-1">
+              {content.faq.kicker}
+            </Kicker>
+            <h2
+              id="faq-title"
+              className="font-display mt-2 text-[32px] leading-[0.95] tracking-[-1.5px] md:text-[42px]"
+            >
+              {content.faq.title}
+            </h2>
+            <p className="mx-auto mt-4 max-w-[640px] text-[15px] leading-relaxed opacity-85">
+              {content.faq.subtitle}
+            </p>
+            <Link
+              href="/chi-siamo"
+              className="mt-5 inline-block border-b-2 border-current pb-0.5 text-sm font-bold"
+            >
+              Conosci la crew →
+            </Link>
+          </div>
+          <div className="mt-8 md:mt-10">
+            <FaqAccordion items={content.faq.items} />
+          </div>
+        </section>
+      )}
 
       {/* CTA BAND */}
       <div className="mx-auto mt-10 max-w-[1200px] px-6">

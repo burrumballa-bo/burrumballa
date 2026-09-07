@@ -157,6 +157,13 @@ const required = (label: string) => z.string().trim().min(1, `${label} è obblig
 const optionalText = z.string()
 const nullableImageUrl = z.string().nullable()
 
+const faqItemSchema = z.object({
+  question: required("La domanda"),
+  answer: required("La risposta"),
+})
+export type FaqItemFormValues = z.infer<typeof faqItemSchema>
+export const emptyFaqItemFormValues: FaqItemFormValues = { question: "", answer: "" }
+
 export const homeContentSchema = z.object({
   hero: z.object({
     kicker: required("Il kicker"),
@@ -182,6 +189,14 @@ export const homeContentSchema = z.object({
     title: required("Il titolo del teaser chi siamo"),
     body: optionalText,
     imageUrl: nullableImageUrl,
+  }),
+  // Lista libera: 0 domande è valido e fa sparire la sezione dalla home,
+  // ma una domanda salvata a metà (senza testo) no.
+  faq: z.object({
+    kicker: optionalText,
+    title: required("Il titolo della sezione domande"),
+    subtitle: optionalText,
+    items: z.array(faqItemSchema),
   }),
   ctaBand: z.object({ title: required("Il titolo della cta finale"), subtitle: optionalText }),
 })

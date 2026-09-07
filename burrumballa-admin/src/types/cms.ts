@@ -18,6 +18,11 @@ export interface HomeHeroContent {
   triangleImageUrl: string | null
 }
 
+export interface FaqItem {
+  question: string
+  answer: string
+}
+
 export interface HomeContent {
   hero: HomeHeroContent
   marquee: { text: string }
@@ -26,6 +31,10 @@ export interface HomeContent {
   corsiSection: { kicker: string; title: string }
   eventsSection: { kicker: string; title: string }
   aboutTeaser: { kicker: string; title: string; body: string; imageUrl: string | null }
+  /** Domande frequenti in fondo alla home: lista libera (aggiungibile,
+   *  riordinabile e svuotabile). Con `items` vuoto la sezione sparisce dal
+   *  sito. */
+  faq: { kicker: string; title: string; subtitle: string; items: FaqItem[] }
   ctaBand: { title: string; subtitle: string }
 }
 

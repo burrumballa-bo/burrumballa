@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(echo \"exit=$?\")",
+      "Bash(grep -E \"^\\(trash-2|chevron-up|chevron-down|plus|grip-vertical|circle-help|message-circle-question-mark\\)\\\\.mjs$\")",
+      "Bash(echo \"ADMIN_TSC_EXIT=$?\")",
+      "Bash(echo \"WEB_TSC_EXIT=$?\")",
+      "Bash(ls /Users/francescomascarello/Desktop/masca/burrumballa/burrumballa-web/node_modules/.bin | grep -iE \"playwright|puppeteer\" || echo \"no browser driver\"; ls ~/Library/Caches/ms-playwright 2>/dev/null | head)",
+      "Read(//Users/francescomascarello/Library/Caches/ms-playwright/**)",
+      "Bash(PORT=3111 npx next start -p 3111)",
+      "Bash(npx --yes playwright@latest --version)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3111/)",
+      "Bash(npm i *)",
+      "Bash(node shot.mjs)",
+      "Bash(ls -d \"/Applications/Google Chrome.app\" 2>/dev/null && echo \"chrome ok\"; ls ~/Library/Caches/ms-playwright/chromium_headless_shell-1234/ 2>/dev/null)",
+      "Read(//Users/francescomascarello/Library/Caches/ms-playwright/chromium_headless_shell-1234/**)",
+      "Bash(curl -s http://localhost:3111/)",
+      "Bash(curl -s -o /dev/null -w \"final=%{url_effective} code=%{http_code}\\\\n\" -L http://localhost:3111/)",
+      "Bash(xargs kill)",
+      "Bash(curl -s -o /dev/null -w \"code=%{http_code}\\\\n\" http://localhost:3111/)",
+      "Bash(echo \"curl_exit=$?\")",
+      "Bash(curl -s -o /dev/null http://localhost:3111/)",
+      "Bash(ls ~/.supabase 2>/dev/null; timeout 25 supabase migration list --linked 2>&1 | tail -25)",
+      "Read(//Users/francescomascarello/.supabase/**)"
+    ]
+  }
+}

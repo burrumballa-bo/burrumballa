@@ -26,7 +26,8 @@ const CONTENUTI_SECTIONS = [
     path: "/admin/contenuti/home",
     icon: Home,
     title: "Home",
-    description: "Hero, calendario, preview corsi/eventi, teaser chi siamo, cta finale.",
+    description:
+      "Hero, calendario, preview corsi/eventi, teaser chi siamo, domande frequenti, cta finale.",
   },
   {
     path: "/admin/contenuti/corsi",

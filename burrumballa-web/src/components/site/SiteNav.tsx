@@ -110,10 +110,17 @@ export function SiteNav({ active, logoUrl }: SiteNavProps) {
         </button>
       </div>
 
+      {/* `isolate` è necessario: senza uno stacking context proprio, questo
+          dropdown è solo un discendente posizionato con z-index auto, e nel
+          painting order il suo `bg-bb-cream` finisce *sopra* lo SprayStroke
+          della voce attiva (che sta a `-z-10`), nascondendolo. Con `isolate`
+          il -z-10 viene risolto dentro il dropdown, quindi lo stroke si
+          dipinge sopra il suo sfondo, come già accade in desktop grazie al
+          wrapper `sticky z-50`. */}
       {open && (
         <div
           id="site-mobile-nav"
-          className="border-bb-ink bg-bb-cream absolute top-full right-0 left-0 flex flex-col gap-1 border-t-[2.5px] px-6 py-4 md:hidden"
+          className="border-bb-ink bg-bb-cream absolute top-full right-0 left-0 isolate flex flex-col gap-1 border-t-[2.5px] px-6 py-4 md:hidden"
         >
           {NAV_ITEMS.map((item) => (
             <NavLink

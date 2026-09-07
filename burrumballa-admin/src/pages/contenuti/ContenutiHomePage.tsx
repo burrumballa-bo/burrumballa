@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { MediaUploadField } from "@/components/MediaUploadField"
+import { HomeFaqFields } from "@/components/HomeFaqFields"
 import { useSitePage, useUpdateSitePage } from "@/hooks/useSitePage"
 import { DEFAULT_HOME_CONTENT } from "@/lib/cms/defaults"
 import { homeContentSchema, type HomeContentFormValues } from "@/lib/cms/schemas"
@@ -22,6 +23,7 @@ export default function ContenutiHomePage() {
   const {
     register,
     handleSubmit,
+    control,
     watch,
     setValue,
     formState: { errors, isSubmitting },
@@ -224,6 +226,19 @@ export default function ContenutiHomePage() {
               onChange={(url) => setValue("aboutTeaser.imageUrl", url, { shouldDirty: true })}
               folder="pages/home"
             />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Domande frequenti</CardTitle>
+            <CardDescription>
+              L&apos;elenco a fisarmonica in fondo alla home. Aggiungi, riordina o elimina
+              le domande: senza nemmeno una domanda la sezione sparisce dal sito.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <HomeFaqFields control={control} register={register} errors={errors} />
           </CardContent>
         </Card>
 
