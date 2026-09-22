@@ -15,5 +15,8 @@ export interface EventInfo {
   nota_battle: string | null
   nota_workshop: string | null
   nota_pagamento: string | null
+  /** Se false il form pubblico non propone il bonifico: ci si iscrive
+   *  comunque e si paga di persona all'evento. */
+  bonifico_attivo: boolean
   updated_at: string
 }

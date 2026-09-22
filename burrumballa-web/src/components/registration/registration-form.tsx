@@ -67,6 +67,9 @@ export function RegistrationForm() {
   const [noteBattle, setNoteBattle] = React.useState(FALLBACK_NOTA_BATTLE)
   const [noteWorkshop, setNoteWorkshop] = React.useState(FALLBACK_NOTA_WORKSHOP)
   const [notePagamento, setNotePagamento] = React.useState(FALLBACK_NOTA_PAGAMENTO)
+  // Gestito dall'admin (event_info.bonifico_attivo): da disattivato ci si
+  // iscrive comunque, ma il pagamento avviene di persona all'evento.
+  const [bonificoAttivo, setBonificoAttivo] = React.useState(true)
 
   const loadOptions = React.useCallback(async () => {
     setOptionsError(null)
@@ -107,6 +110,18 @@ export function RegistrationForm() {
         if (data.nota_pagamento) setNotePagamento(data.nota_pagamento)
       })
 
+    // Query separata: se la colonna non esistesse ancora non deve far
+    // saltare il caricamento di scadenza e note qui sopra.
+    supabase
+      .from("event_info")
+      .select("bonifico_attivo")
+      .eq("id", 1)
+      .single()
+      .then(({ data, error }) => {
+        if (error || !data) return
+        setBonificoAttivo(data.bonifico_attivo !== false)
+      })
+
     // Vista pubblica su app_settings (ricevuta_iban / ricevuta_intestazione):
     // stessi dati che l'admin gestisce in Impostazioni per la ricevuta PDF.
     supabase
@@ -140,12 +155,17 @@ export function RegistrationForm() {
     control,
     register,
     handleSubmit,
+    setValue,
     watch,
     formState: { errors, isSubmitting },
   } = useForm<RegistrationFormValues>({
     resolver: zodResolver(registrationSchema),
     defaultValues: registrationDefaultValues,
   })
+
+  React.useEffect(() => {
+    if (!bonificoAttivo) setValue("paymentMethod", "sul_posto")
+  }, [bonificoAttivo, setValue])
 
   const workshop = watch("workshop")
   const battleCategorie = watch("battleCategorie")
@@ -668,56 +688,73 @@ export function RegistrationForm() {
             <p className="font-[family-name:var(--font-anton)] text-sm uppercase">
               Metodo di pagamento
             </p>
-            <Controller
-              control={control}
-              name="paymentMethod"
-              render={({ field }) => (
-                <RadioGroup value={field.value} onValueChange={field.onChange}>
-                  <label
-                    htmlFor="payment-bonifico"
-                    className={cn(
-                      "flex cursor-pointer items-start gap-3 border p-2.5",
-                      field.value === "bonifico"
-                        ? "border-[#f5d90a] bg-[#1a1a1a]"
-                        : "border-white/15 bg-[#151515]"
-                    )}
-                  >
-                    <RadioGroupItem
-                      id="payment-bonifico"
-                      value="bonifico"
-                      className="mt-0.5"
-                    />
-                    <div>
-                      <p className="text-sm font-semibold">Bonifico bancario</p>
-                      <p className="text-muted-foreground text-xs">
-                        Il posto è confermato solo dopo l&apos;accredito.
-                      </p>
-                    </div>
-                  </label>
-                  <label
-                    htmlFor="payment-sul_posto"
-                    className={cn(
-                      "flex cursor-pointer items-start gap-3 border p-2.5",
-                      field.value === "sul_posto"
-                        ? "border-[#f5d90a] bg-[#1a1a1a]"
-                        : "border-white/15 bg-[#151515]"
-                    )}
-                  >
-                    <RadioGroupItem
-                      id="payment-sul_posto"
-                      value="sul_posto"
-                      className="mt-0.5"
-                    />
-                    <div>
-                      <p className="text-sm font-semibold">Contanti sul posto</p>
-                      <p className="text-xs font-medium text-[#f5d90a]">
-                        +{formatCurrency(ONSITE_SURCHARGE)} di maggiorazione.
-                      </p>
-                    </div>
-                  </label>
-                </RadioGroup>
-              )}
-            />
+            {bonificoAttivo ? (
+              <Controller
+                control={control}
+                name="paymentMethod"
+                render={({ field }) => (
+                  <RadioGroup value={field.value} onValueChange={field.onChange}>
+                    <label
+                      htmlFor="payment-bonifico"
+                      className={cn(
+                        "flex cursor-pointer items-start gap-3 border p-2.5",
+                        field.value === "bonifico"
+                          ? "border-[#f5d90a] bg-[#1a1a1a]"
+                          : "border-white/15 bg-[#151515]"
+                      )}
+                    >
+                      <RadioGroupItem
+                        id="payment-bonifico"
+                        value="bonifico"
+                        className="mt-0.5"
+                      />
+                      <div>
+                        <p className="text-sm font-semibold">Bonifico bancario</p>
+                        <p className="text-muted-foreground text-xs">
+                          Il posto è confermato solo dopo l&apos;accredito.
+                        </p>
+                      </div>
+                    </label>
+                    <label
+                      htmlFor="payment-sul_posto"
+                      className={cn(
+                        "flex cursor-pointer items-start gap-3 border p-2.5",
+                        field.value === "sul_posto"
+                          ? "border-[#f5d90a] bg-[#1a1a1a]"
+                          : "border-white/15 bg-[#151515]"
+                      )}
+                    >
+                      <RadioGroupItem
+                        id="payment-sul_posto"
+                        value="sul_posto"
+                        className="mt-0.5"
+                      />
+                      <div>
+                        <p className="text-sm font-semibold">Contanti sul posto</p>
+                        <p className="text-xs font-medium text-[#f5d90a]">
+                          +{formatCurrency(ONSITE_SURCHARGE)} di maggiorazione.
+                        </p>
+                      </div>
+                    </label>
+                  </RadioGroup>
+                )}
+              />
+            ) : (
+              <div className="flex items-start gap-3 border border-[#f5d90a] bg-[#1a1a1a] p-2.5">
+                <div>
+                  <p className="text-sm font-semibold">Pagamento di persona</p>
+                  <p className="text-muted-foreground text-xs">
+                    Il pagamento con bonifico non è disponibile: ti iscrivi ora e
+                    paghi di persona all&apos;evento.
+                  </p>
+                  {totale.surchargeOnsite > 0 && (
+                    <p className="text-xs font-medium text-[#f5d90a]">
+                      +{formatCurrency(ONSITE_SURCHARGE)} di maggiorazione.
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           <p className="text-muted-foreground text-xs leading-relaxed">

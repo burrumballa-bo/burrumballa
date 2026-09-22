@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { ArrowLeft, Search } from "lucide-react"
+import { ArrowLeft, Search, Swords } from "lucide-react"
 import { toast } from "sonner"
 
 import { cn } from "@/lib/utils"
+import { accoppia2vs2 } from "@/lib/coppie2vs2"
 import { PAYMENT_STATUS_OPTIONS } from "@/lib/paymentStatus"
 import { useRegistrations } from "@/hooks/useRegistrations"
 import { useEventOptionsStato } from "@/hooks/useEventOptionsStato"
@@ -42,6 +43,11 @@ export default function EventoIscrittiPage() {
   const registrations = useMemo(
     () => registrationsQuery.data ?? [],
     [registrationsQuery.data]
+  )
+
+  const senzaCoppiaIds = useMemo(
+    () => new Set(accoppia2vs2(registrations).singoli.map((r) => r.id)),
+    [registrations]
   )
 
   const options = optionsQuery.data ?? []
@@ -85,6 +91,10 @@ export default function EventoIscrittiPage() {
           <ArrowLeft />
         </Button>
         <h1 className="text-2xl font-semibold">Iscritti</h1>
+        <Button className="ml-auto" onClick={() => navigate("/admin/evento/si-balla")}>
+          <Swords />
+          Si balla
+        </Button>
       </div>
 
       {registrationsQuery.isError && (
@@ -130,6 +140,7 @@ export default function EventoIscrittiPage() {
         <RegistrationsTable
           data={filtered}
           onRowClick={(registration) => setSelectedId(registration.id)}
+          senzaCoppiaIds={senzaCoppiaIds}
         />
       )}
 

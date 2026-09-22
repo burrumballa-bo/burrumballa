@@ -32,6 +32,7 @@ export interface UpdateEventInfoInput {
   nota_battle: string | null
   nota_workshop: string | null
   nota_pagamento: string | null
+  bonifico_attivo: boolean
 }
 
 export function useUpdateEventInfo() {

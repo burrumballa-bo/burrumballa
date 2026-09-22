@@ -6,6 +6,7 @@ import ImpostazioniPage from "@/pages/ImpostazioniPage"
 import EventDashboardPage from "@/pages/EventDashboardPage"
 import EventoPaginaPage from "@/pages/EventoPaginaPage"
 import EventoIscrittiPage from "@/pages/EventoIscrittiPage"
+import EventoSiBallaPage from "@/pages/EventoSiBallaPage"
 import ContenutiHomePage from "@/pages/contenuti/ContenutiHomePage"
 import ContenutiCorsiPage from "@/pages/contenuti/ContenutiCorsiPage"
 import ContenutiClassiPage from "@/pages/contenuti/ContenutiClassiPage"
@@ -58,6 +59,14 @@ function App() {
         element={
           <ProtectedRoute>
             <EventoIscrittiPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/evento/si-balla"
+        element={
+          <ProtectedRoute>
+            <EventoSiBallaPage />
           </ProtectedRoute>
         }
       />

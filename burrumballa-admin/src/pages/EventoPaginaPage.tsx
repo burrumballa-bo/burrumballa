@@ -28,6 +28,7 @@ import { isoToDatetimeLocal, datetimeLocalToIso } from "@/lib/datetime"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import {
   Card,
@@ -125,6 +126,7 @@ export default function EventoPaginaPage() {
         nota_battle: eventInfoQuery.data?.nota_battle ?? null,
         nota_workshop: eventInfoQuery.data?.nota_workshop ?? null,
         nota_pagamento: eventInfoQuery.data?.nota_pagamento ?? null,
+        bonifico_attivo: eventInfoQuery.data?.bonifico_attivo ?? true,
       },
       {
         onSuccess: () => toast.success("Info evento salvate."),
@@ -145,6 +147,26 @@ export default function EventoPaginaPage() {
         onSuccess: () => toast.success("Nota salvata."),
         onError: (error) =>
           toast.error("Salvataggio nota non riuscito.", {
+            description: (error as Error).message,
+          }),
+      }
+    )
+  }
+
+  const handleToggleBonifico = (value: boolean) => {
+    if (!eventInfoQuery.data) return
+    const { id, updated_at, ...rest } = eventInfoQuery.data
+    updateEventInfo.mutate(
+      { ...rest, bonifico_attivo: value },
+      {
+        onSuccess: () =>
+          toast.success(
+            value
+              ? "Pagamento con bonifico attivato."
+              : "Pagamento con bonifico disattivato: si pagherà di persona."
+          ),
+        onError: (error) =>
+          toast.error("Salvataggio non riuscito.", {
             description: (error as Error).message,
           }),
       }
@@ -367,6 +389,23 @@ export default function EventoPaginaPage() {
                     un&apos;altra e si imposta in Impostazioni.
                   </p>
                 )}
+              </div>
+
+              <div className="flex items-start justify-between gap-4 border-t pt-4">
+                <div className="space-y-1">
+                  <Label htmlFor="bonifico_attivo">Pagamento con bonifico</Label>
+                  <p className="text-muted-foreground text-xs">
+                    Se disattivato ci si può comunque iscrivere all&apos;evento, ma il
+                    bonifico non viene proposto: il pagamento avverrà di persona.
+                    Salvato subito.
+                  </p>
+                </div>
+                <Switch
+                  id="bonifico_attivo"
+                  checked={eventInfoQuery.data?.bonifico_attivo ?? true}
+                  onCheckedChange={handleToggleBonifico}
+                  disabled={updateEventInfo.isPending}
+                />
               </div>
 
               <div className="border-t pt-4">

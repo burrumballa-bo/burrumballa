@@ -8,7 +8,7 @@ import {
   type Column,
   type SortingState,
 } from "@tanstack/react-table"
-import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react"
+import { ArrowDown, ArrowUp, ArrowUpDown, TriangleAlert } from "lucide-react"
 
 import {
   Table,
@@ -19,13 +19,18 @@ import {
   TableCell,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { formatDateTime } from "@/lib/format"
 import { PAYMENT_STATUS_BADGE_CLASSES, PAYMENT_STATUS_LABELS } from "@/lib/paymentStatus"
 import type { Registration } from "@/types/registration"
 
 interface RegistrationsTableProps {
   data: Registration[]
   onRowClick: (registration: Registration) => void
+  /** Iscritti alla 2vs2 Open senza crew/partner corrispondente. */
+  senzaCoppiaIds?: Set<string>
 }
+
+const SENZA_COPPIA_TOOLTIP = "crew o partner non trovato"
 
 function SortableHeader({
   column,
@@ -50,7 +55,11 @@ function SortableHeader({
   )
 }
 
-export function RegistrationsTable({ data, onRowClick }: RegistrationsTableProps) {
+export function RegistrationsTable({
+  data,
+  onRowClick,
+  senzaCoppiaIds,
+}: RegistrationsTableProps) {
   const [sorting, setSorting] = useState<SortingState>([{ id: "cognome", desc: false }])
 
   const columns = useMemo<ColumnDef<Registration>[]>(
@@ -58,6 +67,25 @@ export function RegistrationsTable({ data, onRowClick }: RegistrationsTableProps
       {
         accessorKey: "cognome",
         header: ({ column }) => <SortableHeader column={column} label="Cognome" />,
+        cell: (info) => (
+          <span className="flex items-center gap-1.5">
+            {info.getValue<string>()}
+            {senzaCoppiaIds?.has(info.row.original.id) && (
+              <span className="group relative inline-flex">
+                <TriangleAlert
+                  className="size-4 text-amber-500"
+                  aria-label={SENZA_COPPIA_TOOLTIP}
+                />
+                <span
+                  role="tooltip"
+                  className="bg-popover text-popover-foreground pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 -translate-x-1/2 rounded-md border px-2 py-1 text-xs whitespace-nowrap opacity-0 shadow-md transition-opacity group-hover:opacity-100"
+                >
+                  {SENZA_COPPIA_TOOLTIP}
+                </span>
+              </span>
+            )}
+          </span>
+        ),
       },
       {
         accessorKey: "nome",
@@ -67,6 +95,13 @@ export function RegistrationsTable({ data, onRowClick }: RegistrationsTableProps
         accessorKey: "aka",
         header: ({ column }) => <SortableHeader column={column} label="Aka" />,
         cell: (info) => info.getValue<string | null>() || "—",
+      },
+      {
+        accessorKey: "created_at",
+        header: ({ column }) => <SortableHeader column={column} label="Iscrizione" />,
+        cell: (info) => (
+          <span className="whitespace-nowrap">{formatDateTime(info.getValue<string>())}</span>
+        ),
       },
       {
         accessorKey: "payment_status",
@@ -81,7 +116,7 @@ export function RegistrationsTable({ data, onRowClick }: RegistrationsTableProps
         },
       },
     ],
-    []
+    [senzaCoppiaIds]
   )
 
   const table = useReactTable({
