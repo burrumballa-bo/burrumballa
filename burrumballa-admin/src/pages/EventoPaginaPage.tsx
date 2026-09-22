@@ -93,6 +93,7 @@ export default function EventoPaginaPage() {
           descrizione: eventInfoQuery.data.descrizione ?? "",
           luogo: eventInfoQuery.data.luogo ?? "",
           testi_informativi: eventInfoQuery.data.testi_informativi ?? "",
+          email_mittente: eventInfoQuery.data.email_mittente ?? "",
           scadenza_iscrizioni: isoToDatetimeLocal(
             eventInfoQuery.data.scadenza_iscrizioni
           ),
@@ -117,6 +118,7 @@ export default function EventoPaginaPage() {
         descrizione: values.descrizione || null,
         luogo: values.luogo || null,
         testi_informativi: values.testi_informativi || null,
+        email_mittente: values.email_mittente || null,
         scadenza_iscrizioni: scadenzaIso,
         // Non gestite in questo form: si salvano da sole nelle rispettive
         // sezioni (vedi handleSaveNoteField), qui si preservano invariate.
@@ -342,6 +344,29 @@ export default function EventoPaginaPage() {
                   placeholder="Regolamento, info pratiche, ecc."
                   {...register("testi_informativi")}
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email_mittente">Email mittente</Label>
+                <Input
+                  id="email_mittente"
+                  type="email"
+                  placeholder="senticomesuona@burrumballa.it"
+                  aria-invalid={!!errors.email_mittente}
+                  {...register("email_mittente")}
+                />
+                {errors.email_mittente ? (
+                  <p className="text-destructive text-sm">
+                    {errors.email_mittente.message}
+                  </p>
+                ) : (
+                  <p className="text-muted-foreground text-xs">
+                    Indirizzo da cui partono le email dell&apos;evento (conferma
+                    iscrizione e ricevuta di pagamento) e a cui arrivano le
+                    risposte degli iscritti. L&apos;email dei contatti del sito è
+                    un&apos;altra e si imposta in Impostazioni.
+                  </p>
+                )}
               </div>
 
               <div className="border-t pt-4">

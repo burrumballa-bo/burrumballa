@@ -9,6 +9,16 @@ export const eventInfoSchema = z.object({
   descrizione: z.string().trim(),
   luogo: z.string().trim(),
   testi_informativi: z.string().trim(),
+  // Facoltativa: se resta vuota le Edge Functions ricadono sul mittente
+  // SMTP configurato nei secret, quindi vale la pena validarla solo
+  // quando c'è qualcosa da validare.
+  email_mittente: z
+    .string()
+    .trim()
+    .refine(
+      (value) => value === "" || z.string().email().safeParse(value).success,
+      "Inserisci un indirizzo email valido."
+    ),
   scadenza_iscrizioni: z
     .string()
     .trim()
@@ -26,5 +36,6 @@ export const emptyEventInfoFormValues: EventInfoFormValues = {
   descrizione: "",
   luogo: "",
   testi_informativi: "",
+  email_mittente: "",
   scadenza_iscrizioni: "",
 }

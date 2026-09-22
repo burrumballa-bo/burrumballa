@@ -46,7 +46,7 @@ export default function ImpostazioniPage() {
     resolver: zodResolver(appSettingsSchema),
     values: settingsQuery.data
       ? {
-          email_mittente: settingsQuery.data.email_mittente ?? "",
+          email_contatti: settingsQuery.data.email_contatti ?? "",
           ricevuta_intestazione: settingsQuery.data.ricevuta_intestazione ?? "",
           ricevuta_indirizzo: settingsQuery.data.ricevuta_indirizzo ?? "",
           ricevuta_piva_cf: settingsQuery.data.ricevuta_piva_cf ?? "",
@@ -132,23 +132,28 @@ export default function ImpostazioniPage() {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>Email mittente</CardTitle>
+            <CardTitle>Email contatti</CardTitle>
             <CardDescription>
-              Indirizzo usato come mittente delle email e per il recupero password.
+              Indirizzo a cui arrivano i messaggi del form contatti del sito
+              (home, popup &quot;iscriviti a un corso&quot; e &quot;lezione di
+              prova&quot;). È anche il contatto pubblico mostrato
+              nell&apos;informativa privacy. Il mittente delle email
+              dell&apos;evento si imposta invece in Evento → Modifica pagina
+              evento.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
-            <Label htmlFor="email_mittente">Email mittente</Label>
+            <Label htmlFor="email_contatti">Email contatti</Label>
             <Input
-              id="email_mittente"
+              id="email_contatti"
               type="email"
               placeholder="info@burrumballa.it"
-              aria-invalid={!!errors.email_mittente}
-              {...register("email_mittente")}
+              aria-invalid={!!errors.email_contatti}
+              {...register("email_contatti")}
             />
-            {errors.email_mittente && (
+            {errors.email_contatti && (
               <p className="text-destructive text-sm">
-                {errors.email_mittente.message}
+                {errors.email_contatti.message}
               </p>
             )}
           </CardContent>

@@ -1,10 +1,10 @@
 import { z } from "zod"
 
 export const appSettingsSchema = z.object({
-  email_mittente: z
+  email_contatti: z
     .string()
     .trim()
-    .min(1, "L'email mittente è obbligatoria.")
+    .min(1, "L'email contatti è obbligatoria.")
     .email("Inserisci un indirizzo email valido."),
   ricevuta_intestazione: z
     .string()
@@ -25,7 +25,7 @@ export const appSettingsSchema = z.object({
 export type AppSettingsFormValues = z.infer<typeof appSettingsSchema>
 
 export const emptyAppSettingsFormValues: AppSettingsFormValues = {
-  email_mittente: "",
+  email_contatti: "",
   ricevuta_intestazione: "",
   ricevuta_indirizzo: "",
   ricevuta_piva_cf: "",

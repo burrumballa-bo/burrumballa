@@ -27,6 +27,7 @@ export interface UpdateEventInfoInput {
   descrizione: string | null
   luogo: string | null
   testi_informativi: string | null
+  email_mittente: string | null
   scadenza_iscrizioni: string
   nota_battle: string | null
   nota_workshop: string | null

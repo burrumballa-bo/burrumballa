@@ -8,6 +8,9 @@ export interface EventInfo {
   descrizione: string | null
   luogo: string | null
   testi_informativi: string | null
+  /** Mittente delle email dell'evento (conferma iscrizione, ricevuta di
+   *  pagamento). Vuoto = si usa il mittente SMTP di default. */
+  email_mittente: string | null
   scadenza_iscrizioni: string
   nota_battle: string | null
   nota_workshop: string | null

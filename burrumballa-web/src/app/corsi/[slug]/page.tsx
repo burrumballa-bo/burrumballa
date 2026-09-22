@@ -198,7 +198,7 @@ export default async function CorsoPage({ params }: CorsoPageProps) {
 
       {/* ISCRIVITI */}
       <div className="mx-auto mt-14 max-w-[1200px] px-6">
-        <CorsiJoinBand content={corsiContent.join} />
+        <CorsiJoinBand content={corsiContent.join} courseName={course.name} />
       </div>
     </SiteShell>
   );

@@ -27,7 +27,7 @@ export const DEFAULT_HOME_CONTENT: HomeContent = {
     text: "ISCRIZIONI APERTE ✦ OPEN CLASS ✦ BATTLE NIGHT ✦ APERICREATIVO ✦ FREEDAY TRAINING ✦ ",
   },
   about: {
-    kicker: "chi siamo",
+    enabled: true,
     title: "Burrumballa, scuola di danza hip hop a Bologna",
     body: "Burrumballa è una scuola di danza urbana e collettivo hip hop nato al Circolo La Fattoria di Bologna. Corsi di breaking, hip hop, house e popping per bambini, ragazzi e adulti di ogni livello, più eventi, battle e serate aperte a tutto il quartiere: non una palestra, una crew vera.",
   },
@@ -77,6 +77,13 @@ export const DEFAULT_HOME_CONTENT: HomeContent = {
           "Sì. Le iscrizioni restano aperte tutto l'anno: se nel corso che ti interessa c'è ancora posto puoi entrare in qualsiasi momento.",
       },
     ],
+  },
+  contact: {
+    kicker: "scrivici",
+    title: "Parliamone",
+    subtitle:
+      "Vuoi iscriverti, prenotare una lezione di prova o solo capire se fa per te? Scrivici qui: ti rispondiamo noi, non un bot.",
+    note: "Ti rispondiamo via email, di solito entro un paio di giorni.",
   },
   ctaBand: {
     title: "Entra nella crew.",

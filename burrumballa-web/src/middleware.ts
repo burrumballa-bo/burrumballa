@@ -14,9 +14,14 @@ const PREVIEW_COOKIE_MAX_AGE = 60 * 60 * 24 * 90 // 90 giorni
 // quindi il `.*\..*` del matcher qui sotto non li esclude. Senza questa
 // riga il gate coming-soon risponderebbe HTML al posto dell'immagine e il
 // browser mostrerebbe l'icona generica.
+// /api sono endpoint, non pagine: il gate coming-soon li riscriverebbe
+// sulla pagina di attesa, che a una POST risponde 405 (è il caso del form
+// contatti, /api/contatti). Un endpoint o esiste o dà errore, non diventa
+// mai HTML.
 const PUBLIC_PREFIXES = [
   "/eventi/senti-come-suona",
   "/coming-soon",
+  "/api",
   "/icon",
   "/apple-icon",
   "/logo",

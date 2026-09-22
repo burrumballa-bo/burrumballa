@@ -177,7 +177,7 @@ export const homeContentSchema = z.object({
   }),
   marquee: z.object({ text: optionalText }),
   about: z.object({
-    kicker: optionalText,
+    enabled: z.boolean(),
     title: required("Il titolo della sezione chi siamo"),
     body: optionalText,
   }),
@@ -197,6 +197,12 @@ export const homeContentSchema = z.object({
     title: required("Il titolo della sezione domande"),
     subtitle: optionalText,
     items: z.array(faqItemSchema),
+  }),
+  contact: z.object({
+    kicker: optionalText,
+    title: required("Il titolo della sezione contatti"),
+    subtitle: optionalText,
+    note: optionalText,
   }),
   ctaBand: z.object({ title: required("Il titolo della cta finale"), subtitle: optionalText }),
 })

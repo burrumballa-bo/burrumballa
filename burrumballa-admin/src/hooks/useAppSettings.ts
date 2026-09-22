@@ -78,7 +78,7 @@ export function useUpdateAppSettings() {
       const { error } = await supabase
         .from("app_settings")
         .update({
-          email_mittente: values.email_mittente,
+          email_contatti: values.email_contatti,
           ricevuta_intestazione: values.ricevuta_intestazione,
           ricevuta_indirizzo: values.ricevuta_indirizzo || null,
           ricevuta_piva_cf: values.ricevuta_piva_cf || null,

@@ -1,16 +1,22 @@
-import Link from "next/link"
-
+import { ContactCtaButton } from "@/components/contact/ContactCtaButton"
+import { courseSignupIntent } from "@/lib/contact/intents"
 import type { CorsiContent } from "@/lib/cms/types"
 import { Kicker } from "./Kicker"
 
 interface CorsiJoinBandProps {
   content: CorsiContent["join"]
+  /** Nome del corso, quando la banda chiude la pagina di un corso: entra nel
+   *  messaggio già scritto nel popup contatti. Assente nella pagina Corsi,
+   *  dove la richiesta resta generica. */
+  courseName?: string
 }
 
 // Banda finale "Iscriviti a un corso": stessa card mostrata in fondo alla
 // pagina Corsi e in ogni pagina di dettaglio corso, sempre sourced dal
 // contenuto configurabile in Contenuti — Corsi (site_pages "corsi".join).
-export function CorsiJoinBand({ content }: CorsiJoinBandProps) {
+// La CTA apre il popup contatti (vedi ContactDialogProvider) invece di
+// portare altrove: da qui si scrive alla scuola, non si cambia pagina.
+export function CorsiJoinBand({ content, courseName }: CorsiJoinBandProps) {
   return (
     <div className="bg-bb-ink text-bb-cream grid grid-cols-1 items-center gap-8 p-8 md:grid-cols-[1.3fr_1fr] md:p-10">
       <div>
@@ -21,12 +27,12 @@ export function CorsiJoinBand({ content }: CorsiJoinBandProps) {
         <p className="text-bb-cream/75 max-w-[440px] text-[15px] leading-relaxed">{content.body}</p>
       </div>
       <div className="flex flex-col gap-3">
-        <Link
-          href="/eventi"
-          className="bg-bb-green px-5.5 py-4 text-center text-base font-bold text-[#1a1a1a]"
+        <ContactCtaButton
+          intent={courseSignupIntent(courseName)}
+          className="bg-bb-green w-full px-5.5 py-4 text-center text-base font-bold text-[#1a1a1a]"
         >
           {content.ctaLabel} →
-        </Link>
+        </ContactCtaButton>
         <div className="text-bb-cream/55 text-center text-[13px]">{content.note}</div>
       </div>
     </div>

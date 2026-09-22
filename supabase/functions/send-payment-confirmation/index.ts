@@ -14,7 +14,7 @@
 //   SMTP_USER   - utente/casella SMTP
 //   SMTP_PASS   - password della casella SMTP
 //   SMTP_FROM   - mittente di fallback "Nome <email@dominio>",
-//                 usato solo se app_settings.email_mittente e' vuoto
+//                 usato solo se event_info.email_mittente e' vuoto
 //                 (opzionale, default SMTP_USER)
 //
 // SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY sono iniettate automaticamente
@@ -86,7 +86,6 @@ interface Registration {
 }
 
 interface AppSettings {
-  email_mittente: string | null
   ricevuta_intestazione: string | null
   ricevuta_indirizzo: string | null
   ricevuta_piva_cf: string | null
@@ -511,12 +510,23 @@ Deno.serve(async (req: Request) => {
     const { data: settingsRow, error: settingsError } = await supabaseAdmin
       .from("app_settings")
       .select(
-        "email_mittente, ricevuta_intestazione, ricevuta_indirizzo, ricevuta_piva_cf, ricevuta_iban, ricevuta_note, timbro_url"
+        "ricevuta_intestazione, ricevuta_indirizzo, ricevuta_piva_cf, ricevuta_iban, ricevuta_note, timbro_url"
       )
       .eq("id", 1)
       .single<AppSettings>()
 
     if (settingsError) throw new Error(`Impostazioni non disponibili: ${settingsError.message}`)
+
+    // Il mittente e' quello dell'evento (event_info.email_mittente), non
+    // piu' quello delle impostazioni generali: in Impostazioni ora c'e'
+    // l'email dei contatti del sito, che e' un'altra cosa.
+    const { data: eventInfo } = await supabaseAdmin
+      .from("event_info")
+      .select("email_mittente")
+      .eq("id", 1)
+      .maybeSingle<{ email_mittente: string | null }>()
+
+    const senderAddress = eventInfo?.email_mittente?.trim() || null
 
     const chiavi = [
       ...(registration.workshop ? [registration.workshop] : []),
@@ -553,10 +563,10 @@ Deno.serve(async (req: Request) => {
       stampBytes,
     })
 
-    const fromAddress = settingsRow.email_mittente
+    const fromAddress = senderAddress
       ? settingsRow.ricevuta_intestazione
-        ? `${settingsRow.ricevuta_intestazione} <${settingsRow.email_mittente}>`
-        : settingsRow.email_mittente
+        ? `${settingsRow.ricevuta_intestazione} <${senderAddress}>`
+        : senderAddress
       : SMTP_FROM_FALLBACK
 
     const smtpClient = new SMTPClient({

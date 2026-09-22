@@ -1,5 +1,6 @@
 import type { ReactNode } from "react"
 
+import { ContactDialogProvider } from "@/components/contact/ContactDialogProvider"
 import { getHeaderLogoSrc, getThemeContent } from "@/lib/cms/queries"
 import type { FooterContent, ThemeColors } from "@/lib/cms/types"
 import { isValidHexColor } from "@/lib/color"
@@ -65,9 +66,14 @@ export async function SiteShell({ active, footer, children }: SiteShellProps) {
     >
       {isDark && <style dangerouslySetInnerHTML={{ __html: buildDarkThemeCss(theme.dark) }} />}
       <WallBackground />
-      <SiteNav active={active} logoUrl={logoUrl} />
-      <div className="pb-12 md:pb-12.5">{children}</div>
-      <SiteFooter content={footer} logoUrl={logoUrl} />
+      {/* Il popup contatti vive qui dentro, non fuori: anche in top layer un
+          <dialog> eredita lo stile dalla sua posizione nel DOM, quindi deve
+          stare sotto al nodo `.dark` per prendere la palette del tema. */}
+      <ContactDialogProvider>
+        <SiteNav active={active} logoUrl={logoUrl} />
+        <div className="pb-12 md:pb-12.5">{children}</div>
+        <SiteFooter content={footer} logoUrl={logoUrl} />
+      </ContactDialogProvider>
     </div>
   )
 }

@@ -43,7 +43,7 @@ function LevelBadgesRow({
       {course.levels.map((level) => (
         <div
           key={level.id}
-          className="border-bb-ink bg-bb-surface flex min-h-[92px] flex-col justify-center border-2 p-3"
+          className="bg-bb-surface flex min-h-23 flex-col justify-center p-3"
           style={{ flexShrink: 0, flexBasis: basis }}
         >
           <div className="font-display text-sm">{level.level}</div>
@@ -65,8 +65,16 @@ function LevelBadges({ course }: { course: CourseWithLevels }) {
 
   return (
     <>
-      <LevelBadgesRow course={course} cols={mobileCols} className="flex sm:hidden" />
-      <LevelBadgesRow course={course} cols={desktopCols} className="hidden sm:flex" />
+      <LevelBadgesRow
+        course={course}
+        cols={mobileCols}
+        className="flex sm:hidden"
+      />
+      <LevelBadgesRow
+        course={course}
+        cols={desktopCols}
+        className="hidden sm:flex"
+      />
     </>
   );
 }
@@ -109,7 +117,6 @@ function FeaturedDiscipline({
             className="font-display-alt text-[46px] leading-[0.9] md:text-[62px]"
             style={{
               color: course.color,
-              WebkitTextStroke: "1.5px var(--color-bb-ink)",
             }}
           >
             {course.name.toUpperCase()}

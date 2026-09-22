@@ -30,7 +30,9 @@ export interface FaqItem {
 export interface HomeContent {
   hero: HomeHeroContent
   marquee: { text: string }
-  about: { kicker: string; title: string; body: string }
+  /** Paragrafo SEO/AI sopra il programma: con `enabled` a false il blocco
+   *  non viene renderizzato (interruttore in /admin/contenuti/home). */
+  about: { enabled: boolean; title: string; body: string }
   calendar: { kicker: string; title: string; subLabel: string }
   corsiSection: { kicker: string; title: string }
   eventsSection: { kicker: string; title: string }
@@ -39,6 +41,9 @@ export interface HomeContent {
    *  riordinabile e svuotabile da /admin/contenuti/home). Con `items` vuoto
    *  la sezione non viene renderizzata. */
   faq: { kicker: string; title: string; subtitle: string; items: FaqItem[] }
+  /** Sezione "scrivici" in fondo alla home: testi attorno al form contatti,
+   *  che recapita i messaggi all'email impostata in admin → Impostazioni. */
+  contact: { kicker: string; title: string; subtitle: string; note: string }
   ctaBand: { title: string; subtitle: string }
 }
 

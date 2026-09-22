@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { MediaUploadField } from "@/components/MediaUploadField"
 import { HomeFaqFields } from "@/components/HomeFaqFields"
@@ -116,9 +117,19 @@ export default function ContenutiHomePage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="about-kicker">Kicker</Label>
-              <Input id="about-kicker" {...register("about.kicker")} />
+            <div className="flex items-center justify-between gap-4">
+              <div className="space-y-0.5">
+                <Label htmlFor="about-enabled">Mostra la sezione</Label>
+                <p className="text-muted-foreground text-xs">
+                  Disattivato: il blocco non compare in home (il teaser &quot;chi siamo&quot; più
+                  in basso resta comunque visibile).
+                </p>
+              </div>
+              <Switch
+                id="about-enabled"
+                checked={watch("about.enabled")}
+                onCheckedChange={(value) => setValue("about.enabled", value, { shouldDirty: true })}
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="about-title">Titolo</Label>
@@ -239,6 +250,46 @@ export default function ContenutiHomePage() {
           </CardHeader>
           <CardContent>
             <HomeFaqFields control={control} register={register} errors={errors} />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Sezione contatti</CardTitle>
+            <CardDescription>
+              Testi attorno al form contatti in fondo alla home. I messaggi
+              inviati dal form arrivano all&apos;indirizzo configurato in
+              Impostazioni → Email contatti.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="contact-kicker">Kicker</Label>
+              <Input id="contact-kicker" {...register("contact.kicker")} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="contact-title">Titolo</Label>
+              <Input
+                id="contact-title"
+                aria-invalid={!!errors.contact?.title}
+                {...register("contact.title")}
+              />
+              {errors.contact?.title && (
+                <p className="text-destructive text-sm">{errors.contact.title.message}</p>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="contact-subtitle">Sottotitolo</Label>
+              <Textarea id="contact-subtitle" rows={2} {...register("contact.subtitle")} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="contact-note">Nota sotto il form</Label>
+              <Input
+                id="contact-note"
+                placeholder="es. Ti rispondiamo via email entro un paio di giorni."
+                {...register("contact.note")}
+              />
+            </div>
           </CardContent>
         </Card>
 

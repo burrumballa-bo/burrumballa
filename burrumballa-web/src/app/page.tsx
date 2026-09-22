@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { ContactCtaButton } from "@/components/contact/ContactCtaButton";
+import { ContactForm } from "@/components/contact/ContactForm";
 import { Chip } from "@/components/site/Chip";
 import { FaqAccordion } from "@/components/site/FaqAccordion";
 import { Kicker } from "@/components/site/Kicker";
@@ -19,6 +21,11 @@ import {
   getHomeContent,
 } from "@/lib/cms/queries";
 import { textColorFor } from "@/lib/color";
+import {
+  GENERAL_CONTACT_TOPIC,
+  courseSignupIntent,
+  trialLessonIntent,
+} from "@/lib/contact/intents";
 import { rowNeedsCentering } from "@/lib/gridWrap";
 import { cn } from "@/lib/utils";
 
@@ -96,8 +103,6 @@ export default async function HomePage() {
               {content.hero.titleLine2}
               <br />
               <span className="relative inline-block">
-                {/* Masca */}
-                {/* <SprayBlob className="text-bb-purple pointer-events-none absolute -inset-x-6 -top-7 -bottom-3 -z-10 hidden -rotate-1 dark:block" /> */}
                 <span
                   className="text-transparent"
                   style={{ WebkitTextStroke: "2.5px var(--hero-stroke-color)" }}
@@ -109,19 +114,22 @@ export default async function HomePage() {
             <p className="mt-5 max-w-[430px] text-[16px] leading-relaxed">
               {content.hero.subtitle}
             </p>
+            {/* Le due CTA della hero aprono il popup contatti (vedi
+                ContactDialogProvider) con un messaggio già iniziato: da qui
+                si scrive alla scuola, non si va a leggere un'altra pagina. */}
             <div className="mt-6 flex flex-wrap gap-3">
-              <Link
-                href="/corsi"
+              <ContactCtaButton
+                intent={courseSignupIntent()}
                 className="bg-bb-ink text-bb-cream px-5 py-3.5 text-[15px] font-bold"
               >
                 Iscriviti a un corso →
-              </Link>
-              <Link
-                href="/corsi"
+              </ContactCtaButton>
+              <ContactCtaButton
+                intent={trialLessonIntent()}
                 className="border-bb-ink border-[2.5px] px-5 py-3.5 text-[15px] font-bold"
               >
                 Lezione di prova
-              </Link>
+              </ContactCtaButton>
             </div>
             <div className="mt-6 flex flex-wrap gap-2">
               {courses.map((course, index) => (
@@ -160,49 +168,52 @@ export default async function HomePage() {
       <Marquee text={content.marquee.text} />
 
       {/* CHI SIAMO — sezione SEO/AI: testo pieno, leggibile da motori di
-          ricerca e assistenti AI, sopra il programma. */}
-      <section
-        aria-labelledby="chi-siamo-breve-title"
-        className="mx-auto max-w-300 px-6 pt-12 pb-2"
-      >
-        <div className="bg-bb-purple/25 border-bb-ink border-[3px] p-8 text-center text-white backdrop-blur-md md:p-10">
-          <h2
-            id="chi-siamo-breve-title"
-            className="font-display mt-1 text-[28px] tracking-[-1.5px] md:text-[36px] text-center"
-          >
-            {content.about.title}
-          </h2>
-          <p className="mt-3.5 text-[16px] leading-relaxed text-center">
-            {content.about.body}
-          </p>
-        </div>
+          ricerca e assistenti AI, sopra il programma. Si nasconde
+          dall'admin (contenuti → home). */}
+      {content.about.enabled && (
+        <section
+          aria-labelledby="chi-siamo-breve-title"
+          className="mx-auto max-w-300 px-6 pt-12"
+        >
+          <div className="bg-bb-purple/25 border-bb-ink border-[3px] p-8 text-center text-white backdrop-blur-md md:p-10">
+            <h2
+              id="chi-siamo-breve-title"
+              className="font-display mt-1 text-[28px] tracking-[-1.5px] md:text-[36px] text-center"
+            >
+              {content.about.title}
+            </h2>
+            <p className="mt-3.5 text-[16px] leading-relaxed text-center">
+              {content.about.body}
+            </p>
+          </div>
+        </section>
+      )}
 
-        {/* CHI SIAMO TEASER */}
-        <div className="mx-auto mt-12 max-w-300">
-          <div className="bg-bb-ink text-bb-cream grid grid-cols-1 overflow-hidden md:grid-cols-2">
-            <div className="relative min-h-55 md:min-h-70">
-              <Media
-                src={content.aboutTeaser.imageUrl}
-                alt=""
-                fallbackColor="#7e3fae"
-                className="absolute inset-0 h-full w-full object-cover"
-              />
-            </div>
-            <div className="p-8 md:p-11">
-              <Kicker color="#8be03c">{content.aboutTeaser.kicker}</Kicker>
-              <h2 className="font-display mt-2 mb-4 text-[30px] leading-none tracking-[-1px] md:text-[38px]">
-                {content.aboutTeaser.title}
-              </h2>
-              <p className="text-bb-cream/75 max-w-105 text-[15px] leading-relaxed">
-                {content.aboutTeaser.body}
-              </p>
-              <Link
-                href="/chi-siamo"
-                className="bg-bb-green mt-5 inline-block px-5 py-3 text-sm font-bold text-[#1a1a1a]"
-              >
-                Scopri chi siamo →
-              </Link>
-            </div>
+      {/* CHI SIAMO TEASER */}
+      <section className="mx-auto max-w-300 px-6 pt-12 pb-2">
+        <div className="bg-bb-ink text-bb-cream grid grid-cols-1 overflow-hidden md:grid-cols-2">
+          <div className="relative min-h-55 md:min-h-70">
+            <Media
+              src={content.aboutTeaser.imageUrl}
+              alt=""
+              fallbackColor="#7e3fae"
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          </div>
+          <div className="p-8 md:p-11">
+            <Kicker color="#8be03c">{content.aboutTeaser.kicker}</Kicker>
+            <h2 className="font-display mt-2 mb-4 text-[30px] leading-none tracking-[-1px] md:text-[38px]">
+              {content.aboutTeaser.title}
+            </h2>
+            <p className="text-bb-cream/75 max-w-105 text-[15px] leading-relaxed">
+              {content.aboutTeaser.body}
+            </p>
+            <Link
+              href="/chi-siamo"
+              className="bg-bb-green mt-5 inline-block px-5 py-3 text-sm font-bold text-[#1a1a1a]"
+            >
+              Scopri chi siamo →
+            </Link>
           </div>
         </div>
       </section>
@@ -392,6 +403,37 @@ export default async function HomePage() {
         </section>
       )}
 
+      {/* CONTATTI — il form scrive all'indirizzo configurato in admin →
+          Impostazioni (Email contatti); i testi arrivano da Contenuti — Home. */}
+      <section
+        id="contatti"
+        aria-labelledby="contatti-title"
+        className="mx-auto max-w-[1200px] px-6 pt-14 pb-4 scroll-mt-20"
+      >
+        <div className="grid grid-cols-1 items-start gap-8 md:grid-cols-[0.85fr_1.15fr] md:gap-10">
+          <div>
+            <Kicker color="#8be03c" className="-rotate-1">
+              {content.contact.kicker}
+            </Kicker>
+            <h2
+              id="contatti-title"
+              className="font-display mt-2 text-[32px] leading-[0.95] tracking-[-1.5px] md:text-[42px]"
+            >
+              {content.contact.title}
+            </h2>
+            <p className="mt-3.5 max-w-[440px] text-[16px] leading-relaxed">
+              {content.contact.subtitle}
+            </p>
+          </div>
+          <div className="border-bb-ink bg-bb-surface border-[3px] p-6 md:p-8">
+            <ContactForm
+              topic={GENERAL_CONTACT_TOPIC}
+              note={content.contact.note}
+            />
+          </div>
+        </div>
+      </section>
+
       {/* CTA BAND */}
       <div className="mx-auto mt-10 max-w-[1200px] px-6">
         <div className="bg-bb-pink border-bb-ink border-[3px] p-8 text-center text-white md:p-10">
@@ -401,12 +443,12 @@ export default async function HomePage() {
           <p className="mt-2.5 mb-5 text-[16px] opacity-95">
             {content.ctaBand.subtitle}
           </p>
-          <Link
-            href="/corsi"
+          <ContactCtaButton
+            intent={courseSignupIntent()}
             className="bg-bb-ink text-bb-cream inline-block px-7 py-4 text-base font-bold"
           >
             Iscriviti a un corso →
-          </Link>
+          </ContactCtaButton>
         </div>
       </div>
     </SiteShell>
