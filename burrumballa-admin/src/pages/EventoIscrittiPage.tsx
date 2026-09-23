@@ -84,6 +84,31 @@ export default function EventoIscrittiPage() {
     ? (registrations.find((r) => r.id === selectedId) ?? null)
     : null
 
+  // Usata sia dal modale sia dal bottone di conferma in tabella: il
+  // successMessage serve solo al secondo, dove non c'è il badge di stato
+  // sott'occhio a fare da conferma visiva.
+  const changeStatus = (id: string, status: PaymentStatus, successMessage?: string) =>
+    updateStatus.mutate(
+      { id, paymentStatus: status },
+      {
+        onSuccess: (result) => {
+          if (result.emailStatus === "sent") {
+            toast.success("Ricevuta di pagamento inviata via email.")
+          } else if (result.emailStatus === "failed") {
+            toast.error("Stato aggiornato, ma l'invio della ricevuta non è riuscito.", {
+              description: result.emailError,
+            })
+          } else if (successMessage) {
+            toast.success(successMessage)
+          }
+        },
+        onError: (error) =>
+          toast.error("Aggiornamento stato non riuscito.", {
+            description: (error as Error).message,
+          }),
+      }
+    )
+
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6 md:p-8">
       <div className="flex items-center gap-3">
@@ -141,6 +166,10 @@ export default function EventoIscrittiPage() {
           data={filtered}
           onRowClick={(registration) => setSelectedId(registration.id)}
           senzaCoppiaIds={senzaCoppiaIds}
+          confirmingId={updateStatus.isPending ? (updateStatus.variables?.id ?? null) : null}
+          onConfirmPayment={(registration, status) =>
+            changeStatus(registration.id, status, "Stato pagamento aggiornato.")
+          }
         />
       )}
 
@@ -165,27 +194,7 @@ export default function EventoIscrittiPage() {
                 }),
             })
           }
-          onStatusChange={(status) =>
-            updateStatus.mutate(
-              { id: selected.id, paymentStatus: status },
-              {
-                onSuccess: (result) => {
-                  if (result.emailStatus === "sent") {
-                    toast.success("Ricevuta di pagamento inviata via email.")
-                  } else if (result.emailStatus === "failed") {
-                    toast.error(
-                      "Stato aggiornato, ma l'invio della ricevuta non è riuscito.",
-                      { description: result.emailError }
-                    )
-                  }
-                },
-                onError: (error) =>
-                  toast.error("Aggiornamento stato non riuscito.", {
-                    description: (error as Error).message,
-                  }),
-              }
-            )
-          }
+          onStatusChange={(status) => changeStatus(selected.id, status)}
           onNoteChange={(note) => updateNote.mutate({ id: selected.id, noteAdmin: note })}
           onDelete={() =>
             deleteRegistration.mutate(selected.id, {

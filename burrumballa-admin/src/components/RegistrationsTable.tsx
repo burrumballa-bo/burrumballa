@@ -8,7 +8,7 @@ import {
   type Column,
   type SortingState,
 } from "@tanstack/react-table"
-import { ArrowDown, ArrowUp, ArrowUpDown, TriangleAlert } from "lucide-react"
+import { ArrowDown, ArrowUp, ArrowUpDown, Loader2, TriangleAlert } from "lucide-react"
 
 import {
   Table,
@@ -19,15 +19,24 @@ import {
   TableCell,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { formatDateTime } from "@/lib/format"
-import { PAYMENT_STATUS_BADGE_CLASSES, PAYMENT_STATUS_LABELS } from "@/lib/paymentStatus"
-import type { Registration } from "@/types/registration"
+import {
+  PAYMENT_CONFIRM_ACTIONS,
+  PAYMENT_STATUS_BADGE_CLASSES,
+  PAYMENT_STATUS_LABELS,
+} from "@/lib/paymentStatus"
+import type { PaymentStatus, Registration } from "@/types/registration"
 
 interface RegistrationsTableProps {
   data: Registration[]
   onRowClick: (registration: Registration) => void
   /** Iscritti alla 2vs2 Open senza crew/partner corrispondente. */
   senzaCoppiaIds?: Set<string>
+  /** Conferma il pagamento nello stato coerente col metodo scelto. */
+  onConfirmPayment?: (registration: Registration, status: PaymentStatus) => void
+  /** Id dell'iscritto con una conferma in corso (mostra lo spinner). */
+  confirmingId?: string | null
 }
 
 const SENZA_COPPIA_TOOLTIP = "crew o partner non trovato"
@@ -59,6 +68,8 @@ export function RegistrationsTable({
   data,
   onRowClick,
   senzaCoppiaIds,
+  onConfirmPayment,
+  confirmingId,
 }: RegistrationsTableProps) {
   const [sorting, setSorting] = useState<SortingState>([{ id: "cognome", desc: false }])
 
@@ -115,8 +126,41 @@ export function RegistrationsTable({
           )
         },
       },
+      {
+        id: "conferma",
+        header: () => <span className="sr-only">Conferma pagamento</span>,
+        enableSorting: false,
+        cell: (info) => {
+          const registration = info.row.original
+          const action = PAYMENT_CONFIRM_ACTIONS[registration.payment_method]
+          const isPending = confirmingId === registration.id
+
+          // Già nello stato target: niente da confermare.
+          if (registration.payment_status === action.status) {
+            return <span className="text-muted-foreground block text-right">—</span>
+          }
+
+          return (
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isPending || !onConfirmPayment}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onConfirmPayment?.(registration, action.status)
+                }}
+              >
+                {isPending && <Loader2 className="animate-spin" />}
+                {action.label}
+              </Button>
+            </div>
+          )
+        },
+      },
     ],
-    [senzaCoppiaIds]
+    [senzaCoppiaIds, onConfirmPayment, confirmingId]
   )
 
   const table = useReactTable({

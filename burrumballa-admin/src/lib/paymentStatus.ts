@@ -25,3 +25,13 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   bonifico: "Bonifico",
   sul_posto: "Sul posto",
 }
+
+// Conferma rapida dalla tabella iscritti: ogni metodo di pagamento ha un
+// solo stato "pagato" sensato, quindi il bottone porta direttamente lì.
+export const PAYMENT_CONFIRM_ACTIONS: Record<
+  PaymentMethod,
+  { status: PaymentStatus; label: string }
+> = {
+  bonifico: { status: "pagato_bonifico", label: "Conferma bonifico" },
+  sul_posto: { status: "pagato_in_loco", label: "Pagato in loco" },
+}
