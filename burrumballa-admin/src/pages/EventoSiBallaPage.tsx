@@ -56,9 +56,9 @@ function rigaPersona(r: Registration): Riga {
   }
 }
 
+// Solo l'aka; nome e cognome solo se manca (possibile nelle coppie per crew).
 function etichettaPersona(r: Registration): string {
-  const nome = `${r.nome} ${r.cognome}`
-  return r.aka ? `${nome} - ${r.aka}` : nome
+  return r.aka?.trim() || `${r.nome} ${r.cognome}`
 }
 
 // Le righe presenti nell'ordine salvato vengono prima, nell'ordine
