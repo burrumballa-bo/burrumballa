@@ -1,6 +1,6 @@
 import { useMemo } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
-import { ArrowLeft, Loader2, Printer, Shuffle } from "lucide-react"
+import { ArrowLeft, FileSpreadsheet, Loader2, Printer, Shuffle } from "lucide-react"
 import { toast } from "sonner"
 import { jsPDF } from "jspdf"
 import autoTable from "jspdf-autotable"
@@ -96,13 +96,36 @@ function stampaPdf(titolo: string, sottotitolo: string, columns: string[], righe
     headStyles: { fillColor: [30, 30, 30] },
     columnStyles: { 0: { cellWidth: 10 } },
   })
-  const slug = `${titolo}-${sottotitolo}`
+  doc.save(`${nomeFile(titolo, sottotitolo)}.pdf`)
+}
+
+function nomeFile(titolo: string, sottotitolo: string): string {
+  return `${titolo}-${sottotitolo}`
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "")
-  doc.save(`${slug}.pdf`)
+}
+
+function cellaCsv(value: string): string {
+  return /[";\n\r]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value
+}
+
+// Separatore ";" e BOM UTF-8: è il formato che Excel in italiano apre
+// direttamente in colonne, con gli accenti corretti.
+function stampaCsv(titolo: string, sottotitolo: string, columns: string[], righe: Riga[]) {
+  const linee = [
+    ["#", ...columns],
+    ...righe.map((r, i) => [String(i + 1), ...r.cells]),
+  ].map((cells) => cells.map(cellaCsv).join(";"))
+  const blob = new Blob(["\uFEFF" + linee.join("\r\n")], { type: "text/csv;charset=utf-8" })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement("a")
+  link.href = url
+  link.download = `${nomeFile(titolo, sottotitolo)}.csv`
+  link.click()
+  URL.revokeObjectURL(url)
 }
 
 interface SezioneProps {
@@ -156,6 +179,15 @@ function Sezione({ sezione, titolo, titoloPdf, columns, righe, ordine, vuoto }: 
           >
             <Printer />
             Stampa PDF
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => stampaCsv(titoloPdf, titolo, columns, ordinate)}
+            disabled={righe.length === 0}
+          >
+            <FileSpreadsheet />
+            Stampa CSV
           </Button>
         </div>
       </CardHeader>

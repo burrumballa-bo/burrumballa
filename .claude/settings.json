@@ -21,7 +21,14 @@
       "Bash(echo \"curl_exit=$?\")",
       "Bash(curl -s -o /dev/null http://localhost:3111/)",
       "Bash(ls ~/.supabase 2>/dev/null; timeout 25 supabase migration list --linked 2>&1 | tail -25)",
-      "Read(//Users/francescomascarello/.supabase/**)"
+      "Read(//Users/francescomascarello/.supabase/**)",
+      "Bash(curl -s -b \"bb_preview=1\" http://localhost:3123/)",
+      "Bash(curl -s -b \"bb_preview=1\" http://localhost:3123/corsi/breaking)",
+      "Bash(curl -s -b \"bb_preview=1\" http://localhost:3123/corsi)",
+      "Bash(pkill -f \"next start -p 3123\")",
+      "Bash(deno --version)",
+      "Bash(command -v deno)",
+      "Bash(pkill -f \"next start -p 3126\")"
     ]
   }
 }

@@ -4,6 +4,10 @@
 // email all'iscritto, con guardia anti-doppio-invio su
 // `registrations.email_conferma_bonifico_inviata_at`.
 //
+// Con `resend: true` (bottone "Rimanda ricevuta" nel modale iscritto) la
+// ricevuta viene reinviata a prescindere dalla guardia, per qualsiasi
+// iscrizione gia' pagata (bonifico o in loco).
+//
 // Deploy:
 //   supabase functions deploy send-payment-confirmation
 //
@@ -59,12 +63,17 @@ function jsonResponse(body: unknown, status = 200) {
 
 interface RequestPayload {
   registrationId: string
+  resend?: boolean
 }
 
 function isValidPayload(value: unknown): value is RequestPayload {
   if (!value || typeof value !== "object") return false
   const p = value as Record<string, unknown>
-  return typeof p.registrationId === "string" && p.registrationId.length > 0
+  return (
+    typeof p.registrationId === "string" &&
+    p.registrationId.length > 0 &&
+    (p.resend === undefined || typeof p.resend === "boolean")
+  )
 }
 
 interface Registration {
@@ -81,6 +90,7 @@ interface Registration {
   surcharge_late: number
   surcharge_onsite: number
   amount_total: number
+  prezzo_admin: number | null
   created_at: string
   email_conferma_bonifico_inviata_at: string | null
 }
@@ -123,9 +133,15 @@ function pdfSafeText(text: string): string {
     .join("")
 }
 
+// Il prezzo amministratore, se impostato, e' la cifra effettivamente
+// pagata e sostituisce il totale calcolato dal listino.
+function importoPagato(registration: Registration): number {
+  return registration.prezzo_admin ?? registration.amount_total
+}
+
 interface ReceiptLine {
   label: string
-  amount: number
+  amount: number | null
 }
 
 function buildReceiptLines(
@@ -134,6 +150,22 @@ function buildReceiptLines(
   battleLabels: string[]
 ): ReceiptLine[] {
   const lines: ReceiptLine[] = []
+
+  // Con un prezzo amministratore gli importi di listino non corrispondono
+  // a quanto pagato: elenchiamo le attivita' senza prezzi (niente
+  // sovrapprezzi) e mostriamo solo il totale pagato.
+  if (registration.prezzo_admin !== null) {
+    if (registration.workshop) {
+      lines.push({
+        label: pdfSafeText(`Workshop: ${workshopLabel ?? registration.workshop}`),
+        amount: null,
+      })
+    }
+    if (battleLabels.length > 0) {
+      lines.push({ label: pdfSafeText(`Battle: ${battleLabels.join(", ")}`), amount: null })
+    }
+    return lines
+  }
 
   if (registration.amount_workshop > 0) {
     lines.push({
@@ -326,13 +358,15 @@ async function buildReceiptPdf(params: {
   const lines = buildReceiptLines(registration, workshopLabel, battleLabels)
   for (const line of lines) {
     page.drawText(line.label, { x: colDescX, y, size: 11, font, color: black })
-    page.drawText(formatCurrency(line.amount), {
-      x: colAmountX,
-      y,
-      size: 11,
-      font,
-      color: black,
-    })
+    if (line.amount !== null) {
+      page.drawText(formatCurrency(line.amount), {
+        x: colAmountX,
+        y,
+        size: 11,
+        font,
+        color: black,
+      })
+    }
     y -= 20
   }
 
@@ -346,7 +380,7 @@ async function buildReceiptPdf(params: {
   y -= 25
 
   page.drawText("Totale pagato", { x: colDescX, y, size: 13, font: fontBold, color: black })
-  page.drawText(formatCurrency(registration.amount_total), {
+  page.drawText(formatCurrency(importoPagato(registration)), {
     x: colAmountX,
     y,
     size: 13,
@@ -401,12 +435,18 @@ async function buildReceiptPdf(params: {
   return pdfDoc.save()
 }
 
+function confermaPagamento(registration: Registration): string {
+  return registration.payment_status === "pagato_bonifico"
+    ? "Abbiamo ricevuto il tuo bonifico"
+    : "Abbiamo ricevuto il tuo pagamento"
+}
+
 function buildEmailHtml(registration: Registration, settings: AppSettings): string {
   return `
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
       <h1 style="font-size: 20px;">Pagamento confermato — SENTI COME SUONA vol.3</h1>
       <p>Ciao ${registration.nome},</p>
-      <p>Abbiamo ricevuto il tuo bonifico: la tua iscrizione a <strong>Senti Come Suona vol.3</strong> è confermata.</p>
+      <p>${confermaPagamento(registration)}: la tua iscrizione a <strong>Senti Come Suona vol.3</strong> è confermata.</p>
       <p>In allegato trovi la ricevuta di pagamento in PDF.</p>
       <p>A presto,<br />${settings.ricevuta_intestazione ?? "Burrumballa"}</p>
     </div>
@@ -418,7 +458,7 @@ function buildEmailText(registration: Registration, settings: AppSettings): stri
     "Pagamento confermato — SENTI COME SUONA vol.3",
     "",
     `Ciao ${registration.nome},`,
-    "Abbiamo ricevuto il tuo bonifico: la tua iscrizione a Senti Come Suona vol.3 è confermata.",
+    `${confermaPagamento(registration)}: la tua iscrizione a Senti Come Suona vol.3 è confermata.`,
     "In allegato trovi la ricevuta di pagamento in PDF.",
     "",
     `A presto,\n${settings.ricevuta_intestazione ?? "Burrumballa"}`,
@@ -465,7 +505,7 @@ Deno.serve(async (req: Request) => {
   const { data: registration, error: fetchError } = await supabaseAdmin
     .from("registrations")
     .select(
-      "id, nome, cognome, email, workshop, battle_categories, payment_method, payment_status, amount_workshop, amount_battle, surcharge_late, surcharge_onsite, amount_total, created_at, email_conferma_bonifico_inviata_at"
+      "id, nome, cognome, email, workshop, battle_categories, payment_method, payment_status, amount_workshop, amount_battle, surcharge_late, surcharge_onsite, amount_total, prezzo_admin, created_at, email_conferma_bonifico_inviata_at"
     )
     .eq("id", payload.registrationId)
     .maybeSingle<Registration>()
@@ -476,34 +516,45 @@ Deno.serve(async (req: Request) => {
   if (!registration) {
     return jsonResponse({ error: "Iscrizione non trovata" }, 404)
   }
-  if (registration.payment_status !== "pagato_bonifico") {
-    return jsonResponse(
-      { error: "L'iscrizione non è nello stato 'pagato_bonifico'" },
-      409
-    )
-  }
-  if (registration.email_conferma_bonifico_inviata_at) {
-    return jsonResponse({ ok: true, skipped: true, reason: "already_sent" })
-  }
+  const resend = payload.resend === true
 
-  // Guardia anti-doppio-invio: reclama atomicamente la riga. Se un'altra
-  // richiesta concorrente l'ha già reclamata (update non trova righe),
-  // ci fermiamo qui senza inviare una seconda email.
-  const nowIso = new Date().toISOString()
-  const { data: claimed, error: claimError } = await supabaseAdmin
-    .from("registrations")
-    .update({ email_conferma_bonifico_inviata_at: nowIso })
-    .eq("id", registration.id)
-    .eq("payment_status", "pagato_bonifico")
-    .is("email_conferma_bonifico_inviata_at", null)
-    .select("id")
-    .maybeSingle()
+  if (resend) {
+    if (registration.payment_status === "da_pagare") {
+      return jsonResponse({ error: "L'iscrizione non risulta ancora pagata" }, 409)
+    }
+  } else {
+    if (registration.payment_status !== "pagato_bonifico") {
+      return jsonResponse(
+        { error: "L'iscrizione non è nello stato 'pagato_bonifico'" },
+        409
+      )
+    }
+    if (registration.email_conferma_bonifico_inviata_at) {
+      return jsonResponse({ ok: true, skipped: true, reason: "already_sent" })
+    }
 
-  if (claimError) {
-    return jsonResponse({ error: "Errore aggiornamento iscrizione", detail: claimError.message }, 500)
-  }
-  if (!claimed) {
-    return jsonResponse({ ok: true, skipped: true, reason: "already_sent" })
+    // Guardia anti-doppio-invio: reclama atomicamente la riga. Se un'altra
+    // richiesta concorrente l'ha già reclamata (update non trova righe),
+    // ci fermiamo qui senza inviare una seconda email.
+    const nowIso = new Date().toISOString()
+    const { data: claimed, error: claimError } = await supabaseAdmin
+      .from("registrations")
+      .update({ email_conferma_bonifico_inviata_at: nowIso })
+      .eq("id", registration.id)
+      .eq("payment_status", "pagato_bonifico")
+      .is("email_conferma_bonifico_inviata_at", null)
+      .select("id")
+      .maybeSingle()
+
+    if (claimError) {
+      return jsonResponse(
+        { error: "Errore aggiornamento iscrizione", detail: claimError.message },
+        500
+      )
+    }
+    if (!claimed) {
+      return jsonResponse({ ok: true, skipped: true, reason: "already_sent" })
+    }
   }
 
   try {
@@ -601,11 +652,15 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ ok: true, skipped: false })
   } catch (error) {
     // Rollback della guardia: la riga torna "non inviata" cosi' un
-    // nuovo tentativo (cambio stato o retry manuale) puo' reinviare.
-    await supabaseAdmin
-      .from("registrations")
-      .update({ email_conferma_bonifico_inviata_at: null })
-      .eq("id", registration.id)
+    // nuovo tentativo (cambio stato o retry manuale) puo' reinviare. Un
+    // reinvio non ha reclamato la guardia, quindi non c'e' nulla da
+    // ripristinare.
+    if (!resend) {
+      await supabaseAdmin
+        .from("registrations")
+        .update({ email_conferma_bonifico_inviata_at: null })
+        .eq("id", registration.id)
+    }
 
     const message = error instanceof Error ? error.message : "Errore sconosciuto"
     return jsonResponse({ error: "Invio ricevuta non riuscito", detail: message }, 502)

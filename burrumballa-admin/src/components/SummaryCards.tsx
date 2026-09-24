@@ -1,5 +1,6 @@
 import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card"
 import { formatCurrency } from "@/lib/format"
+import { importoEffettivo } from "@/lib/paymentStatus"
 import type { Registration } from "@/types/registration"
 
 interface SummaryCardsProps {
@@ -12,10 +13,10 @@ export function SummaryCards({ registrations }: SummaryCardsProps) {
   const daConfermare = totale - confermati
   const incassato = registrations
     .filter((r) => r.payment_status !== "da_pagare")
-    .reduce((sum, r) => sum + r.amount_total, 0)
+    .reduce((sum, r) => sum + importoEffettivo(r), 0)
   const daIncassare = registrations
     .filter((r) => r.payment_status === "da_pagare")
-    .reduce((sum, r) => sum + r.amount_total, 0)
+    .reduce((sum, r) => sum + importoEffettivo(r), 0)
   const paganoSulPosto = registrations.filter((r) => r.payment_method === "sul_posto").length
   const paganoBonifico = registrations.filter((r) => r.payment_method === "bonifico").length
 

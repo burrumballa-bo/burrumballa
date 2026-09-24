@@ -19,6 +19,8 @@ export interface Registration {
   surcharge_late: number
   surcharge_onsite: number
   amount_total: number
+  /** Importo fissato dall'admin: se presente sostituisce amount_total. */
+  prezzo_admin: number | null
   note_admin: string | null
   email_conferma_bonifico_inviata_at: string | null
 }

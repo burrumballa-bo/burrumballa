@@ -1,4 +1,4 @@
-import type { PaymentMethod, PaymentStatus } from "@/types/registration"
+import type { PaymentMethod, PaymentStatus, Registration } from "@/types/registration"
 
 export const PAYMENT_STATUS_OPTIONS: { value: PaymentStatus; label: string }[] = [
   { value: "da_pagare", label: "Da pagare" },
@@ -34,4 +34,10 @@ export const PAYMENT_CONFIRM_ACTIONS: Record<
 > = {
   bonifico: { status: "pagato_bonifico", label: "Conferma bonifico" },
   sul_posto: { status: "pagato_in_loco", label: "Pagato in loco" },
+}
+
+// Cifra effettivamente dovuta/incassata: il prezzo amministratore, se
+// impostato, sostituisce il totale calcolato dal listino.
+export function importoEffettivo(r: Registration): number {
+  return r.prezzo_admin ?? r.amount_total
 }

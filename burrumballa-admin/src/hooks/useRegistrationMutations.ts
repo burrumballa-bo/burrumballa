@@ -97,6 +97,38 @@ export function useUpdateNoteAdmin() {
   })
 }
 
+// null = nessun prezzo amministratore: vale di nuovo il totale di listino.
+export function useUpdatePrezzoAdmin() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id, prezzoAdmin }: { id: string; prezzoAdmin: number | null }) => {
+      const { error } = await supabase
+        .from("registrations")
+        .update({ prezzo_admin: prezzoAdmin })
+        .eq("id", id)
+
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["registrations"] })
+    },
+  })
+}
+
+// Reinvia la ricevuta di pagamento ignorando la guardia anti-doppio-invio
+// (vedi `resend` in supabase/functions/send-payment-confirmation).
+export function useResendReceipt() {
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.functions.invoke("send-payment-confirmation", {
+        body: { registrationId: id, resend: true },
+      })
+      if (error) throw new Error(await describeFunctionsError(error))
+    },
+  })
+}
+
 export interface UpdateRegistrationInput {
   id: string
   nome: string

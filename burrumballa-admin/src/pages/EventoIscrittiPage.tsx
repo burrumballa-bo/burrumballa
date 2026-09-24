@@ -10,7 +10,9 @@ import { useRegistrations } from "@/hooks/useRegistrations"
 import { useEventOptionsStato } from "@/hooks/useEventOptionsStato"
 import {
   useDeleteRegistration,
+  useResendReceipt,
   useUpdateNoteAdmin,
+  useUpdatePrezzoAdmin,
   useUpdatePaymentStatus,
   useUpdateRegistration,
 } from "@/hooks/useRegistrationMutations"
@@ -39,6 +41,8 @@ export default function EventoIscrittiPage() {
   const updateNote = useUpdateNoteAdmin()
   const updateRegistration = useUpdateRegistration()
   const deleteRegistration = useDeleteRegistration()
+  const updatePrezzoAdmin = useUpdatePrezzoAdmin()
+  const resendReceipt = useResendReceipt()
 
   const registrations = useMemo(
     () => registrationsQuery.data ?? [],
@@ -181,6 +185,8 @@ export default function EventoIscrittiPage() {
           onClose={() => setSelectedId(null)}
           isSaving={updateRegistration.isPending}
           isStatusSaving={updateStatus.isPending}
+          isPrezzoAdminSaving={updatePrezzoAdmin.isPending}
+          isResending={resendReceipt.isPending}
           isDeleting={deleteRegistration.isPending}
           onSave={(input) =>
             updateRegistration.mutate(input, {
@@ -196,6 +202,32 @@ export default function EventoIscrittiPage() {
           }
           onStatusChange={(status) => changeStatus(selected.id, status)}
           onNoteChange={(note) => updateNote.mutate({ id: selected.id, noteAdmin: note })}
+          onPrezzoAdminChange={(prezzoAdmin) =>
+            updatePrezzoAdmin.mutate(
+              { id: selected.id, prezzoAdmin },
+              {
+                onSuccess: () =>
+                  toast.success(
+                    prezzoAdmin === null
+                      ? "Prezzo amministratore rimosso."
+                      : "Prezzo amministratore salvato."
+                  ),
+                onError: (error) =>
+                  toast.error("Salvataggio prezzo non riuscito.", {
+                    description: (error as Error).message,
+                  }),
+              }
+            )
+          }
+          onResendReceipt={() =>
+            resendReceipt.mutate(selected.id, {
+              onSuccess: () => toast.success(`Ricevuta reinviata a ${selected.email}.`),
+              onError: (error) =>
+                toast.error("Invio ricevuta non riuscito.", {
+                  description: (error as Error).message,
+                }),
+            })
+          }
           onDelete={() =>
             deleteRegistration.mutate(selected.id, {
               onSuccess: () => {

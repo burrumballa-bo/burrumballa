@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Loader2, Trash2 } from "lucide-react"
+import { Loader2, Mail, Trash2 } from "lucide-react"
 
 import {
   Dialog,
@@ -37,10 +37,18 @@ interface RegistrationDetailModalProps {
   onSave: (input: UpdateRegistrationInput) => void
   onStatusChange: (status: PaymentStatus) => void
   onNoteChange: (note: string) => void
+  onPrezzoAdminChange: (prezzoAdmin: number | null) => void
+  onResendReceipt: () => void
   onDelete: () => void
   isSaving: boolean
   isStatusSaving: boolean
+  isPrezzoAdminSaving: boolean
+  isResending: boolean
   isDeleting: boolean
+}
+
+function prezzoToInput(value: number | null): string {
+  return value === null ? "" : String(value)
 }
 
 export function RegistrationDetailModal({
@@ -51,9 +59,13 @@ export function RegistrationDetailModal({
   onSave,
   onStatusChange,
   onNoteChange,
+  onPrezzoAdminChange,
+  onResendReceipt,
   onDelete,
   isSaving,
   isStatusSaving,
+  isPrezzoAdminSaving,
+  isResending,
   isDeleting,
 }: RegistrationDetailModalProps) {
   const [nome, setNome] = useState(registration.nome)
@@ -68,6 +80,7 @@ export function RegistrationDetailModal({
   )
   const [paymentMethod, setPaymentMethod] = useState(registration.payment_method)
   const [note, setNote] = useState(registration.note_admin ?? "")
+  const [prezzoAdmin, setPrezzoAdmin] = useState(prezzoToInput(registration.prezzo_admin))
   const [confirmingDelete, setConfirmingDelete] = useState(false)
 
   // Risincronizza solo quando cambia la persona selezionata, non a ogni
@@ -85,6 +98,7 @@ export function RegistrationDetailModal({
     setBattleCategories(registration.battle_categories)
     setPaymentMethod(registration.payment_method)
     setNote(registration.note_admin ?? "")
+    setPrezzoAdmin(prezzoToInput(registration.prezzo_admin))
     setConfirmingDelete(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [registration.id])
@@ -97,6 +111,13 @@ export function RegistrationDetailModal({
       checked ? [...prev, chiave] : prev.filter((c) => c !== chiave)
     )
   }
+
+  const prezzoAdminTrimmed = prezzoAdmin.trim().replace(",", ".")
+  const prezzoAdminValue = prezzoAdminTrimmed === "" ? null : Number(prezzoAdminTrimmed)
+  const prezzoAdminValido =
+    prezzoAdminValue === null || (Number.isFinite(prezzoAdminValue) && prezzoAdminValue >= 0)
+  const prezzoAdminModificato = prezzoAdminValue !== registration.prezzo_admin
+  const isPagato = registration.payment_status !== "da_pagare"
 
   const handleSave = () => {
     onSave({
@@ -286,10 +307,47 @@ export function RegistrationDetailModal({
             </div>
             <div>
               <span className="text-muted-foreground">Totale</span>
-              <p className="font-semibold tabular-nums">
+              <p
+                className={
+                  registration.prezzo_admin !== null
+                    ? "text-muted-foreground tabular-nums line-through"
+                    : "font-semibold tabular-nums"
+                }
+              >
                 {formatCurrency(registration.amount_total)}
               </p>
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="modal-prezzo-admin">Prezzo amministratore</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                id="modal-prezzo-admin"
+                type="number"
+                inputMode="decimal"
+                min={0}
+                step="0.01"
+                className="w-32"
+                placeholder="—"
+                value={prezzoAdmin}
+                onChange={(e) => setPrezzoAdmin(e.target.value)}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={!prezzoAdminValido || !prezzoAdminModificato || isPrezzoAdminSaving}
+                onClick={() => onPrezzoAdminChange(prezzoAdminValue)}
+              >
+                {isPrezzoAdminSaving && <Loader2 className="animate-spin" />}
+                Salva prezzo
+              </Button>
+            </div>
+            <p className="text-muted-foreground text-xs">
+              Opzionale. Se impostato è la cifra incassata al posto del totale (statistiche e
+              ricevuta). Lascia vuoto per usare il totale.
+            </p>
           </div>
         </div>
 
@@ -309,6 +367,25 @@ export function RegistrationDetailModal({
         </div>
 
         <div className="border-t pt-4">
+          {!confirmingDelete && (
+            <div className="mb-3 flex flex-col items-end gap-1">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onResendReceipt}
+                disabled={!isPagato || isResending}
+              >
+                {isResending ? <Loader2 className="animate-spin" /> : <Mail />}
+                Rimanda ricevuta
+              </Button>
+              {!isPagato && (
+                <p className="text-muted-foreground text-xs">
+                  Disponibile solo per iscrizioni già pagate.
+                </p>
+              )}
+            </div>
+          )}
           {confirmingDelete ? (
             <div className="border-destructive/40 bg-destructive/5 space-y-3 rounded-md border p-3">
               <p className="text-sm">
