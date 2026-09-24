@@ -29,6 +29,12 @@ function normalizza(value: string | null | undefined): string {
     .replace(/^@+\s*/, "")
 }
 
+// Solo lettere e numeri: "Crew-X / Toni B" → "crewxtonib". Serve a trovare
+// l'aka dentro il campo partner a prescindere da spazi, trattini e barre.
+function compatta(value: string | null | undefined): string {
+  return normalizza(value).replace(/[^a-z0-9]/g, "")
+}
+
 function coppia(a: Registration, b: Registration, crew: string | null): Coppia2vs2 {
   const [x, y] = a.id < b.id ? [a, b] : [b, a]
   return { id: `${x.id}|${y.id}`, a: x, b: y, crew }
@@ -39,8 +45,9 @@ export function isIscrittoA2vs2(r: Registration): boolean {
 }
 
 /**
- * Accoppia gli iscritti alla 2vs2 Open: prima i partner reciproci (A indica
- * B e B indica A), poi chi ha indicato lo stesso nome di crew. A parità,
+ * Accoppia gli iscritti alla 2vs2 Open: prima i partner reciproci (il campo
+ * partner di A contiene l'aka di B e viceversa, senza ambiguità), poi chi ha
+ * indicato lo stesso nome di crew. A parità,
  * vince chi si è iscritto prima; ognuno finisce in al massimo una coppia.
  */
 export function accoppia2vs2(registrations: Registration[]): Accoppiamento2vs2 {
@@ -51,19 +58,26 @@ export function accoppia2vs2(registrations: Registration[]): Accoppiamento2vs2 {
   const accoppiati = new Set<string>()
   const coppie: Coppia2vs2[] = []
 
-  const aka = (r: Registration) => normalizza(r.aka)
   const partner = (r: Registration) => normalizza(r.aka_partner_2vs2)
 
+  // Per ogni iscritto, l'unico altro iscritto il cui aka compare nel suo
+  // campo partner. Se ne compaiono più di uno (es. aka corti contenuti in
+  // altri nomi) il match è ambiguo e non si accoppia.
+  const partnerUnico = new Map<string, Registration>()
   for (const a of iscritti) {
-    if (accoppiati.has(a.id) || !partner(a) || !aka(a)) continue
-    const b = iscritti.find(
-      (c) =>
-        c.id !== a.id &&
-        !accoppiati.has(c.id) &&
-        aka(c) === partner(a) &&
-        aka(a) === partner(c)
-    )
-    if (b) {
+    const testo = compatta(a.aka_partner_2vs2)
+    if (!testo) continue
+    const candidati = iscritti.filter((c) => {
+      const akaC = compatta(c.aka)
+      return c.id !== a.id && akaC !== "" && testo.includes(akaC)
+    })
+    if (candidati.length === 1) partnerUnico.set(a.id, candidati[0])
+  }
+
+  for (const a of iscritti) {
+    if (accoppiati.has(a.id)) continue
+    const b = partnerUnico.get(a.id)
+    if (b && !accoppiati.has(b.id) && partnerUnico.get(b.id)?.id === a.id) {
       accoppiati.add(a.id).add(b.id)
       coppie.push(coppia(a, b, null))
     }
