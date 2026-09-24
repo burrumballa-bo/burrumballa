@@ -1,7 +1,7 @@
 import type { Registration } from "@/types/registration"
 
 // Categoria 2vs2: il campo `aka_partner_2vs2` del form ("Crew / partner
-// 2vs2") contiene il nome della crew OPPURE il nome/aka del partner.
+// 2vs2") contiene il nome della crew OPPURE l'aka del partner.
 export const HIPHOP_2VS2_OPEN_KEY = "hiphop_2vs2_open"
 
 export interface Coppia2vs2 {
@@ -29,16 +29,6 @@ function normalizza(value: string | null | undefined): string {
     .replace(/^@+\s*/, "")
 }
 
-// Modi in cui un iscritto può essere indicato come partner da un altro.
-function identita(r: Registration): Set<string> {
-  const nomi = [
-    r.aka,
-    `${r.nome} ${r.cognome}`,
-    `${r.cognome} ${r.nome}`,
-  ].map(normalizza)
-  return new Set(nomi.filter(Boolean))
-}
-
 function coppia(a: Registration, b: Registration, crew: string | null): Coppia2vs2 {
   const [x, y] = a.id < b.id ? [a, b] : [b, a]
   return { id: `${x.id}|${y.id}`, a: x, b: y, crew }
@@ -61,17 +51,17 @@ export function accoppia2vs2(registrations: Registration[]): Accoppiamento2vs2 {
   const accoppiati = new Set<string>()
   const coppie: Coppia2vs2[] = []
 
-  const identitaById = new Map(iscritti.map((r) => [r.id, identita(r)]))
+  const aka = (r: Registration) => normalizza(r.aka)
   const partner = (r: Registration) => normalizza(r.aka_partner_2vs2)
 
   for (const a of iscritti) {
-    if (accoppiati.has(a.id) || !partner(a)) continue
+    if (accoppiati.has(a.id) || !partner(a) || !aka(a)) continue
     const b = iscritti.find(
       (c) =>
         c.id !== a.id &&
         !accoppiati.has(c.id) &&
-        identitaById.get(c.id)!.has(partner(a)) &&
-        identitaById.get(a.id)!.has(partner(c))
+        aka(c) === partner(a) &&
+        aka(a) === partner(c)
     )
     if (b) {
       accoppiati.add(a.id).add(b.id)
