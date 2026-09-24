@@ -1,25 +1,17 @@
 import { useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { ArrowLeft, Search, Swords } from "lucide-react"
-import { toast } from "sonner"
+import { ArrowLeft, Search, Swords, UserPlus } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { accoppia2vs2 } from "@/lib/coppie2vs2"
 import { PAYMENT_STATUS_OPTIONS } from "@/lib/paymentStatus"
 import { useRegistrations } from "@/hooks/useRegistrations"
-import { useEventOptionsStato } from "@/hooks/useEventOptionsStato"
-import {
-  useDeleteRegistration,
-  useResendReceipt,
-  useUpdateNoteAdmin,
-  useUpdatePrezzoAdmin,
-  useUpdatePaymentStatus,
-  useUpdateRegistration,
-} from "@/hooks/useRegistrationMutations"
+import { usePaymentStatusChange } from "@/hooks/usePaymentStatusChange"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { RegistrationsTable } from "@/components/RegistrationsTable"
-import { RegistrationDetailModal } from "@/components/RegistrationDetailModal"
+import { RegistrationDetailDialog } from "@/components/RegistrationDetailDialog"
+import { RegistrationCreateModal } from "@/components/RegistrationCreateModal"
 import type { PaymentStatus } from "@/types/registration"
 
 type StatusFilter = "tutti" | PaymentStatus
@@ -34,15 +26,10 @@ export default function EventoIscrittiPage() {
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("tutti")
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [creating, setCreating] = useState(false)
 
   const registrationsQuery = useRegistrations()
-  const optionsQuery = useEventOptionsStato()
-  const updateStatus = useUpdatePaymentStatus()
-  const updateNote = useUpdateNoteAdmin()
-  const updateRegistration = useUpdateRegistration()
-  const deleteRegistration = useDeleteRegistration()
-  const updatePrezzoAdmin = useUpdatePrezzoAdmin()
-  const resendReceipt = useResendReceipt()
+  const { changeStatus, mutation: updateStatus } = usePaymentStatusChange()
 
   const registrations = useMemo(
     () => registrationsQuery.data ?? [],
@@ -53,10 +40,6 @@ export default function EventoIscrittiPage() {
     () => new Set(accoppia2vs2(registrations).singoli.map((r) => r.id)),
     [registrations]
   )
-
-  const options = optionsQuery.data ?? []
-  const workshopOptions = useMemo(() => options.filter((o) => o.tipo === "workshop"), [options])
-  const battleOptions = useMemo(() => options.filter((o) => o.tipo === "battle"), [options])
 
   const searchFiltered = useMemo(() => {
     const term = search.trim().toLowerCase()
@@ -88,31 +71,6 @@ export default function EventoIscrittiPage() {
     ? (registrations.find((r) => r.id === selectedId) ?? null)
     : null
 
-  // Usata sia dal modale sia dal bottone di conferma in tabella: il
-  // successMessage serve solo al secondo, dove non c'è il badge di stato
-  // sott'occhio a fare da conferma visiva.
-  const changeStatus = (id: string, status: PaymentStatus, successMessage?: string) =>
-    updateStatus.mutate(
-      { id, paymentStatus: status },
-      {
-        onSuccess: (result) => {
-          if (result.emailStatus === "sent") {
-            toast.success("Ricevuta di pagamento inviata via email.")
-          } else if (result.emailStatus === "failed") {
-            toast.error("Stato aggiornato, ma l'invio della ricevuta non è riuscito.", {
-              description: result.emailError,
-            })
-          } else if (successMessage) {
-            toast.success(successMessage)
-          }
-        },
-        onError: (error) =>
-          toast.error("Aggiornamento stato non riuscito.", {
-            description: (error as Error).message,
-          }),
-      }
-    )
-
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6 md:p-8">
       <div className="flex items-center gap-3">
@@ -120,7 +78,11 @@ export default function EventoIscrittiPage() {
           <ArrowLeft />
         </Button>
         <h1 className="text-2xl font-semibold">Iscritti</h1>
-        <Button className="ml-auto" onClick={() => navigate("/admin/evento/si-balla")}>
+        <Button variant="outline" className="ml-auto" onClick={() => setCreating(true)}>
+          <UserPlus />
+          Nuovo iscritto
+        </Button>
+        <Button onClick={() => navigate("/admin/evento/si-balla")}>
           <Swords />
           Si balla
         </Button>
@@ -178,70 +140,10 @@ export default function EventoIscrittiPage() {
       )}
 
       {selected && (
-        <RegistrationDetailModal
-          registration={selected}
-          workshopOptions={workshopOptions}
-          battleOptions={battleOptions}
-          onClose={() => setSelectedId(null)}
-          isSaving={updateRegistration.isPending}
-          isStatusSaving={updateStatus.isPending}
-          isPrezzoAdminSaving={updatePrezzoAdmin.isPending}
-          isResending={resendReceipt.isPending}
-          isDeleting={deleteRegistration.isPending}
-          onSave={(input) =>
-            updateRegistration.mutate(input, {
-              onSuccess: () => {
-                toast.success("Iscritto aggiornato.")
-                setSelectedId(null)
-              },
-              onError: (error) =>
-                toast.error("Salvataggio non riuscito.", {
-                  description: (error as Error).message,
-                }),
-            })
-          }
-          onStatusChange={(status) => changeStatus(selected.id, status)}
-          onNoteChange={(note) => updateNote.mutate({ id: selected.id, noteAdmin: note })}
-          onPrezzoAdminChange={(prezzoAdmin) =>
-            updatePrezzoAdmin.mutate(
-              { id: selected.id, prezzoAdmin },
-              {
-                onSuccess: () =>
-                  toast.success(
-                    prezzoAdmin === null
-                      ? "Prezzo amministratore rimosso."
-                      : "Prezzo amministratore salvato."
-                  ),
-                onError: (error) =>
-                  toast.error("Salvataggio prezzo non riuscito.", {
-                    description: (error as Error).message,
-                  }),
-              }
-            )
-          }
-          onResendReceipt={() =>
-            resendReceipt.mutate(selected.id, {
-              onSuccess: () => toast.success(`Ricevuta reinviata a ${selected.email}.`),
-              onError: (error) =>
-                toast.error("Invio ricevuta non riuscito.", {
-                  description: (error as Error).message,
-                }),
-            })
-          }
-          onDelete={() =>
-            deleteRegistration.mutate(selected.id, {
-              onSuccess: () => {
-                toast.success("Iscritto eliminato.")
-                setSelectedId(null)
-              },
-              onError: (error) =>
-                toast.error("Eliminazione non riuscita.", {
-                  description: (error as Error).message,
-                }),
-            })
-          }
-        />
+        <RegistrationDetailDialog registration={selected} onClose={() => setSelectedId(null)} />
       )}
+
+      {creating && <RegistrationCreateModal onClose={() => setCreating(false)} />}
     </div>
   )
 }

@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { FunctionsHttpError } from "@supabase/supabase-js"
 import { supabase } from "@/lib/supabase"
+import type { Importi } from "@/lib/pricing"
 import type { PaymentMethod, PaymentStatus } from "@/types/registration"
 
 async function describeFunctionsError(error: unknown): Promise<string> {
@@ -28,6 +29,31 @@ export interface UpdatePaymentStatusResult {
   emailError?: string
 }
 
+// La ricevuta va inviata alla transizione verso uno stato "pagato"
+// (bonifico o in loco): lo stato e' gia' stato salvato, quindi invochiamo
+// la function che si occupa anche della guardia anti-doppio-invio lato
+// server (email_conferma_bonifico_inviata_at).
+async function sendPaymentConfirmation(
+  id: string,
+  paymentStatus: PaymentStatus
+): Promise<UpdatePaymentStatusResult> {
+  if (paymentStatus === "da_pagare") {
+    return { emailStatus: "not_applicable" }
+  }
+
+  const { data, error } = await supabase.functions.invoke("send-payment-confirmation", {
+    body: { registrationId: id },
+  })
+
+  if (error) {
+    return { emailStatus: "failed", emailError: await describeFunctionsError(error) }
+  }
+
+  return {
+    emailStatus: data?.skipped ? "skipped" : "sent",
+  }
+}
+
 export function useUpdatePaymentStatus() {
   const queryClient = useQueryClient()
 
@@ -46,26 +72,7 @@ export function useUpdatePaymentStatus() {
 
       if (error) throw error
 
-      if (paymentStatus !== "pagato_bonifico") {
-        return { emailStatus: "not_applicable" }
-      }
-
-      // La ricevuta va inviata solo alla transizione verso
-      // "pagato_bonifico": qui lo stato e' appena stato salvato, quindi
-      // invochiamo la function che si occupa anche della guardia
-      // anti-doppio-invio lato server (email_conferma_bonifico_inviata_at).
-      const { data, error: emailError } = await supabase.functions.invoke(
-        "send-payment-confirmation",
-        { body: { registrationId: id } }
-      )
-
-      if (emailError) {
-        return { emailStatus: "failed", emailError: await describeFunctionsError(emailError) }
-      }
-
-      return {
-        emailStatus: data?.skipped ? "skipped" : "sent",
-      }
+      return sendPaymentConfirmation(id, paymentStatus)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["registrations"] })
@@ -121,25 +128,68 @@ export function useUpdatePrezzoAdmin() {
 export function useResendReceipt() {
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.functions.invoke("send-payment-confirmation", {
+      const { data, error } = await supabase.functions.invoke("send-payment-confirmation", {
         body: { registrationId: id, resend: true },
       })
       if (error) throw new Error(await describeFunctionsError(error))
+      // Una function che non conosce `resend` applica la guardia
+      // anti-doppio-invio e risponde "skipped" senza inviare nulla: non va
+      // spacciato per un reinvio riuscito.
+      if (data?.skipped) {
+        throw new Error(
+          "Il server non ha inviato la ricevuta: verifica che la Edge Function send-payment-confirmation sia aggiornata."
+        )
+      }
     },
   })
 }
 
-export interface UpdateRegistrationInput {
-  id: string
+export interface RegistrationValues {
   nome: string
   cognome: string
   aka: string | null
   aka_partner_2vs2: string | null
   email: string
+  telefono: string | null
   data_nascita: string | null
   workshop: string | null
   battle_categories: string[]
   payment_method: PaymentMethod
+}
+
+export interface UpdateRegistrationInput extends RegistrationValues {
+  id: string
+}
+
+export interface CreateRegistrationInput extends RegistrationValues, Importi {
+  payment_status: PaymentStatus
+  prezzo_admin: number | null
+  note_admin: string | null
+}
+
+// Iscrizione inserita a mano dall'admin. Gli importi arrivano dal calcolo
+// lato client (stessa regola del form pubblico); se lo stato e' gia'
+// "pagato" parte subito la ricevuta, come al cambio stato.
+export function useCreateRegistration() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (input: CreateRegistrationInput): Promise<UpdatePaymentStatusResult> => {
+      const { data, error } = await supabase
+        .from("registrations")
+        .insert(input)
+        .select("id")
+        .single()
+
+      if (error) throw error
+
+      return sendPaymentConfirmation(data.id, input.payment_status)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["registrations"] })
+      queryClient.invalidateQueries({ queryKey: ["event-options-stato"] })
+    },
+  })
 }
 
 // Aggiorna i dati anagrafici/scelte dell'iscrizione (modificabili

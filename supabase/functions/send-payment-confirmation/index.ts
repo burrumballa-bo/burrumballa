@@ -1,8 +1,10 @@
 // Edge Function invocata dalla dashboard admin quando lo stato di
-// un'iscrizione passa a "pagato_bonifico". Genera la ricevuta PDF
-// (dati dinamici da `app_settings` + timbro da Storage) e la invia via
-// email all'iscritto, con guardia anti-doppio-invio su
-// `registrations.email_conferma_bonifico_inviata_at`.
+// un'iscrizione passa a uno stato pagato ("pagato_bonifico" o
+// "pagato_in_loco"). Genera la ricevuta PDF (dati dinamici da
+// `app_settings` + timbro da Storage) e la invia via email all'iscritto,
+// con guardia anti-doppio-invio su
+// `registrations.email_conferma_bonifico_inviata_at` (il nome e' storico:
+// vale per qualsiasi metodo di pagamento).
 //
 // Con `resend: true` (bottone "Rimanda ricevuta" nel modale iscritto) la
 // ricevuta viene reinviata a prescindere dalla guardia, per qualsiasi
@@ -523,11 +525,8 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ error: "L'iscrizione non risulta ancora pagata" }, 409)
     }
   } else {
-    if (registration.payment_status !== "pagato_bonifico") {
-      return jsonResponse(
-        { error: "L'iscrizione non è nello stato 'pagato_bonifico'" },
-        409
-      )
+    if (registration.payment_status === "da_pagare") {
+      return jsonResponse({ error: "L'iscrizione non risulta ancora pagata" }, 409)
     }
     if (registration.email_conferma_bonifico_inviata_at) {
       return jsonResponse({ ok: true, skipped: true, reason: "already_sent" })
@@ -541,7 +540,7 @@ Deno.serve(async (req: Request) => {
       .from("registrations")
       .update({ email_conferma_bonifico_inviata_at: nowIso })
       .eq("id", registration.id)
-      .eq("payment_status", "pagato_bonifico")
+      .neq("payment_status", "da_pagare")
       .is("email_conferma_bonifico_inviata_at", null)
       .select("id")
       .maybeSingle()

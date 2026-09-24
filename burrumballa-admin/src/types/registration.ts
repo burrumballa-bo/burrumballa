@@ -9,6 +9,7 @@ export interface Registration {
   aka: string | null
   aka_partner_2vs2: string | null
   email: string
+  telefono: string | null
   data_nascita: string | null
   workshop: string | null
   battle_categories: string[]

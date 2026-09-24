@@ -1,4 +1,4 @@
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { ArrowLeft, FileSpreadsheet, Loader2, Printer, Shuffle } from "lucide-react"
 import { toast } from "sonner"
@@ -16,6 +16,7 @@ import {
 } from "@/hooks/useSiBallaOrdinamenti"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { RegistrationDetailDialog } from "@/components/RegistrationDetailDialog"
 import {
   Table,
   TableBody,
@@ -36,6 +37,10 @@ const PERSONA_COLUMNS = ["Nome", "Cognome", "Aka", "Anno di nascita"]
 interface Riga {
   id: string
   cells: string[]
+  // Iscritto aperto al click sulla riga (righe "persona").
+  registrationId?: string
+  // Iscritto aperto al click sulla singola cella (righe "coppia").
+  cellRegistrationIds?: (string | undefined)[]
 }
 
 function isPagato(r: Registration): boolean {
@@ -52,6 +57,7 @@ function perCognome(a: Registration, b: Registration): number {
 function rigaPersona(r: Registration): Riga {
   return {
     id: r.id,
+    registrationId: r.id,
     cells: [r.nome, r.cognome, r.aka || "—", r.data_nascita?.slice(0, 4) || "—"],
   }
 }
@@ -136,9 +142,19 @@ interface SezioneProps {
   righe: Riga[]
   ordine: string[] | undefined
   vuoto: string
+  onOpenRegistration: (id: string) => void
 }
 
-function Sezione({ sezione, titolo, titoloPdf, columns, righe, ordine, vuoto }: SezioneProps) {
+function Sezione({
+  sezione,
+  titolo,
+  titoloPdf,
+  columns,
+  righe,
+  ordine,
+  vuoto,
+  onOpenRegistration,
+}: SezioneProps) {
   const saveOrdine = useSaveSiBallaOrdinamento()
   const ordinate = useMemo(() => applicaOrdine(righe, ordine), [righe, ordine])
 
@@ -213,14 +229,40 @@ function Sezione({ sezione, titolo, titoloPdf, columns, righe, ordine, vuoto }: 
                   </TableCell>
                 </TableRow>
               ) : (
-                ordinate.map((riga, i) => (
-                  <TableRow key={riga.id}>
-                    <TableCell className="text-muted-foreground">{i + 1}</TableCell>
-                    {riga.cells.map((cell, j) => (
-                      <TableCell key={j}>{cell}</TableCell>
-                    ))}
-                  </TableRow>
-                ))
+                ordinate.map((riga, i) => {
+                  const rowRegistrationId = riga.registrationId
+                  return (
+                    <TableRow
+                      key={riga.id}
+                      className={rowRegistrationId ? "cursor-pointer" : undefined}
+                      onClick={
+                        rowRegistrationId
+                          ? () => onOpenRegistration(rowRegistrationId)
+                          : undefined
+                      }
+                    >
+                      <TableCell className="text-muted-foreground">{i + 1}</TableCell>
+                      {riga.cells.map((cell, j) => {
+                        const cellRegistrationId = riga.cellRegistrationIds?.[j]
+                        return (
+                          <TableCell key={j}>
+                            {cellRegistrationId ? (
+                              <button
+                                type="button"
+                                className="hover:underline"
+                                onClick={() => onOpenRegistration(cellRegistrationId)}
+                              >
+                                {cell}
+                              </button>
+                            ) : (
+                              cell
+                            )}
+                          </TableCell>
+                        )
+                      })}
+                    </TableRow>
+                  )
+                })
               )}
             </TableBody>
           </Table>
@@ -233,6 +275,7 @@ function Sezione({ sezione, titolo, titoloPdf, columns, righe, ordine, vuoto }: 
 export default function EventoSiBallaPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
   const eventInfoQuery = useEventInfo()
   const registrationsQuery = useRegistrations()
@@ -285,6 +328,12 @@ export default function EventoSiBallaPage() {
 
   const accoppiamento = useMemo(() => accoppia2vs2(pagati), [pagati])
 
+  // Cercato tra tutti gli iscritti, non solo i pagati: se dal modale lo
+  // stato torna "da pagare" il modale resta aperto.
+  const selected = selectedId
+    ? (registrationsQuery.data?.find((r) => r.id === selectedId) ?? null)
+    : null
+
   const ordinamenti = ordinamentiQuery.data
   const titoloEvento = eventInfoQuery.data?.titolo ?? "Evento"
   const isLoading =
@@ -309,9 +358,11 @@ export default function EventoSiBallaPage() {
             righe={accoppiamento.coppie.map((c) => ({
               id: c.id,
               cells: [etichettaPersona(c.a), etichettaPersona(c.b), c.crew || "—"],
+              cellRegistrationIds: [c.a.id, c.b.id],
             }))}
             ordine={ordinamenti?.get(`${sezioneBase}:coppie`)}
             vuoto="Nessuna coppia trovata tra gli iscritti che hanno pagato."
+            onOpenRegistration={setSelectedId}
           />
           <Sezione
             sezione={`${sezioneBase}:senza-coppia`}
@@ -324,6 +375,7 @@ export default function EventoSiBallaPage() {
             })}
             ordine={ordinamenti?.get(`${sezioneBase}:senza-coppia`)}
             vuoto="Tutti gli iscritti che hanno pagato sono stati accoppiati."
+            onOpenRegistration={setSelectedId}
           />
         </div>
       )
@@ -339,6 +391,7 @@ export default function EventoSiBallaPage() {
         righe={iscritti.map(rigaPersona)}
         ordine={ordinamenti?.get(sezioneBase)}
         vuoto="Nessun iscritto che abbia pagato."
+        onOpenRegistration={setSelectedId}
       />
     )
   }
@@ -396,6 +449,10 @@ export default function EventoSiBallaPage() {
 
           <div role="tabpanel">{renderPanel()}</div>
         </>
+      )}
+
+      {selected && (
+        <RegistrationDetailDialog registration={selected} onClose={() => setSelectedId(null)} />
       )}
     </div>
   )
