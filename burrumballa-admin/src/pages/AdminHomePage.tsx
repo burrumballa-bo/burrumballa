@@ -1,91 +1,40 @@
 import { useNavigate } from "react-router-dom"
-import {
-  CalendarDays,
-  FileText,
-  Home,
-  Info,
-  LayoutTemplate,
-  Layers,
-  LogOut,
-  Moon,
-  Plus,
-  Settings,
-  SunMoon,
-  PartyPopper,
-} from "lucide-react"
-import { toast } from "sonner"
+import { CalendarDays, GraduationCap, Globe, LogOut, Settings } from "lucide-react"
 
 import { supabase } from "@/lib/supabase"
-import { useEventInfo } from "@/hooks/useEventInfo"
-import { formatDateOnly } from "@/lib/datetime"
 import { Button } from "@/components/ui/button"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
-const CONTENUTI_SECTIONS = [
+const SECTIONS = [
   {
-    path: "/admin/contenuti/home",
-    icon: Home,
-    title: "Home",
-    description:
-      "Hero, calendario, preview corsi/eventi, teaser chi siamo, domande frequenti, cta finale.",
+    path: "/admin/corsi",
+    icon: GraduationCap,
+    title: "Gestione corsi",
+    description: "Corsi, classi, maestri, iscritti e abbonamenti della scuola.",
+    button: "Apri gestione corsi",
   },
   {
-    path: "/admin/contenuti/corsi",
-    icon: LayoutTemplate,
-    title: "Corsi",
-    description: "Testi della pagina Corsi.",
+    path: "/admin/sito",
+    icon: Globe,
+    title: "Gestione sito",
+    description: "Testi, immagini, corsi ed eventi del sito pubblico burrumballa.it.",
+    button: "Apri gestione sito",
   },
   {
-    path: "/admin/contenuti/classi",
-    icon: Layers,
-    title: "Classi",
-    description: "Le 4 discipline (nome, colore, descrizione, immagine, orari) mostrate su Home e Corsi.",
-  },
-  {
-    path: "/admin/contenuti/eventi",
-    icon: PartyPopper,
-    title: "Eventi",
-    description: "Testi della pagina Eventi e l'elenco degli eventi mostrati sul sito.",
-  },
-  {
-    path: "/admin/contenuti/chi-siamo",
-    icon: Info,
-    title: "Chi siamo",
-    description: "Storia, valori, crew, corsi kids, sede.",
-  },
-  {
-    path: "/admin/contenuti/footer",
-    icon: FileText,
-    title: "Footer",
-    description: "Testo, indirizzo e contatti mostrati in fondo a ogni pagina.",
-  },
-  {
-    path: "/admin/contenuti/tema",
-    icon: Moon,
-    title: "Tema",
-    description: "Personalizza i colori del tema scuro del sito.",
-  },
-  {
-    path: "/admin/contenuti/impostazioni-generali",
-    icon: SunMoon,
-    title: "Impostazioni generali",
-    description: "Scegli se il sito deve avere il tema chiaro o il tema scuro.",
+    path: "/admin/eventi",
+    icon: CalendarDays,
+    title: "Gestione eventi",
+    description: "Eventi, iscritti e pagina dedicata.",
+    button: "Apri gestione eventi",
   },
 ]
 
 export default function AdminHomePage() {
   const navigate = useNavigate()
-  const eventInfoQuery = useEventInfo()
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
     navigate("/admin/login", { replace: true })
-  }
-
-  const handleNewEvent = () => {
-    toast("Presto disponibile", {
-      description: "La creazione di nuovi eventi non è ancora attiva.",
-    })
   }
 
   return (
@@ -104,70 +53,21 @@ export default function AdminHomePage() {
         </div>
       </div>
 
-      <div className="space-y-4">
-        <div>
-          <h2 className="text-lg font-semibold">Contenuti sito</h2>
-          <p className="text-muted-foreground text-sm">
-            Testi, immagini, corsi ed eventi del sito pubblico burrumballa.it.
-          </p>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {CONTENUTI_SECTIONS.map((section) => (
-            <Card
-              key={section.path}
-              role="button"
-              tabIndex={0}
-              onClick={() => navigate(section.path)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") navigate(section.path)
-              }}
-              className="hover:border-primary/50 cursor-pointer transition-colors"
-            >
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <section.icon className="text-muted-foreground size-4" />
-                  {section.title}
-                </CardTitle>
-                <CardDescription>{section.description}</CardDescription>
-              </CardHeader>
-            </Card>
-          ))}
-        </div>
-      </div>
-
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Eventi</h2>
-          <Button onClick={handleNewEvent}>
-            <Plus />
-            Nuovo evento
-          </Button>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Card
-            role="button"
-            tabIndex={0}
-            onClick={() => navigate("/admin/evento")}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") navigate("/admin/evento")
-            }}
-            className="hover:border-primary/50 cursor-pointer transition-colors"
-          >
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {SECTIONS.map((section) => (
+          <Card key={section.path}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <CalendarDays className="text-muted-foreground size-4" />
-                {eventInfoQuery.data?.titolo ?? "Evento"}
+                <section.icon className="text-muted-foreground size-4" />
+                {section.title}
               </CardTitle>
-              {eventInfoQuery.data?.data_evento && (
-                <CardDescription>
-                  {formatDateOnly(eventInfoQuery.data.data_evento)}
-                </CardDescription>
-              )}
+              <CardDescription>{section.description}</CardDescription>
+              <Button className="mt-3 w-fit" onClick={() => navigate(section.path)}>
+                {section.button}
+              </Button>
             </CardHeader>
           </Card>
-        </div>
+        ))}
       </div>
     </div>
   )

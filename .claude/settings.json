@@ -28,7 +28,8 @@
       "Bash(pkill -f \"next start -p 3123\")",
       "Bash(deno --version)",
       "Bash(command -v deno)",
-      "Bash(pkill -f \"next start -p 3126\")"
+      "Bash(pkill -f \"next start -p 3126\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); r=d.get\\('definitions',{}\\).get\\('registrations'\\); print\\(json.dumps\\({'required':r.get\\('required'\\),'cols':{k:\\(v.get\\('format'\\),v.get\\('default'\\)\\) for k,v in r['properties'].items\\(\\)}},indent=1\\) if r else list\\(d.keys\\(\\)\\)[:10]\\)\")"
     ]
   }
 }

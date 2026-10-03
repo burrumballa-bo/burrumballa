@@ -15,6 +15,11 @@ import ContenutiChiSiamoPage from "@/pages/contenuti/ContenutiChiSiamoPage"
 import ContenutiFooterPage from "@/pages/contenuti/ContenutiFooterPage"
 import ContenutiTemaPage from "@/pages/contenuti/ContenutiTemaPage"
 import ContenutiImpostazioniGeneraliPage from "@/pages/contenuti/ContenutiImpostazioniGeneraliPage"
+import GestioneCorsiPage from "@/pages/GestioneCorsiPage"
+import GestioneSitoPage from "@/pages/GestioneSitoPage"
+import GestioneEventiPage from "@/pages/GestioneEventiPage"
+import CorsiGestionePage from "@/pages/corsi/CorsiGestionePage"
+import IscrittiScuolaPage from "@/pages/corsi/IscrittiScuolaPage"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
 
 function App() {
@@ -131,6 +136,46 @@ function App() {
         element={
           <ProtectedRoute>
             <ContenutiImpostazioniGeneraliPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/corsi"
+        element={
+          <ProtectedRoute>
+            <GestioneCorsiPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/corsi/corsi"
+        element={
+          <ProtectedRoute>
+            <CorsiGestionePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/corsi/iscritti"
+        element={
+          <ProtectedRoute>
+            <IscrittiScuolaPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/sito"
+        element={
+          <ProtectedRoute>
+            <GestioneSitoPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/eventi"
+        element={
+          <ProtectedRoute>
+            <GestioneEventiPage />
           </ProtectedRoute>
         }
       />

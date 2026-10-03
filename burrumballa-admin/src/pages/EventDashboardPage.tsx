@@ -38,7 +38,7 @@ export default function EventDashboardPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-6 md:p-8">
       <div className="flex items-center gap-3">
-        <Button variant="outline" size="icon" onClick={() => navigate("/admin")}>
+        <Button variant="outline" size="icon" onClick={() => navigate("/admin/eventi")}>
           <ArrowLeft />
         </Button>
         <div>
