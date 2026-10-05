@@ -8,7 +8,8 @@ import {
   type Column,
   type SortingState,
 } from "@tanstack/react-table"
-import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react"
+import { ArrowDown, ArrowUp, ArrowUpDown, Minus, Plus } from "lucide-react"
+import { toast } from "sonner"
 
 import {
   Table,
@@ -19,20 +20,25 @@ import {
   TableCell,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { useUpdateEntriesUsed } from "@/hooks/useSchoolStudents"
 import {
   STUDENT_STATE_BADGE_CLASSES,
   STUDENT_STATE_LABELS,
   studentSubscriptionState,
+  subscriptionStatus,
   todayIso,
   type StudentSubscriptionState,
 } from "@/lib/subscriptions"
-import type { SchoolStudent } from "@/types/school"
+import type { SchoolStudent, SchoolSubscription } from "@/types/school"
 
 interface Row {
   student: SchoolStudent
   first_name: string
   last_name: string
   state: StudentSubscriptionState
+  /** Abbonamento ad ingressi attivo, se presente. */
+  entriesSub: SchoolSubscription | null
 }
 
 // Ordine per lo stato: attivi prima, poi futuri, scaduti, senza abbonamento.
@@ -67,9 +73,25 @@ interface SchoolStudentsTableProps {
 export function SchoolStudentsTable({ data, onRowClick }: SchoolStudentsTableProps) {
   const [sorting, setSorting] = useState<SortingState>([{ id: "last_name", desc: false }])
 
+  const updateEntries = useUpdateEntriesUsed()
+  const changeEntries = (sub: SchoolSubscription, delta: number) =>
+    updateEntries.mutate(
+      { id: sub.id, entries_used: sub.entries_used + delta },
+      {
+        onError: (error) =>
+          toast.error("Aggiornamento ingressi non riuscito.", {
+            description: (error as Error).message,
+          }),
+      }
+    )
+
   const rows = useMemo<Row[]>(() => {
     const today = todayIso()
     return data.map((student) => ({
+      entriesSub:
+        student.subscriptions.find(
+          (s) => s.kind === "entries" && subscriptionStatus(s, today) === "current"
+        ) ?? null,
       student,
       first_name: student.first_name,
       last_name: student.last_name,
@@ -102,8 +124,51 @@ export function SchoolStudentsTable({ data, onRowClick }: SchoolStudentsTablePro
           )
         },
       },
+      {
+        id: "entries",
+        header: () => (
+          <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+            Ingressi
+          </span>
+        ),
+        cell: ({ row }) => {
+          const sub = row.original.entriesSub
+          if (!sub) return <span className="text-muted-foreground">—</span>
+          const total = sub.entries ?? 0
+          return (
+            <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+              <Button
+                type="button"
+                size="icon"
+                variant="outline"
+                className="size-7"
+                aria-label="Togli un ingresso"
+                disabled={sub.entries_used <= 0 || updateEntries.isPending}
+                onClick={() => changeEntries(sub, -1)}
+              >
+                <Minus />
+              </Button>
+              <span className="min-w-10 text-center text-sm font-medium tabular-nums">
+                {sub.entries_used}/{total}
+              </span>
+              <Button
+                type="button"
+                size="icon"
+                variant="outline"
+                className="size-7"
+                aria-label="Aggiungi un ingresso"
+                disabled={sub.entries_used >= total || updateEntries.isPending}
+                onClick={() => changeEntries(sub, 1)}
+              >
+                <Plus />
+              </Button>
+            </div>
+          )
+        },
+      },
     ],
-    []
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [updateEntries.isPending]
   )
 
   const table = useReactTable({

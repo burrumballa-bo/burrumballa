@@ -1,4 +1,4 @@
-import type { SchoolStudent, SchoolSubscription } from "@/types/school"
+import type { SchoolStudent, SchoolSubscription, SubscriptionKind } from "@/types/school"
 
 export type SubscriptionStatus = "current" | "future" | "expired"
 
@@ -59,4 +59,28 @@ export const STUDENT_STATE_BADGE_CLASSES: Record<StudentSubscriptionState, strin
 
 export function studentFullName(s: Pick<SchoolStudent, "first_name" | "last_name">): string {
   return `${s.first_name} ${s.last_name}`.trim()
+}
+
+export const SUBSCRIPTION_KIND_LABELS: Record<SubscriptionKind, string> = {
+  monthly: "Mensile",
+  quarterly: "Trimestrale",
+  entries: "Ad ingressi",
+}
+
+export const MAX_SUBSCRIPTION_ENTRIES = 10
+
+/** Valore scelto da mostrare nella card: durata o numero di ingressi. */
+export function subscriptionValueLabel(sub: { kind: SubscriptionKind; entries: number | null }): string {
+  if (sub.kind === "entries") return `${sub.entries ?? 0} ingressi`
+  return sub.kind === "monthly" ? "1 mese" : "3 mesi"
+}
+
+/** Data di fine suggerita (ultimo giorno incluso) per mensile/trimestrale. */
+export function suggestedEndDate(kind: SubscriptionKind, startDate: string): string {
+  if (kind === "entries" || !startDate) return ""
+  const [y, m, d] = startDate.split("-").map(Number)
+  const months = kind === "monthly" ? 1 : 3
+  const date = new Date(y, m - 1 + months, d - 1)
+  const pad = (n: number) => String(n).padStart(2, "0")
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 }

@@ -7,6 +7,8 @@ import { useCourses } from "@/hooks/useCourses"
 import { useSchoolStudents } from "@/hooks/useSchoolStudents"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Select } from "@/components/ui/select"
+import { weekdayLabel } from "@/lib/weekdays"
 import { SchoolStudentsTable } from "@/components/SchoolStudentsTable"
 import { SchoolStudentModal } from "@/components/SchoolStudentModal"
 import type { SchoolStudent } from "@/types/school"
@@ -19,6 +21,7 @@ export default function IscrittiScuolaPage() {
   const coursesQuery = useCourses()
 
   const [tab, setTab] = useState<string>(ALL)
+  const [classFilter, setClassFilter] = useState<string>(ALL)
   const [search, setSearch] = useState("")
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
@@ -39,12 +42,30 @@ export default function IscrittiScuolaPage() {
     return map
   }, [courses, students])
 
+  // Classi filtrabili raggruppate per corso: tutti i corsi se "Tutti", altrimenti solo quello scelto.
+  const classGroups = useMemo(
+    () =>
+      courses
+        .filter((c) => (tab === ALL || c.id === tab) && c.levels.length > 0)
+        .map((c) => ({
+          id: c.id,
+          name: c.name,
+          levels: c.levels.map((l) => ({
+            id: l.id,
+            label: `${l.level} · ${weekdayLabel(l.day_of_week)}`,
+            count: students.filter((s) => s.classIds.includes(l.id)).length,
+          })),
+        })),
+    [courses, tab, students]
+  )
+
   const visible = useMemo(() => {
-    const base = tab === ALL ? students : (studentsByCourse.get(tab) ?? [])
+    let base = tab === ALL ? students : (studentsByCourse.get(tab) ?? [])
+    if (classFilter !== ALL) base = base.filter((s) => s.classIds.includes(classFilter))
     const term = search.trim().toLowerCase()
     if (!term) return base
     return base.filter((s) => `${s.first_name} ${s.last_name}`.toLowerCase().includes(term))
-  }, [tab, students, studentsByCourse, search])
+  }, [tab, classFilter, students, studentsByCourse, search])
 
   // Derivato dalla cache: il modale riflette sempre i dati aggiornati.
   const selected = students.find((s) => s.id === selectedId)
@@ -80,7 +101,10 @@ export default function IscrittiScuolaPage() {
             type="button"
             role="tab"
             aria-selected={tab === t.id}
-            onClick={() => setTab(t.id)}
+            onClick={() => {
+              setTab(t.id)
+              setClassFilter(ALL)
+            }}
             className={cn(
               "rounded-full border px-3 py-1 text-sm transition-colors",
               tab === t.id
@@ -93,14 +117,44 @@ export default function IscrittiScuolaPage() {
         ))}
       </div>
 
-      <div className="relative max-w-sm">
-        <Search className="text-muted-foreground absolute top-2.5 left-3 size-4" />
-        <Input
-          className="pl-9"
-          placeholder="Cerca per nome o cognome"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="relative w-full max-w-sm flex-1">
+          <Search className="text-muted-foreground absolute top-2.5 left-3 size-4" />
+          <Input
+            className="pl-9"
+            placeholder="Cerca per nome o cognome"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        {classGroups.length > 0 && (
+          <div className="w-full max-w-60 sm:w-60">
+            <Select
+              aria-label="Filtra per classe"
+              value={classFilter}
+              onChange={(e) => setClassFilter(e.target.value)}
+            >
+              <option value={ALL}>Tutte le classi</option>
+              {classGroups.map((group) =>
+                tab === ALL ? (
+                  <optgroup key={group.id} label={group.name}>
+                    {group.levels.map((l) => (
+                      <option key={l.id} value={l.id}>
+                        {l.label} ({l.count})
+                      </option>
+                    ))}
+                  </optgroup>
+                ) : (
+                  group.levels.map((l) => (
+                    <option key={l.id} value={l.id}>
+                      {l.label} ({l.count})
+                    </option>
+                  ))
+                )
+              )}
+            </Select>
+          </div>
+        )}
       </div>
 
       {studentsQuery.isError && (

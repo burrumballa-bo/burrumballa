@@ -1,7 +1,14 @@
+export type SubscriptionKind = "monthly" | "quarterly" | "entries"
+
 export interface SchoolSubscription {
   id: string
   student_id: string
-  description: string
+  kind: SubscriptionKind
+  /** Numero di ingressi (1..10), solo per kind = "entries". */
+  entries: number | null
+  /** Ingressi gia' effettuati (0..entries). */
+  entries_used: number
+  price: number
   start_date: string
   end_date: string
 }
@@ -29,7 +36,10 @@ export interface SchoolStudentInput {
 }
 
 export interface SubscriptionInput {
-  description: string
+  kind: SubscriptionKind
+  entries: number | null
+  entries_used: number
+  price: number
   start_date: string
   end_date: string
 }

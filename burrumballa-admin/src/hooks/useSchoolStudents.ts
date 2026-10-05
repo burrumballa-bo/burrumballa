@@ -1,6 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { supabase } from "@/lib/supabase"
-import type { SchoolStudent, SchoolStudentSaveInput } from "@/types/school"
+import type {
+  SchoolStudent,
+  SchoolStudentSaveInput,
+  SchoolSubscription,
+  SubscriptionInput,
+} from "@/types/school"
 
 const KEY = ["school-students"]
 
@@ -17,16 +22,17 @@ export function useSchoolStudents() {
       return (data ?? []).map(({ classes, subscriptions, ...student }) => ({
         ...student,
         classIds: (classes ?? []).map((c: { course_level_id: string }) => c.course_level_id),
-        subscriptions: [...(subscriptions ?? [])].sort((a, b) =>
-          a.start_date.localeCompare(b.start_date)
-        ),
+        subscriptions: (subscriptions ?? [])
+          .map((s: SchoolSubscription) => ({ ...s, price: Number(s.price) }))
+          .sort((a: SchoolSubscription, b: SchoolSubscription) =>
+            b.start_date.localeCompare(a.start_date)
+          ),
       }))
     },
   })
 }
 
-// Salva anagrafica + classi + abbonamenti in sequenza. Classi e abbonamenti
-// vengono riallineati (delete + insert) rispetto allo stato del modale.
+// Salva anagrafica + classi (riallineate con delete + insert) e, per i nuovi iscritti, gli abbonamenti.
 export function useSaveSchoolStudent() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -57,12 +63,9 @@ export function useSaveSchoolStudent() {
         if (error) throw error
       }
 
-      const delSubs = await supabase
-        .from("school_subscriptions")
-        .delete()
-        .eq("student_id", studentId)
-      if (delSubs.error) throw delSubs.error
-      if (subscriptions.length > 0) {
+      // Gli abbonamenti di un iscritto esistente sono salvati subito dalla modale;
+      // qui vengono inseriti solo quelli di un iscritto appena creato.
+      if (!id && subscriptions.length > 0) {
         const { error } = await supabase
           .from("school_subscriptions")
           .insert(subscriptions.map((s) => ({ ...s, student_id: studentId })))
@@ -78,6 +81,61 @@ export function useDeleteSchoolStudent() {
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("school_students").delete().eq("id", id)
+      if (error) throw error
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: KEY }),
+  })
+}
+
+export function useUpdateEntriesUsed() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, entries_used }: { id: string; entries_used: number }) => {
+      const { error } = await supabase
+        .from("school_subscriptions")
+        .update({ entries_used })
+        .eq("id", id)
+      if (error) throw error
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: KEY }),
+  })
+}
+
+// Insert (senza id) o update (con id) di un singolo abbonamento; restituisce l'id.
+export function useSaveSubscription() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({
+      studentId,
+      id,
+      input,
+    }: {
+      studentId: string
+      id?: string
+      input: SubscriptionInput
+    }): Promise<string> => {
+      if (id) {
+        const { error } = await supabase.from("school_subscriptions").update(input).eq("id", id)
+        if (error) throw error
+        return id
+      }
+      const { data, error } = await supabase
+        .from("school_subscriptions")
+        .insert({ ...input, student_id: studentId })
+        .select("id")
+        .single()
+      if (error) throw error
+      return data.id as string
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: KEY }),
+  })
+}
+
+export function useDeleteSubscription() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("school_subscriptions").delete().eq("id", id)
       if (error) throw error
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: KEY }),
