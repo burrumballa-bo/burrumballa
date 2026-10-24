@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react"
-import { useNavigate } from "react-router-dom"
-import { ArrowLeft, Ban, Download, FilePlus2, Loader2, Mail, Search } from "lucide-react"
+import { Ban, Download, FilePlus2, Loader2, Mail, Search } from "lucide-react"
 import { toast } from "sonner"
 
 import {
@@ -80,7 +79,6 @@ function SendReceiptDialog({ receipt, onClose }: { receipt: Receipt; onClose: ()
 }
 
 export default function RicevutePage() {
-  const navigate = useNavigate()
   const receiptsQuery = useReceipts()
   const download = useDownloadReceipt()
   const cancel = useCancelReceipt()
@@ -136,9 +134,6 @@ export default function RicevutePage() {
     <div className="mx-auto max-w-5xl space-y-6 p-6 md:p-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="icon" onClick={() => navigate("/admin")}>
-            <ArrowLeft />
-          </Button>
           <h1 className="text-2xl font-semibold">Ricevute</h1>
         </div>
         <Button onClick={() => setCreating(true)}>

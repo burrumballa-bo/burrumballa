@@ -1,8 +1,7 @@
 import { useEffect, useState, type ChangeEvent } from "react"
-import { useNavigate } from "react-router-dom"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import { ArrowLeft, Loader2, PenLine, Stamp, type LucideIcon } from "lucide-react"
+import { Loader2, PenLine, Stamp, type LucideIcon } from "lucide-react"
 import { toast } from "sonner"
 
 import {
@@ -117,7 +116,6 @@ function SettingsImageField({
 }
 
 export default function ImpostazioniPage() {
-  const navigate = useNavigate()
   const settingsQuery = useAppSettings()
   const updateSettings = useUpdateAppSettings()
 
@@ -193,9 +191,6 @@ export default function ImpostazioniPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6 md:p-8">
       <div className="flex items-center gap-3">
-        <Button variant="outline" size="icon" onClick={() => navigate("/admin")}>
-          <ArrowLeft />
-        </Button>
         <h1 className="text-2xl font-semibold">Impostazioni</h1>
       </div>
 

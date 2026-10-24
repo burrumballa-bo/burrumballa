@@ -1,7 +1,6 @@
-import { useNavigate } from "react-router-dom"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import { ArrowLeft, Loader2 } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -14,7 +13,6 @@ import { DEFAULT_CORSI_CONTENT } from "@/lib/cms/defaults"
 import { corsiContentSchema, type CorsiContentFormValues } from "@/lib/cms/schemas"
 
 export default function ContenutiCorsiPage() {
-  const navigate = useNavigate()
   const pageQuery = useSitePage("corsi", DEFAULT_CORSI_CONTENT)
   const updatePage = useUpdateSitePage("corsi")
 
@@ -38,9 +36,6 @@ export default function ContenutiCorsiPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6 md:p-8">
       <div className="flex items-center gap-3">
-        <Button variant="outline" size="icon" onClick={() => navigate("/admin/sito")}>
-          <ArrowLeft />
-        </Button>
         <h1 className="text-2xl font-semibold">Contenuti — Corsi</h1>
       </div>
 

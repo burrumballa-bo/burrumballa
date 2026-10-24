@@ -1,7 +1,6 @@
-import { useNavigate } from "react-router-dom"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import { ArrowLeft, Loader2 } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -15,7 +14,6 @@ import { DEFAULT_EVENTI_CONTENT } from "@/lib/cms/defaults"
 import { eventiContentSchema, type EventiContentFormValues } from "@/lib/cms/schemas"
 
 export default function ContenutiEventiPage() {
-  const navigate = useNavigate()
   const pageQuery = useSitePage("eventi", DEFAULT_EVENTI_CONTENT)
   const updatePage = useUpdateSitePage("eventi")
 
@@ -39,9 +37,6 @@ export default function ContenutiEventiPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6 md:p-8">
       <div className="flex items-center gap-3">
-        <Button variant="outline" size="icon" onClick={() => navigate("/admin/sito")}>
-          <ArrowLeft />
-        </Button>
         <h1 className="text-2xl font-semibold">Contenuti — Eventi</h1>
       </div>
 

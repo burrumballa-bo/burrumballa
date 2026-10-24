@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react"
-import { useNavigate } from "react-router-dom"
-import { ArrowLeft, Search, UserPlus } from "lucide-react"
+import { Search, UserPlus } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { useAppSettings } from "@/hooks/useAppSettings"
@@ -46,7 +45,6 @@ function matchesStatus(s: SchoolStudent, filter: StatusFilter, season: number): 
 }
 
 export default function IscrittiScuolaPage() {
-  const navigate = useNavigate()
   const studentsQuery = useSchoolStudents()
   const coursesQuery = useCourses()
   const season = currentSeason(useAppSettings().data?.stagione_mese_inizio ?? 9)
@@ -116,9 +114,6 @@ export default function IscrittiScuolaPage() {
     <div className="mx-auto max-w-3xl space-y-6 p-6 md:p-8">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="icon" onClick={() => navigate("/admin/corsi")}>
-            <ArrowLeft />
-          </Button>
           <h1 className="text-2xl font-semibold">Iscritti alla scuola</h1>
         </div>
         <Button onClick={() => setCreating(true)}>

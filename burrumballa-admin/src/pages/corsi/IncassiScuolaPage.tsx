@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react"
-import { useNavigate } from "react-router-dom"
-import { ArrowLeft, FileSpreadsheet } from "lucide-react"
+import { FileSpreadsheet } from "lucide-react"
 
 import { useAppSettings } from "@/hooks/useAppSettings"
 import { useSchoolStudents } from "@/hooks/useSchoolStudents"
@@ -50,7 +49,6 @@ function monthRange(month: string): { from: string; to: string } {
 }
 
 export default function IncassiScuolaPage() {
-  const navigate = useNavigate()
   const studentsQuery = useSchoolStudents()
   const settings = useAppSettings().data
   const startMonth = settings?.stagione_mese_inizio ?? 9
@@ -137,9 +135,6 @@ export default function IncassiScuolaPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-6 md:p-8">
       <div className="flex items-center gap-3">
-        <Button variant="outline" size="icon" onClick={() => navigate("/admin/corsi")}>
-          <ArrowLeft />
-        </Button>
         <h1 className="text-2xl font-semibold">Incassi scuola</h1>
       </div>
 

@@ -23,180 +23,43 @@ import IscrittiScuolaPage from "@/pages/corsi/IscrittiScuolaPage"
 import IncassiScuolaPage from "@/pages/corsi/IncassiScuolaPage"
 import RicevutePage from "@/pages/RicevutePage"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
+import { AdminLayout } from "@/components/AdminLayout"
 
 function App() {
   return (
     <Routes>
       <Route path="/admin/login" element={<LoginPage />} />
       <Route path="/admin/reset-password" element={<ResetPasswordPage />} />
+      {/* Pagine riservate: un solo controllo di accesso e il menu laterale. */}
       <Route
-        path="/admin"
         element={
           <ProtectedRoute>
-            <AdminHomePage />
+            <AdminLayout />
           </ProtectedRoute>
         }
-      />
-      <Route
-        path="/admin/impostazioni"
-        element={
-          <ProtectedRoute>
-            <ImpostazioniPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/evento"
-        element={
-          <ProtectedRoute>
-            <EventDashboardPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/evento/pagina"
-        element={
-          <ProtectedRoute>
-            <EventoPaginaPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/evento/iscritti"
-        element={
-          <ProtectedRoute>
-            <EventoIscrittiPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/evento/si-balla"
-        element={
-          <ProtectedRoute>
-            <EventoSiBallaPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/contenuti/home"
-        element={
-          <ProtectedRoute>
-            <ContenutiHomePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/contenuti/corsi"
-        element={
-          <ProtectedRoute>
-            <ContenutiCorsiPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/contenuti/classi"
-        element={
-          <ProtectedRoute>
-            <ContenutiClassiPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/contenuti/eventi"
-        element={
-          <ProtectedRoute>
-            <ContenutiEventiPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/contenuti/chi-siamo"
-        element={
-          <ProtectedRoute>
-            <ContenutiChiSiamoPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/contenuti/footer"
-        element={
-          <ProtectedRoute>
-            <ContenutiFooterPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/contenuti/tema"
-        element={
-          <ProtectedRoute>
-            <ContenutiTemaPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/contenuti/impostazioni-generali"
-        element={
-          <ProtectedRoute>
-            <ContenutiImpostazioniGeneraliPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/corsi"
-        element={
-          <ProtectedRoute>
-            <GestioneCorsiPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/corsi/corsi"
-        element={
-          <ProtectedRoute>
-            <CorsiGestionePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/corsi/iscritti"
-        element={
-          <ProtectedRoute>
-            <IscrittiScuolaPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/corsi/incassi"
-        element={
-          <ProtectedRoute>
-            <IncassiScuolaPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/ricevute"
-        element={
-          <ProtectedRoute>
-            <RicevutePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/sito"
-        element={
-          <ProtectedRoute>
-            <GestioneSitoPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/eventi"
-        element={
-          <ProtectedRoute>
-            <GestioneEventiPage />
-          </ProtectedRoute>
-        }
-      />
+      >
+        <Route path="/admin" element={<AdminHomePage />} />
+        <Route path="/admin/impostazioni" element={<ImpostazioniPage />} />
+        <Route path="/admin/evento" element={<EventDashboardPage />} />
+        <Route path="/admin/evento/pagina" element={<EventoPaginaPage />} />
+        <Route path="/admin/evento/iscritti" element={<EventoIscrittiPage />} />
+        <Route path="/admin/evento/si-balla" element={<EventoSiBallaPage />} />
+        <Route path="/admin/contenuti/home" element={<ContenutiHomePage />} />
+        <Route path="/admin/contenuti/corsi" element={<ContenutiCorsiPage />} />
+        <Route path="/admin/contenuti/classi" element={<ContenutiClassiPage />} />
+        <Route path="/admin/contenuti/eventi" element={<ContenutiEventiPage />} />
+        <Route path="/admin/contenuti/chi-siamo" element={<ContenutiChiSiamoPage />} />
+        <Route path="/admin/contenuti/footer" element={<ContenutiFooterPage />} />
+        <Route path="/admin/contenuti/tema" element={<ContenutiTemaPage />} />
+        <Route path="/admin/contenuti/impostazioni-generali" element={<ContenutiImpostazioniGeneraliPage />} />
+        <Route path="/admin/corsi" element={<GestioneCorsiPage />} />
+        <Route path="/admin/corsi/corsi" element={<CorsiGestionePage />} />
+        <Route path="/admin/corsi/iscritti" element={<IscrittiScuolaPage />} />
+        <Route path="/admin/corsi/incassi" element={<IncassiScuolaPage />} />
+        <Route path="/admin/ricevute" element={<RicevutePage />} />
+        <Route path="/admin/sito" element={<GestioneSitoPage />} />
+        <Route path="/admin/eventi" element={<GestioneEventiPage />} />
+      </Route>
       <Route path="*" element={<Navigate to="/admin" replace />} />
     </Routes>
   )

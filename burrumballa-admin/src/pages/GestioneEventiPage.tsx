@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom"
-import { ArrowLeft, CalendarDays, Plus } from "lucide-react"
+import { CalendarDays, Plus } from "lucide-react"
 import { toast } from "sonner"
 
 import { useEventInfo } from "@/hooks/useEventInfo"
@@ -21,9 +21,6 @@ export default function GestioneEventiPage() {
     <div className="mx-auto max-w-5xl space-y-6 p-6 md:p-8">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="icon" onClick={() => navigate("/admin")}>
-            <ArrowLeft />
-          </Button>
           <h1 className="text-2xl font-semibold">Gestione eventi</h1>
         </div>
         <Button onClick={handleNewEvent}>

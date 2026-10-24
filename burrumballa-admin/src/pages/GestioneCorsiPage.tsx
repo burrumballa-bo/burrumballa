@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom"
-import { ArrowLeft, BookOpen, Users, Wallet } from "lucide-react"
+import { BookOpen, Users, Wallet } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -30,9 +30,6 @@ export default function GestioneCorsiPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6 md:p-8">
       <div className="flex items-center gap-3">
-        <Button variant="outline" size="icon" onClick={() => navigate("/admin")}>
-          <ArrowLeft />
-        </Button>
         <h1 className="text-2xl font-semibold">Gestione corsi</h1>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">

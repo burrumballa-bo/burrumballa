@@ -1,6 +1,5 @@
 import { useNavigate } from "react-router-dom"
 import {
-  ArrowLeft,
   FileText,
   Home,
   Info,
@@ -11,7 +10,6 @@ import {
   PartyPopper,
 } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 const CONTENUTI_SECTIONS = [
@@ -72,9 +70,6 @@ export default function GestioneSitoPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-6 md:p-8">
       <div className="flex items-center gap-3">
-        <Button variant="outline" size="icon" onClick={() => navigate("/admin")}>
-          <ArrowLeft />
-        </Button>
         <div>
           <h1 className="text-2xl font-semibold">Gestione sito</h1>
           <p className="text-muted-foreground text-sm">

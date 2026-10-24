@@ -1,7 +1,6 @@
-import { useNavigate } from "react-router-dom"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import { ArrowLeft, Check, Loader2 } from "lucide-react"
+import { Check, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -74,7 +73,6 @@ function LogoOption({
 }
 
 export default function ContenutiImpostazioniGeneraliPage() {
-  const navigate = useNavigate()
   const pageQuery = useSitePage("theme", DEFAULT_THEME_CONTENT)
   const updatePage = useUpdateSitePage("theme")
 
@@ -108,9 +106,6 @@ export default function ContenutiImpostazioniGeneraliPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6 md:p-8">
       <div className="flex items-center gap-3">
-        <Button variant="outline" size="icon" onClick={() => navigate("/admin/sito")}>
-          <ArrowLeft />
-        </Button>
         <h1 className="text-2xl font-semibold">Impostazioni generali</h1>
       </div>
 
