@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react"
-import { Search, UserPlus } from "lucide-react"
+import { FileSpreadsheet, Search, UserPlus } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { useAppSettings } from "@/hooks/useAppSettings"
@@ -9,8 +9,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { weekdayLabel } from "@/lib/weekdays"
+import { downloadCsv } from "@/lib/export"
 import { medicalCertStatus } from "@/lib/medicalCert"
-import { membershipFor } from "@/lib/memberships"
+import { CARD_STATUS_LABELS, membershipFor } from "@/lib/memberships"
+import { STUDENT_STATE_LABELS, studentSubscriptionState } from "@/lib/subscriptions"
 import { currentSeason, seasonLabel } from "@/lib/seasons"
 import { SchoolStudentsTable } from "@/components/SchoolStudentsTable"
 import { SchoolStudentModal } from "@/components/SchoolStudentModal"
@@ -108,6 +110,37 @@ export default function IscrittiScuolaPage() {
     return base.filter((s) => `${s.first_name} ${s.last_name}`.toLowerCase().includes(term))
   }, [tab, classFilter, statusFilter, season, students, studentsByCourse, search])
 
+  // Esporta gli iscritti visibili (filtri applicati) per Excel.
+  const exportCsv = () => {
+    const levelLabel = new Map(
+      courses.flatMap((c) =>
+        c.levels.map((l) => [l.id, `${c.name} ${l.level} (${weekdayLabel(l.day_of_week)})`] as const)
+      )
+    )
+    const date = (d: string | null) => (d ? d.split("-").reverse().join("/") : "")
+    const yesNo = (v: boolean) => (v ? "Sì" : "No")
+    downloadCsv(`iscritti-${seasonLabel(season).replace("/", "-")}`, [
+      [
+        "Cognome", "Nome", "Email", "Telefono", "Data di nascita", "Codice fiscale", "Indirizzo",
+        "Genitore", "C.F. genitore", "Email genitore", "Telefono genitore", "Classi",
+        "Abbonamento", `Tessera ${seasonLabel(season)}`, "Numero tessera", "Quota pagata",
+        "Scadenza certificato", "Privacy", "Foto", "Note",
+      ],
+      ...visible.map((s) => {
+        const m = membershipFor(s, season)
+        return [
+          s.last_name, s.first_name, s.email ?? "", s.phone ?? "", date(s.birth_date),
+          s.tax_code ?? "", s.address ?? "", s.guardian_name ?? "", s.guardian_tax_code ?? "",
+          s.guardian_email ?? "", s.guardian_phone ?? "",
+          s.classIds.map((id) => levelLabel.get(id) ?? "").filter(Boolean).join(", "),
+          STUDENT_STATE_LABELS[studentSubscriptionState(s.subscriptions)],
+          CARD_STATUS_LABELS[m?.card_status ?? "da_fare"], m?.card_number ?? "", yesNo(!!m?.fee_paid),
+          date(s.medical_cert_expiry), yesNo(s.privacy_consent), yesNo(s.photo_consent), s.notes ?? "",
+        ]
+      }),
+    ])
+  }
+
   // Derivato dalla cache: il modale riflette sempre i dati aggiornati.
   const selected = students.find((s) => s.id === selectedId)
 
@@ -126,10 +159,16 @@ export default function IscrittiScuolaPage() {
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-semibold">Iscritti alla scuola</h1>
         </div>
-        <Button onClick={() => setCreating(true)}>
-          <UserPlus />
-          Nuovo iscritto
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" disabled={visible.length === 0} onClick={exportCsv}>
+            <FileSpreadsheet />
+            Esporta Excel
+          </Button>
+          <Button onClick={() => setCreating(true)}>
+            <UserPlus />
+            Nuovo iscritto
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-2" role="tablist">

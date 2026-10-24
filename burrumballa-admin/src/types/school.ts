@@ -44,6 +44,7 @@ export type MembershipInput = Omit<SchoolMembership, "id" | "student_id">
 
 export interface SchoolStudent {
   id: string
+  created_at: string
   first_name: string
   last_name: string
   email: string | null
@@ -68,7 +69,7 @@ export interface SchoolStudent {
 
 export type SchoolStudentInput = Omit<
   SchoolStudent,
-  "id" | "classIds" | "subscriptions" | "memberships"
+  "id" | "created_at" | "classIds" | "subscriptions" | "memberships"
 >
 
 // entries_used non si scrive mai da qui: lo aggiornano solo le funzioni

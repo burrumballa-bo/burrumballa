@@ -4,6 +4,9 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  /* Grafici: palette di riferimento validata (blu, arancio). */
+  --chart-1: #2a78d6;
+  --chart-2: #eb6834;
   --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
@@ -26,6 +29,8 @@
 }
 
 .dark {
+  --chart-1: #3987e5;
+  --chart-2: #d95926;
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
