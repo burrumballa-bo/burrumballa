@@ -9,6 +9,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { PaymentMethodSelect } from "@/components/PaymentMethodSelect"
+import { SchoolMembershipSection } from "@/components/SchoolMembershipSection"
+import { useAppSettings } from "@/hooks/useAppSettings"
 import { useCourses } from "@/hooks/useCourses"
 import {
   useDeleteSchoolStudent,
@@ -20,6 +23,15 @@ import {
 import { formatDateOnly } from "@/lib/datetime"
 import { formatCurrency } from "@/lib/format"
 import {
+  draftToMembershipInput,
+  emptyMembership,
+  isMembershipDraftValid,
+  membershipToDraft,
+  type MembershipDraft,
+} from "@/lib/memberships"
+import { INCASSO_METHOD_LABELS, type IncassoMethod } from "@/lib/paymentMethods"
+import { currentSeason } from "@/lib/seasons"
+import {
   MAX_SUBSCRIPTION_ENTRIES,
   SUBSCRIPTION_BOX_CLASSES,
   SUBSCRIPTION_KIND_LABELS,
@@ -30,7 +42,7 @@ import {
 } from "@/lib/subscriptions"
 import { cn } from "@/lib/utils"
 import { weekdayLabel } from "@/lib/weekdays"
-import type { SchoolStudent, SubscriptionKind } from "@/types/school"
+import type { SchoolStudent, SubscriptionInput, SubscriptionKind } from "@/types/school"
 
 interface SubscriptionFields {
   kind: SubscriptionKind
@@ -39,6 +51,9 @@ interface SubscriptionFields {
   price: string
   start_date: string
   end_date: string
+  /** "" = da pagare. */
+  payment_method: IncassoMethod | ""
+  paid_at: string
 }
 
 // "new" = in creazione (non ancora confermato), "edit" = in modifica,
@@ -58,6 +73,7 @@ function isSubscriptionValid(s: SubscriptionFields): boolean {
     !!s.start_date &&
     !!s.end_date &&
     s.end_date >= s.start_date &&
+    (s.payment_method === "" || !!s.paid_at) &&
     (s.kind !== "entries" ||
       (Number.isInteger(entries) &&
         entries >= 1 &&
@@ -100,15 +116,42 @@ export function SchoolStudentModal({ student, onClose }: SchoolStudentModalProps
       price: String(s.price),
       start_date: s.start_date,
       end_date: s.end_date,
+      payment_method: s.payment_method ?? "",
+      paid_at: s.paid_at ?? "",
     }))
   )
+
+  const settings = useAppSettings().data
+  const thisSeason = currentSeason(settings?.stagione_mese_inizio ?? 9)
+  // null = stagione in corso (calcolata quando arrivano le impostazioni).
+  const [pickedSeason, setPickedSeason] = useState<number | null>(null)
+  const season = pickedSeason ?? thisSeason
+  const [memberships, setMemberships] = useState<Record<number, MembershipDraft>>(() =>
+    Object.fromEntries((student?.memberships ?? []).map((m) => [m.season, membershipToDraft(m)]))
+  )
+  // Solo le stagioni toccate vengono scritte al salvataggio.
+  const [dirtySeasons, setDirtySeasons] = useState<Set<number>>(new Set())
+  const membershipDraft = memberships[season] ?? membershipToDraft(emptyMembership(season))
+  const seasons = [
+    ...new Set([thisSeason + 1, thisSeason, thisSeason - 1, ...Object.keys(memberships).map(Number)]),
+  ].sort((a, b) => b - a)
+
+  const updateMembership = (patch: Partial<MembershipDraft>) => {
+    setMemberships((prev) => ({
+      ...prev,
+      [season]: { ...(prev[season] ?? membershipToDraft(emptyMembership(season))), ...patch },
+    }))
+    setDirtySeasons((prev) => new Set(prev).add(season))
+  }
 
   const today = todayIso()
   const courses = coursesQuery.data ?? []
 
   // Le card ancora in creazione/modifica vanno confermate o annullate prima di salvare.
   const subsPending = subs.some((s) => s.mode !== "saved")
-  const isValid = firstName.trim() !== "" && lastName.trim() !== "" && !subsPending
+  const membershipsValid = [...dirtySeasons].every((s) => isMembershipDraftValid(memberships[s]))
+  const isValid =
+    firstName.trim() !== "" && lastName.trim() !== "" && !subsPending && membershipsValid
 
   // Piu' recente prima; le bozze nuove restano in cima.
   const sortedSubs = [...subs].sort((a, b) => {
@@ -139,6 +182,8 @@ export function SchoolStudentModal({ student, onClose }: SchoolStudentModalProps
         price: "",
         start_date: today,
         end_date: suggestedEndDate("monthly", today),
+        payment_method: "",
+        paid_at: "",
       },
     ])
 
@@ -164,16 +209,27 @@ export function SchoolStudentModal({ student, onClose }: SchoolStudentModalProps
         price: sub.price,
         start_date: sub.start_date,
         end_date: sub.end_date,
+        payment_method: sub.payment_method,
+        paid_at: sub.paid_at,
       },
     })
 
-  const toInput = (s: SubscriptionFields) => ({
+  // Scegliendo un metodo la data di pagamento parte da oggi; "da pagare" la azzera.
+  const changePayment = (sub: SubscriptionDraft, payment_method: IncassoMethod | "") =>
+    updateSub(sub.key, {
+      payment_method,
+      paid_at: payment_method === "" ? "" : sub.paid_at || today,
+    })
+
+  const toInput = (s: SubscriptionFields): SubscriptionInput => ({
     kind: s.kind,
     entries: s.kind === "entries" ? Number(s.entries) : null,
-    entries_used: s.kind === "entries" ? s.entries_used : 0,
+    entries_used: s.kind === "entries" ? Math.min(s.entries_used, Number(s.entries)) : 0,
     price: Number(s.price),
     start_date: s.start_date,
     end_date: s.end_date,
+    payment_method: s.payment_method || null,
+    paid_at: s.payment_method ? s.paid_at : null,
   })
 
   // Per un iscritto esistente l'abbonamento viene salvato subito; per un nuovo
@@ -251,15 +307,8 @@ export function SchoolStudentModal({ student, onClose }: SchoolStudentModalProps
           notes: notes.trim() || null,
         },
         classIds: [...classIds],
-        subscriptions: subs.map((s) => ({
-          kind: s.kind,
-          entries: s.kind === "entries" ? Number(s.entries) : null,
-          entries_used:
-            s.kind === "entries" ? Math.min(s.entries_used, Number(s.entries)) : 0,
-          price: Number(s.price),
-          start_date: s.start_date,
-          end_date: s.end_date,
-        })),
+        subscriptions: subs.map(toInput),
+        memberships: [...dirtySeasons].map((s) => draftToMembershipInput(memberships[s])),
       },
       {
         onSuccess: () => {
@@ -353,6 +402,23 @@ export function SchoolStudentModal({ student, onClose }: SchoolStudentModalProps
                 </div>
               </div>
             ))}
+        </div>
+
+        <div className="border-t pt-4">
+          <SchoolMembershipSection
+            draft={membershipDraft}
+            seasons={seasons}
+            onSeasonChange={setPickedSeason}
+            onChange={updateMembership}
+            defaultCardPrice={settings?.prezzo_tessera ?? null}
+            defaultFeePrice={settings?.prezzo_quota_iscrizione ?? null}
+          />
+          {!membershipsValid && (
+            <p className="text-destructive mt-2 text-xs">
+              Completa importo, metodo e data dei pagamenti di tessera e quota
+              (anche nelle altre stagioni modificate).
+            </p>
+          )}
         </div>
 
         <div className="space-y-3 border-t pt-4">
@@ -449,6 +515,29 @@ export function SchoolStudentModal({ student, onClose }: SchoolStudentModalProps
                           onChange={(e) => updateSub(sub.key, { price: e.target.value })}
                         />
                       </div>
+                      <div className="space-y-1.5">
+                        <Label>Pagamento</Label>
+                        <PaymentMethodSelect
+                          allowEmpty
+                          emptyLabel="Da pagare"
+                          aria-label="Metodo di pagamento abbonamento"
+                          className="bg-background/70"
+                          value={sub.payment_method}
+                          onChange={(method) => changePayment(sub, method)}
+                        />
+                      </div>
+                      {sub.payment_method !== "" && (
+                        <div className="space-y-1.5">
+                          <Label>Pagato il *</Label>
+                          <Input
+                            type="date"
+                            aria-label="Data pagamento"
+                            className="bg-background/70"
+                            value={sub.paid_at}
+                            onChange={(e) => updateSub(sub.key, { paid_at: e.target.value })}
+                          />
+                        </div>
+                      )}
                     </div>
                     <div className="flex flex-wrap items-center gap-2 text-sm">
                       <span>Dal</span>
@@ -498,7 +587,19 @@ export function SchoolStudentModal({ student, onClose }: SchoolStudentModalProps
                             })}
                           </span>
                         </p>
-                        <p className="text-sm font-medium">{formatCurrency(Number(sub.price))}</p>
+                        <p className="flex flex-wrap items-center gap-2 text-sm font-medium">
+                          {formatCurrency(Number(sub.price))}
+                          {sub.payment_method ? (
+                            <span className="bg-background/60 rounded-full border px-2 py-0.5 text-xs font-normal">
+                              Pagato {INCASSO_METHOD_LABELS[sub.payment_method]} ·{" "}
+                              {formatDateOnly(sub.paid_at)}
+                            </span>
+                          ) : (
+                            <span className="rounded-full border border-amber-300 bg-amber-100 px-2 py-0.5 text-xs font-normal text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">
+                              Da pagare
+                            </span>
+                          )}
+                        </p>
                       </div>
                       <div className="flex items-center gap-1">
                         <Button

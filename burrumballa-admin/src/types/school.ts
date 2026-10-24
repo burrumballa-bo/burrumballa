@@ -1,3 +1,5 @@
+import type { IncassoMethod } from "@/lib/paymentMethods"
+
 export type SubscriptionKind = "monthly" | "quarterly" | "entries"
 
 export interface SchoolSubscription {
@@ -11,7 +13,32 @@ export interface SchoolSubscription {
   price: number
   start_date: string
   end_date: string
+  /** null = ancora da pagare. */
+  payment_method: IncassoMethod | null
+  paid_at: string | null
 }
+
+/** Stato della tessera nella stagione. */
+export type CardStatus = "pagata" | "altro_circolo" | "da_pagare" | "da_fare"
+
+/** Tessera e quota di iscrizione di un iscritto per una stagione. */
+export interface SchoolMembership {
+  id: string
+  student_id: string
+  /** Anno di inizio stagione (2026 = 2026/27). */
+  season: number
+  card_status: CardStatus
+  card_number: string | null
+  card_price: number | null
+  card_payment_method: IncassoMethod | null
+  card_paid_at: string | null
+  fee_paid: boolean
+  fee_price: number | null
+  fee_payment_method: IncassoMethod | null
+  fee_paid_at: string | null
+}
+
+export type MembershipInput = Omit<SchoolMembership, "id" | "student_id">
 
 export interface SchoolStudent {
   id: string
@@ -24,6 +51,7 @@ export interface SchoolStudent {
   /** Id delle classi (course_levels) a cui l'iscritto è assegnato. */
   classIds: string[]
   subscriptions: SchoolSubscription[]
+  memberships: SchoolMembership[]
 }
 
 export interface SchoolStudentInput {
@@ -42,6 +70,8 @@ export interface SubscriptionInput {
   price: number
   start_date: string
   end_date: string
+  payment_method: IncassoMethod | null
+  paid_at: string | null
 }
 
 export interface SchoolStudentSaveInput {
@@ -49,4 +79,6 @@ export interface SchoolStudentSaveInput {
   student: SchoolStudentInput
   classIds: string[]
   subscriptions: SubscriptionInput[]
+  /** Stagioni modificate nella scheda: salvate con upsert su (student_id, season). */
+  memberships: MembershipInput[]
 }

@@ -3,25 +3,57 @@ import { useNavigate } from "react-router-dom"
 import { ArrowLeft, Search, UserPlus } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { useAppSettings } from "@/hooks/useAppSettings"
 import { useCourses } from "@/hooks/useCourses"
 import { useSchoolStudents } from "@/hooks/useSchoolStudents"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { weekdayLabel } from "@/lib/weekdays"
+import { membershipFor } from "@/lib/memberships"
+import { currentSeason, seasonLabel } from "@/lib/seasons"
 import { SchoolStudentsTable } from "@/components/SchoolStudentsTable"
 import { SchoolStudentModal } from "@/components/SchoolStudentModal"
 import type { SchoolStudent } from "@/types/school"
 
 const ALL = "tutti"
 
+// Filtri "cose da sistemare" sulla stagione in corso.
+type StatusFilter = typeof ALL | "tessera_da_fare" | "tessera_da_pagare" | "quota_da_pagare" | "abbonamento_da_pagare"
+
+const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
+  { value: ALL, label: "Tutti gli stati" },
+  { value: "tessera_da_fare", label: "Tessera da fare" },
+  { value: "tessera_da_pagare", label: "Tessera da pagare" },
+  { value: "quota_da_pagare", label: "Quota non pagata" },
+  { value: "abbonamento_da_pagare", label: "Abbonamento da pagare" },
+]
+
+function matchesStatus(s: SchoolStudent, filter: StatusFilter, season: number): boolean {
+  const m = membershipFor(s, season)
+  switch (filter) {
+    case "tessera_da_fare":
+      return (m?.card_status ?? "da_fare") === "da_fare"
+    case "tessera_da_pagare":
+      return m?.card_status === "da_pagare"
+    case "quota_da_pagare":
+      return !m?.fee_paid
+    case "abbonamento_da_pagare":
+      return s.subscriptions.some((sub) => sub.payment_method == null)
+    default:
+      return true
+  }
+}
+
 export default function IscrittiScuolaPage() {
   const navigate = useNavigate()
   const studentsQuery = useSchoolStudents()
   const coursesQuery = useCourses()
+  const season = currentSeason(useAppSettings().data?.stagione_mese_inizio ?? 9)
 
   const [tab, setTab] = useState<string>(ALL)
   const [classFilter, setClassFilter] = useState<string>(ALL)
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(ALL)
   const [search, setSearch] = useState("")
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
@@ -62,10 +94,11 @@ export default function IscrittiScuolaPage() {
   const visible = useMemo(() => {
     let base = tab === ALL ? students : (studentsByCourse.get(tab) ?? [])
     if (classFilter !== ALL) base = base.filter((s) => s.classIds.includes(classFilter))
+    if (statusFilter !== ALL) base = base.filter((s) => matchesStatus(s, statusFilter, season))
     const term = search.trim().toLowerCase()
     if (!term) return base
     return base.filter((s) => `${s.first_name} ${s.last_name}`.toLowerCase().includes(term))
-  }, [tab, classFilter, students, studentsByCourse, search])
+  }, [tab, classFilter, statusFilter, season, students, studentsByCourse, search])
 
   // Derivato dalla cache: il modale riflette sempre i dati aggiornati.
   const selected = students.find((s) => s.id === selectedId)
@@ -127,6 +160,19 @@ export default function IscrittiScuolaPage() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
+        <div className="w-full max-w-60 sm:w-56">
+          <Select
+            aria-label="Filtra per stato"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+          >
+            {STATUS_FILTERS.map((f) => (
+              <option key={f.value} value={f.value}>
+                {f.label}
+              </option>
+            ))}
+          </Select>
+        </div>
         {classGroups.length > 0 && (
           <div className="w-full max-w-60 sm:w-60">
             <Select
@@ -165,7 +211,16 @@ export default function IscrittiScuolaPage() {
       {studentsQuery.isLoading ? (
         <p className="text-muted-foreground text-sm">Caricamento iscritti...</p>
       ) : (
-        <SchoolStudentsTable data={visible} onRowClick={(s) => setSelectedId(s.id)} />
+        <>
+          <p className="text-muted-foreground -mb-3 text-xs">
+            Tessera e quota si riferiscono alla stagione {seasonLabel(season)}.
+          </p>
+          <SchoolStudentsTable
+            data={visible}
+            season={season}
+            onRowClick={(s) => setSelectedId(s.id)}
+          />
+        </>
       )}
 
       {creating && <SchoolStudentModal onClose={() => setCreating(false)} />}

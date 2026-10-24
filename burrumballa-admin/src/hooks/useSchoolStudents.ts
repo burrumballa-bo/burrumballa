@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { supabase } from "@/lib/supabase"
 import type {
+  SchoolMembership,
   SchoolStudent,
   SchoolStudentSaveInput,
   SchoolSubscription,
@@ -15,11 +16,11 @@ export function useSchoolStudents() {
     queryFn: async (): Promise<SchoolStudent[]> => {
       const { data, error } = await supabase
         .from("school_students")
-        .select("*, classes:school_student_classes(course_level_id), subscriptions:school_subscriptions(*)")
+        .select("*, classes:school_student_classes(course_level_id), subscriptions:school_subscriptions(*), memberships:school_memberships(*)")
         .order("last_name", { ascending: true })
 
       if (error) throw error
-      return (data ?? []).map(({ classes, subscriptions, ...student }) => ({
+      return (data ?? []).map(({ classes, subscriptions, memberships, ...student }) => ({
         ...student,
         classIds: (classes ?? []).map((c: { course_level_id: string }) => c.course_level_id),
         subscriptions: (subscriptions ?? [])
@@ -27,16 +28,28 @@ export function useSchoolStudents() {
           .sort((a: SchoolSubscription, b: SchoolSubscription) =>
             b.start_date.localeCompare(a.start_date)
           ),
+        memberships: (memberships ?? []).map((m: SchoolMembership) => ({
+          ...m,
+          card_price: m.card_price == null ? null : Number(m.card_price),
+          fee_price: m.fee_price == null ? null : Number(m.fee_price),
+        })),
       }))
     },
   })
 }
 
-// Salva anagrafica + classi (riallineate con delete + insert) e, per i nuovi iscritti, gli abbonamenti.
+// Salva anagrafica + classi (riallineate con delete + insert), tessere/quote
+// delle stagioni toccate e, per i nuovi iscritti, gli abbonamenti.
 export function useSaveSchoolStudent() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async ({ id, student, classIds, subscriptions }: SchoolStudentSaveInput) => {
+    mutationFn: async ({
+      id,
+      student,
+      classIds,
+      subscriptions,
+      memberships,
+    }: SchoolStudentSaveInput) => {
       let studentId = id
       if (studentId) {
         const { error } = await supabase.from("school_students").update(student).eq("id", studentId)
@@ -69,6 +82,16 @@ export function useSaveSchoolStudent() {
         const { error } = await supabase
           .from("school_subscriptions")
           .insert(subscriptions.map((s) => ({ ...s, student_id: studentId })))
+        if (error) throw error
+      }
+
+      if (memberships.length > 0) {
+        const { error } = await supabase
+          .from("school_memberships")
+          .upsert(
+            memberships.map((m) => ({ ...m, student_id: studentId })),
+            { onConflict: "student_id,season" }
+          )
         if (error) throw error
       }
     },

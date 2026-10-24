@@ -8,7 +8,7 @@ import {
   type Column,
   type SortingState,
 } from "@tanstack/react-table"
-import { ArrowDown, ArrowUp, ArrowUpDown, Minus, Plus } from "lucide-react"
+import { ArrowDown, ArrowUp, ArrowUpDown, Check, Minus, Plus } from "lucide-react"
 import { toast } from "sonner"
 
 import {
@@ -22,6 +22,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { useUpdateEntriesUsed } from "@/hooks/useSchoolStudents"
+import { CARD_STATUS_BADGE_CLASSES, CARD_STATUS_LABELS, membershipFor } from "@/lib/memberships"
 import {
   STUDENT_STATE_BADGE_CLASSES,
   STUDENT_STATE_LABELS,
@@ -30,7 +31,7 @@ import {
   todayIso,
   type StudentSubscriptionState,
 } from "@/lib/subscriptions"
-import type { SchoolStudent, SchoolSubscription } from "@/types/school"
+import type { CardStatus, SchoolStudent, SchoolSubscription } from "@/types/school"
 
 interface Row {
   student: SchoolStudent
@@ -39,6 +40,16 @@ interface Row {
   state: StudentSubscriptionState
   /** Abbonamento ad ingressi attivo, se presente. */
   entriesSub: SchoolSubscription | null
+  /** Tessera e quota nella stagione mostrata. */
+  card: CardStatus
+  feePaid: boolean
+}
+
+const CARD_ORDER: Record<CardStatus, number> = {
+  da_fare: 0,
+  da_pagare: 1,
+  altro_circolo: 2,
+  pagata: 3,
 }
 
 // Ordine per lo stato: attivi prima, poi futuri, scaduti, senza abbonamento.
@@ -67,10 +78,12 @@ function SortableHeader({ column, label }: { column: Column<Row, unknown>; label
 
 interface SchoolStudentsTableProps {
   data: SchoolStudent[]
+  /** Stagione di cui mostrare tessera e quota. */
+  season: number
   onRowClick: (student: SchoolStudent) => void
 }
 
-export function SchoolStudentsTable({ data, onRowClick }: SchoolStudentsTableProps) {
+export function SchoolStudentsTable({ data, season, onRowClick }: SchoolStudentsTableProps) {
   const [sorting, setSorting] = useState<SortingState>([{ id: "last_name", desc: false }])
 
   const updateEntries = useUpdateEntriesUsed()
@@ -88,6 +101,8 @@ export function SchoolStudentsTable({ data, onRowClick }: SchoolStudentsTablePro
   const rows = useMemo<Row[]>(() => {
     const today = todayIso()
     return data.map((student) => ({
+      card: membershipFor(student, season)?.card_status ?? "da_fare",
+      feePaid: membershipFor(student, season)?.fee_paid ?? false,
       entriesSub:
         student.subscriptions.find(
           (s) => s.kind === "entries" && subscriptionStatus(s, today) === "current"
@@ -97,7 +112,7 @@ export function SchoolStudentsTable({ data, onRowClick }: SchoolStudentsTablePro
       last_name: student.last_name,
       state: studentSubscriptionState(student.subscriptions, today),
     }))
-  }, [data])
+  }, [data, season])
 
   const columns = useMemo<ColumnDef<Row>[]>(
     () => [
@@ -123,6 +138,30 @@ export function SchoolStudentsTable({ data, onRowClick }: SchoolStudentsTablePro
             </Badge>
           )
         },
+      },
+      {
+        accessorKey: "card",
+        header: ({ column }) => <SortableHeader column={column} label="Tessera" />,
+        sortingFn: (a, b) => CARD_ORDER[a.original.card] - CARD_ORDER[b.original.card],
+        cell: (info) => {
+          const card = info.getValue<CardStatus>()
+          return (
+            <Badge variant="outline" className={CARD_STATUS_BADGE_CLASSES[card]}>
+              {CARD_STATUS_LABELS[card]}
+            </Badge>
+          )
+        },
+      },
+      {
+        accessorKey: "feePaid",
+        header: ({ column }) => <SortableHeader column={column} label="Quota" />,
+        sortingFn: (a, b) => Number(a.original.feePaid) - Number(b.original.feePaid),
+        cell: (info) =>
+          info.getValue<boolean>() ? (
+            <Check className="size-4 text-green-600" aria-label="Quota pagata" />
+          ) : (
+            <span className="text-xs text-amber-700 dark:text-amber-400">Da pagare</span>
+          ),
       },
       {
         id: "entries",
@@ -181,7 +220,7 @@ export function SchoolStudentsTable({ data, onRowClick }: SchoolStudentsTablePro
   })
 
   return (
-    <div className="rounded-md border">
+    <div className="overflow-x-auto rounded-md border">
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
