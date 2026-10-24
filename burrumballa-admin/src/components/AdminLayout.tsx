@@ -3,9 +3,8 @@ import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom"
 import {
   BookOpen,
   CalendarDays,
-  Globe,
+  ChevronDown,
   House,
-  LayoutDashboard,
   LogOut,
   Menu,
   ReceiptText,
@@ -25,21 +24,26 @@ interface NavItem {
   to: string
   label: string
   icon?: LucideIcon
-  /** Attivo solo sul path esatto (es. le panoramiche con sottopagine). */
+  /** Attivo solo sul path esatto (es. Home, che e' prefisso di tutto). */
   end?: boolean
 }
 
 interface NavGroup {
+  /** Gruppi con etichetta = sezioni a fisarmonica. */
   label?: string
   items: NavItem[]
 }
 
 const NAV: NavGroup[] = [
-  { items: [{ to: "/admin", label: "Home", icon: House, end: true }] },
+  {
+    items: [
+      { to: "/admin", label: "Home", icon: House, end: true },
+      { to: "/admin/impostazioni", label: "Impostazioni", icon: Settings },
+    ],
+  },
   {
     label: "Scuola",
     items: [
-      { to: "/admin/corsi", label: "Panoramica", icon: LayoutDashboard, end: true },
       { to: "/admin/corsi/iscritti", label: "Iscritti", icon: Users },
       { to: "/admin/corsi/incassi", label: "Incassi", icon: Wallet },
       { to: "/admin/corsi/corsi", label: "Corsi e classi", icon: BookOpen },
@@ -52,7 +56,6 @@ const NAV: NavGroup[] = [
   {
     label: "Sito pubblico",
     items: [
-      { to: "/admin/sito", label: "Panoramica", icon: Globe, end: true },
       { to: "/admin/contenuti/home", label: "Home" },
       { to: "/admin/contenuti/corsi", label: "Corsi" },
       { to: "/admin/contenuti/classi", label: "Classi" },
@@ -66,14 +69,46 @@ const NAV: NavGroup[] = [
   {
     items: [
       { to: "/admin/ricevute", label: "Ricevute", icon: ReceiptText },
-      { to: "/admin/impostazioni", label: "Impostazioni", icon: Settings },
     ],
   },
 ]
 
+const OPEN_GROUPS_KEY = "admin-sidebar-open-groups"
+
+// Sezioni aperte: ricordate nel browser (se disponibile), tutte aperte la
+// prima volta.
+function loadOpenGroups(): Set<string> {
+  try {
+    const raw = localStorage.getItem(OPEN_GROUPS_KEY)
+    if (raw) return new Set(JSON.parse(raw) as string[])
+  } catch {
+    // storage non disponibile: si parte con tutto aperto
+  }
+  return new Set(NAV.flatMap((g) => (g.label ? [g.label] : [])))
+}
+
+function isItemActive(item: NavItem, pathname: string) {
+  return item.end ? pathname === item.to : pathname === item.to || pathname.startsWith(`${item.to}/`)
+}
+
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const navigate = useNavigate()
+  const { pathname } = useLocation()
   const { session } = useAuth()
+  const [openGroups, setOpenGroups] = useState(loadOpenGroups)
+
+  const toggleGroup = (label: string) =>
+    setOpenGroups((prev) => {
+      const next = new Set(prev)
+      if (next.has(label)) next.delete(label)
+      else next.add(label)
+      try {
+        localStorage.setItem(OPEN_GROUPS_KEY, JSON.stringify([...next]))
+      } catch {
+        // non salvato: vale solo per questa visita
+      }
+      return next
+    })
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -87,35 +122,56 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         <p className="text-muted-foreground text-xs">Amministrazione</p>
       </div>
       <nav className="flex-1 space-y-5 overflow-y-auto px-2 pb-4" aria-label="Menu principale">
-        {NAV.map((group, gi) => (
-          <div key={group.label ?? gi} className="space-y-0.5">
-            {group.label && (
-              <p className="text-muted-foreground px-3 pb-1 text-xs font-medium tracking-wide uppercase">
-                {group.label}
-              </p>
-            )}
-            {group.items.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.end}
-                onClick={onNavigate}
-                className={({ isActive }) =>
-                  cn(
-                    "flex items-center gap-2 rounded-md px-3 py-1.5 text-sm transition-colors",
-                    !item.icon && "pl-9",
-                    isActive
-                      ? "bg-accent text-foreground font-medium"
-                      : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                  )
-                }
-              >
-                {item.icon && <item.icon className="size-4 shrink-0" />}
-                {item.label}
-              </NavLink>
-            ))}
-          </div>
-        ))}
+        {NAV.map((group, gi) => {
+          // La sezione della pagina aperta resta sempre visibile.
+          const hasActive = group.items.some((item) => isItemActive(item, pathname))
+          const open = !group.label || openGroups.has(group.label) || hasActive
+          const panelId = `nav-group-${gi}`
+          return (
+            <div key={group.label ?? gi} className="space-y-0.5">
+              {group.label && (
+                <button
+                  type="button"
+                  aria-expanded={open}
+                  aria-controls={panelId}
+                  disabled={hasActive}
+                  onClick={() => toggleGroup(group.label!)}
+                  className="text-muted-foreground hover:text-foreground disabled:hover:text-muted-foreground flex w-full items-center justify-between rounded-md px-3 py-1 text-xs font-medium tracking-wide uppercase transition-colors disabled:cursor-default"
+                >
+                  {group.label}
+                  <ChevronDown
+                    className={cn("size-3.5 transition-transform", !open && "-rotate-90")}
+                    aria-hidden
+                  />
+                </button>
+              )}
+              {open && (
+                <div id={panelId} className="space-y-0.5">
+                  {group.items.map((item) => (
+                    <NavLink
+                      key={item.to}
+                      to={item.to}
+                      end={item.end}
+                      onClick={onNavigate}
+                      className={({ isActive }) =>
+                        cn(
+                          "flex items-center gap-2 rounded-md px-3 py-1.5 text-sm transition-colors",
+                          !item.icon && "pl-9",
+                          isActive
+                            ? "bg-accent text-foreground font-medium"
+                            : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                        )
+                      }
+                    >
+                      {item.icon && <item.icon className="size-4 shrink-0" />}
+                      {item.label}
+                    </NavLink>
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        })}
       </nav>
       <div className="border-t p-3">
         {session?.user.email && (
