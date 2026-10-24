@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { useUpdateEntriesUsed } from "@/hooks/useSchoolStudents"
+import { useChangeEntries } from "@/hooks/useSchoolStudents"
 import { CARD_STATUS_BADGE_CLASSES, CARD_STATUS_LABELS, membershipFor } from "@/lib/memberships"
 import {
   STUDENT_STATE_BADGE_CLASSES,
@@ -86,10 +86,10 @@ interface SchoolStudentsTableProps {
 export function SchoolStudentsTable({ data, season, onRowClick }: SchoolStudentsTableProps) {
   const [sorting, setSorting] = useState<SortingState>([{ id: "last_name", desc: false }])
 
-  const updateEntries = useUpdateEntriesUsed()
-  const changeEntries = (sub: SchoolSubscription, delta: number) =>
+  const updateEntries = useChangeEntries()
+  const changeEntries = (sub: SchoolSubscription, delta: 1 | -1) =>
     updateEntries.mutate(
-      { id: sub.id, entries_used: sub.entries_used + delta },
+      { id: sub.id, delta },
       {
         onError: (error) =>
           toast.error("Aggiornamento ingressi non riuscito.", {
@@ -195,7 +195,7 @@ export function SchoolStudentsTable({ data, season, onRowClick }: SchoolStudents
                 size="icon"
                 variant="outline"
                 className="size-7"
-                aria-label="Aggiungi un ingresso"
+                aria-label="Segna un ingresso oggi"
                 disabled={sub.entries_used >= total || updateEntries.isPending}
                 onClick={() => changeEntries(sub, 1)}
               >

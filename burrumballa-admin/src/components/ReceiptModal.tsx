@@ -31,7 +31,10 @@ export interface ReceiptSuggestion {
 
 export interface ReceiptInitialValues {
   recipient_name?: string
+  recipient_tax_code?: string
+  recipient_address?: string
   recipient_email?: string
+  notes?: string
   student_id?: string
 }
 
@@ -62,14 +65,14 @@ export function ReceiptModal({ initial, suggestions = [], onClose }: ReceiptModa
   const issue = useIssueReceipt()
 
   const [name, setName] = useState(initial?.recipient_name ?? "")
-  const [taxCode, setTaxCode] = useState("")
-  const [address, setAddress] = useState("")
+  const [taxCode, setTaxCode] = useState(initial?.recipient_tax_code ?? "")
+  const [address, setAddress] = useState(initial?.recipient_address ?? "")
   const [email, setEmail] = useState(initial?.recipient_email ?? "")
   const [issuedOn, setIssuedOn] = useState(todayIso())
   const [method, setMethod] = useState<IncassoMethod | "">("")
   const [items, setItems] = useState<ItemDraft[]>(suggestions.length > 0 ? [] : [newItem()])
   const [usedSuggestions, setUsedSuggestions] = useState<Set<string>>(new Set())
-  const [notes, setNotes] = useState("")
+  const [notes, setNotes] = useState(initial?.notes ?? "")
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [result, setResult] = useState<IssueReceiptResult | null>(null)
 

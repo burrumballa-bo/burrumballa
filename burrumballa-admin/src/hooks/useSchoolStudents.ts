@@ -5,10 +5,13 @@ import type {
   SchoolStudent,
   SchoolStudentSaveInput,
   SchoolSubscription,
-  SubscriptionInput,
 } from "@/types/school"
 
 const KEY = ["school-students"]
+
+type SubscriptionRow = Omit<SchoolSubscription, "entry_dates"> & {
+  entries_log: { used_on: string }[] | null
+}
 
 export function useSchoolStudents() {
   return useQuery({
@@ -16,7 +19,9 @@ export function useSchoolStudents() {
     queryFn: async (): Promise<SchoolStudent[]> => {
       const { data, error } = await supabase
         .from("school_students")
-        .select("*, classes:school_student_classes(course_level_id), subscriptions:school_subscriptions(*), memberships:school_memberships(*)")
+        .select(
+          "*, classes:school_student_classes(course_level_id), subscriptions:school_subscriptions(*, entries_log:school_subscription_entries(used_on)), memberships:school_memberships(*)"
+        )
         .order("last_name", { ascending: true })
 
       if (error) throw error
@@ -24,7 +29,11 @@ export function useSchoolStudents() {
         ...student,
         classIds: (classes ?? []).map((c: { course_level_id: string }) => c.course_level_id),
         subscriptions: (subscriptions ?? [])
-          .map((s: SchoolSubscription) => ({ ...s, price: Number(s.price) }))
+          .map(({ entries_log, ...s }: SubscriptionRow) => ({
+            ...s,
+            price: Number(s.price),
+            entry_dates: (entries_log ?? []).map((e) => e.used_on).sort(),
+          }))
           .sort((a: SchoolSubscription, b: SchoolSubscription) =>
             b.start_date.localeCompare(a.start_date)
           ),
@@ -38,8 +47,9 @@ export function useSchoolStudents() {
   })
 }
 
-// Salva anagrafica + classi (riallineate con delete + insert), tessere/quote
-// delle stagioni toccate e, per i nuovi iscritti, gli abbonamenti.
+// Salva tutta la scheda in un colpo: anagrafica, classi (riallineate con
+// delete + insert), abbonamenti (nuovi, modificati ed eliminati) e
+// tessere/quote delle stagioni toccate. Restituisce l'id dell'iscritto.
 export function useSaveSchoolStudent() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -48,8 +58,9 @@ export function useSaveSchoolStudent() {
       student,
       classIds,
       subscriptions,
+      deletedSubscriptionIds,
       memberships,
-    }: SchoolStudentSaveInput) => {
+    }: SchoolStudentSaveInput): Promise<string> => {
       let studentId = id
       if (studentId) {
         const { error } = await supabase.from("school_students").update(student).eq("id", studentId)
@@ -76,12 +87,22 @@ export function useSaveSchoolStudent() {
         if (error) throw error
       }
 
-      // Gli abbonamenti di un iscritto esistente sono salvati subito dalla modale;
-      // qui vengono inseriti solo quelli di un iscritto appena creato.
-      if (!id && subscriptions.length > 0) {
+      if (deletedSubscriptionIds.length > 0) {
         const { error } = await supabase
           .from("school_subscriptions")
-          .insert(subscriptions.map((s) => ({ ...s, student_id: studentId })))
+          .delete()
+          .in("id", deletedSubscriptionIds)
+        if (error) throw error
+      }
+      for (const sub of subscriptions.filter((s) => s.id)) {
+        const { error } = await supabase.from("school_subscriptions").update(sub.input).eq("id", sub.id!)
+        if (error) throw error
+      }
+      const added = subscriptions.filter((s) => !s.id)
+      if (added.length > 0) {
+        const { error } = await supabase
+          .from("school_subscriptions")
+          .insert(added.map((s) => ({ ...s.input, student_id: studentId })))
         if (error) throw error
       }
 
@@ -94,6 +115,7 @@ export function useSaveSchoolStudent() {
           )
         if (error) throw error
       }
+      return studentId
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: KEY }),
   })
@@ -110,55 +132,16 @@ export function useDeleteSchoolStudent() {
   })
 }
 
-export function useUpdateEntriesUsed() {
+// +1 registra un ingresso con la data di oggi, -1 toglie l'ultimo: sono
+// azioni immediate (non passano dal Salva della scheda).
+export function useChangeEntries() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async ({ id, entries_used }: { id: string; entries_used: number }) => {
-      const { error } = await supabase
-        .from("school_subscriptions")
-        .update({ entries_used })
-        .eq("id", id)
-      if (error) throw error
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: KEY }),
-  })
-}
-
-// Insert (senza id) o update (con id) di un singolo abbonamento; restituisce l'id.
-export function useSaveSubscription() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: async ({
-      studentId,
-      id,
-      input,
-    }: {
-      studentId: string
-      id?: string
-      input: SubscriptionInput
-    }): Promise<string> => {
-      if (id) {
-        const { error } = await supabase.from("school_subscriptions").update(input).eq("id", id)
-        if (error) throw error
-        return id
-      }
-      const { data, error } = await supabase
-        .from("school_subscriptions")
-        .insert({ ...input, student_id: studentId })
-        .select("id")
-        .single()
-      if (error) throw error
-      return data.id as string
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: KEY }),
-  })
-}
-
-export function useDeleteSubscription() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("school_subscriptions").delete().eq("id", id)
+    mutationFn: async ({ id, delta }: { id: string; delta: 1 | -1 }) => {
+      const { error } =
+        delta === 1
+          ? await supabase.rpc("school_use_entry", { p_subscription_id: id })
+          : await supabase.rpc("school_undo_entry", { p_subscription_id: id })
       if (error) throw error
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: KEY }),

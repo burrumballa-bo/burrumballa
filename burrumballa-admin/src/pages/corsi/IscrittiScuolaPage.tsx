@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { weekdayLabel } from "@/lib/weekdays"
+import { medicalCertStatus } from "@/lib/medicalCert"
 import { membershipFor } from "@/lib/memberships"
 import { currentSeason, seasonLabel } from "@/lib/seasons"
 import { SchoolStudentsTable } from "@/components/SchoolStudentsTable"
@@ -18,7 +19,13 @@ import type { SchoolStudent } from "@/types/school"
 const ALL = "tutti"
 
 // Filtri "cose da sistemare" sulla stagione in corso.
-type StatusFilter = typeof ALL | "tessera_da_fare" | "tessera_da_pagare" | "quota_da_pagare" | "abbonamento_da_pagare"
+type StatusFilter =
+  | typeof ALL
+  | "tessera_da_fare"
+  | "tessera_da_pagare"
+  | "quota_da_pagare"
+  | "abbonamento_da_pagare"
+  | "certificato"
 
 const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
   { value: ALL, label: "Tutti gli stati" },
@@ -26,6 +33,7 @@ const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
   { value: "tessera_da_pagare", label: "Tessera da pagare" },
   { value: "quota_da_pagare", label: "Quota non pagata" },
   { value: "abbonamento_da_pagare", label: "Abbonamento da pagare" },
+  { value: "certificato", label: "Certificato scaduto o mancante" },
 ]
 
 function matchesStatus(s: SchoolStudent, filter: StatusFilter, season: number): boolean {
@@ -39,6 +47,8 @@ function matchesStatus(s: SchoolStudent, filter: StatusFilter, season: number): 
       return !m?.fee_paid
     case "abbonamento_da_pagare":
       return s.subscriptions.some((sub) => sub.payment_method == null)
+    case "certificato":
+      return medicalCertStatus(s.medical_cert_expiry) !== "ok"
     default:
       return true
   }
