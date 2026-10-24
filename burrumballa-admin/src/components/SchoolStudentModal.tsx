@@ -13,6 +13,7 @@ import { PaymentMethodSelect } from "@/components/PaymentMethodSelect"
 import { ReceiptModal, type ReceiptSuggestion } from "@/components/ReceiptModal"
 import { SchoolMembershipSection } from "@/components/SchoolMembershipSection"
 import { useAppSettings } from "@/hooks/useAppSettings"
+import { useConfirm } from "@/hooks/useConfirm"
 import { useCourses } from "@/hooks/useCourses"
 import { formatReceiptNumber, useDownloadReceipt, useReceipts } from "@/hooks/useReceipts"
 import {
@@ -95,6 +96,7 @@ let draftCounter = 0
 const newKey = () => `draft-${draftCounter++}`
 
 export function SchoolStudentModal({ student, onClose }: SchoolStudentModalProps) {
+  const confirm = useConfirm()
   const coursesQuery = useCourses()
   const save = useSaveSchoolStudent()
   const remove = useDeleteSchoolStudent()
@@ -304,7 +306,12 @@ export function SchoolStudentModal({ student, onClose }: SchoolStudentModalProps
     )
   }
 
-  const removeSub = (sub: SubscriptionDraft) => {
+  const removeSub = async (sub: SubscriptionDraft) => {
+    const ok = await confirm({
+      title: "Eliminare questo abbonamento?",
+      description: `${SUBSCRIPTION_KIND_LABELS[sub.kind]} dal ${formatDateOnly(sub.start_date)} al ${formatDateOnly(sub.end_date)}, ${formatCurrency(Number(sub.price))}.`,
+    })
+    if (!ok) return
     const done = () => setSubs((prev) => prev.filter((s) => s.key !== sub.key))
     if (!student) return done()
     deleteSubscription.mutate(sub.key, {
@@ -367,9 +374,14 @@ export function SchoolStudentModal({ student, onClose }: SchoolStudentModalProps
     )
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!student) return
-    if (!window.confirm(`Eliminare ${student.first_name} ${student.last_name}?`)) return
+    const ok = await confirm({
+      title: `Eliminare ${student.first_name} ${student.last_name}?`,
+      description:
+        "Vengono eliminati anche classi, abbonamenti, tessere e quote. Le ricevute emesse restano in archivio.",
+    })
+    if (!ok) return
     remove.mutate(student.id, {
       onSuccess: () => {
         toast.success("Iscritto eliminato.")

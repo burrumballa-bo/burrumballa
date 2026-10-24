@@ -7,13 +7,15 @@ interface DialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   children: React.ReactNode
+  /** Classi del pannello, es. "max-w-md" per una finestra piu' stretta. */
+  className?: string
 }
 
 // Dialog aperti, dal piu' vecchio al piu' recente: Esc chiude solo l'ultimo
 // (es. la ricevuta aperta sopra la scheda iscritto).
 const openStack: symbol[] = []
 
-function Dialog({ open, onOpenChange, children }: DialogProps) {
+function Dialog({ open, onOpenChange, children, className }: DialogProps) {
   React.useEffect(() => {
     if (!open) return
     const id = Symbol("dialog")
@@ -40,7 +42,10 @@ function Dialog({ open, onOpenChange, children }: DialogProps) {
       <div
         role="dialog"
         aria-modal="true"
-        className="bg-background relative z-10 my-auto w-full max-w-2xl rounded-lg border p-6 shadow-lg"
+        className={cn(
+          "bg-background relative z-10 my-auto w-full max-w-2xl rounded-lg border p-6 shadow-lg",
+          className
+        )}
       >
         {children}
       </div>

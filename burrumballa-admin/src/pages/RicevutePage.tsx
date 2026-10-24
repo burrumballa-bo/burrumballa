@@ -10,6 +10,7 @@ import {
   useReceipts,
   useSendReceipt,
 } from "@/hooks/useReceipts"
+import { useConfirm } from "@/hooks/useConfirm"
 import { formatDateOnly } from "@/lib/datetime"
 import { downloadBlob } from "@/lib/export"
 import { formatCurrency, formatDateTime } from "@/lib/format"
@@ -83,6 +84,7 @@ export default function RicevutePage() {
   const receiptsQuery = useReceipts()
   const download = useDownloadReceipt()
   const cancel = useCancelReceipt()
+  const confirm = useConfirm()
 
   const [search, setSearch] = useState("")
   const [year, setYear] = useState<string>(ALL)
@@ -115,11 +117,13 @@ export default function RicevutePage() {
     })
   }
 
-  const handleCancel = (r: Receipt) => {
-    const ok = window.confirm(
-      `Annullare la ricevuta ${formatReceiptNumber(r)} di ${r.recipient_name}?\n\n` +
-        "Il numero resta usato e la ricevuta resta in archivio come annullata. L'operazione non si può annullare."
-    )
+  const handleCancel = async (r: Receipt) => {
+    const ok = await confirm({
+      title: `Annullare la ricevuta ${formatReceiptNumber(r)} di ${r.recipient_name}?`,
+      description:
+        "Il numero resta usato e la ricevuta resta in archivio come annullata. L'operazione è definitiva.",
+      confirmLabel: "Annulla ricevuta",
+    })
     if (!ok) return
     cancel.mutate(r.id, {
       onSuccess: () => toast.success(`Ricevuta ${formatReceiptNumber(r)} annullata.`),

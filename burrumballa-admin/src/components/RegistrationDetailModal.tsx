@@ -22,6 +22,7 @@ import {
   PAYMENT_STATUS_OPTIONS,
 } from "@/lib/paymentStatus"
 import { parsePrezzoAdmin } from "@/lib/pricing"
+import { useConfirm } from "@/hooks/useConfirm"
 import type { UpdateRegistrationInput } from "@/hooks/useRegistrationMutations"
 import type { EventOptionStato } from "@/types/eventOption"
 import type { PaymentStatus, Registration } from "@/types/registration"
@@ -68,7 +69,19 @@ export function RegistrationDetailModal({
   const [fields, setFields] = useState(() => registrationToFieldValues(registration))
   const [note, setNote] = useState(registration.note_admin ?? "")
   const [prezzoAdmin, setPrezzoAdmin] = useState(prezzoToInput(registration.prezzo_admin))
-  const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const confirm = useConfirm()
+
+  const handleDelete = async () => {
+    const ok = await confirm({
+      title: "Eliminare questo iscritto?",
+      description:
+        "Non comparirà più in liste, statistiche e nel conteggio posti." +
+        (registration.payment_status !== "da_pagare"
+          ? "\n\nRisulta già pagato: assicurati di aver effettuato il rimborso prima di confermare."
+          : ""),
+    })
+    if (ok) onDelete()
+  }
 
   // Risincronizza solo quando cambia la persona selezionata, non a ogni
   // refetch: altrimenti un salvataggio in corso (es. cambio stato
@@ -78,7 +91,6 @@ export function RegistrationDetailModal({
     setFields(registrationToFieldValues(registration))
     setNote(registration.note_admin ?? "")
     setPrezzoAdmin(prezzoToInput(registration.prezzo_admin))
-    setConfirmingDelete(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [registration.id])
 
@@ -203,70 +215,33 @@ export function RegistrationDetailModal({
         </div>
 
         <div className="border-t pt-4">
-          {!confirmingDelete && (
-            <div className="mb-3 flex flex-col items-end gap-1">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={onResendReceipt}
-                disabled={!isPagato || isResending}
-              >
-                {isResending ? <Loader2 className="animate-spin" /> : <Mail />}
-                Rimanda ricevuta
-              </Button>
-              {!isPagato && (
-                <p className="text-muted-foreground text-xs">
-                  Disponibile solo per iscrizioni già pagate.
-                </p>
-              )}
-            </div>
-          )}
-          {confirmingDelete ? (
-            <div className="border-destructive/40 bg-destructive/5 space-y-3 rounded-md border p-3">
-              <p className="text-sm">
-                Eliminare questo iscritto? Non comparirà più in liste, statistiche e nel
-                conteggio posti.
-                {registration.payment_status !== "da_pagare" && (
-                  <>
-                    {" "}
-                    Risulta già pagato: assicurati di aver effettuato il rimborso prima di
-                    confermare.
-                  </>
-                )}
-              </p>
-              <div className="flex justify-end gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setConfirmingDelete(false)}
-                >
-                  Annulla
-                </Button>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="sm"
-                  onClick={onDelete}
-                  disabled={isDeleting}
-                >
-                  {isDeleting && <Loader2 className="animate-spin" />}
-                  Conferma eliminazione
-                </Button>
-              </div>
-            </div>
-          ) : (
+          <div className="mb-3 flex flex-col items-end gap-1">
             <Button
               type="button"
-              variant="destructive"
+              variant="outline"
               size="sm"
-              onClick={() => setConfirmingDelete(true)}
+              onClick={onResendReceipt}
+              disabled={!isPagato || isResending}
             >
-              <Trash2 />
-              Elimina iscritto
+              {isResending ? <Loader2 className="animate-spin" /> : <Mail />}
+              Rimanda ricevuta
             </Button>
-          )}
+            {!isPagato && (
+              <p className="text-muted-foreground text-xs">
+                Disponibile solo per iscrizioni già pagate.
+              </p>
+            )}
+          </div>
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            disabled={isDeleting}
+            onClick={handleDelete}
+          >
+            {isDeleting ? <Loader2 className="animate-spin" /> : <Trash2 />}
+            Elimina iscritto
+          </Button>
         </div>
       </div>
     </Dialog>

@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form"
 import { ArrowLeft, Loader2, RefreshCw } from "lucide-react"
 import { toast } from "sonner"
 
+import { useConfirm } from "@/hooks/useConfirm"
 import { useEventInfo, useUpdateEventInfo } from "@/hooks/useEventInfo"
 import {
   useCreateEventOption,
@@ -67,6 +68,7 @@ export default function EventoPaginaPage() {
   const createOption = useCreateEventOption()
   const updateOption = useUpdateEventOption()
   const deleteOption = useDeleteEventOption()
+  const confirm = useConfirm()
   const [optionModal, setOptionModal] = useState<OptionModalState>(null)
   const [deletingOptionId, setDeletingOptionId] = useState<string | null>(null)
 
@@ -239,10 +241,12 @@ export default function EventoPaginaPage() {
     })
   }
 
-  const handleDeletePerson = (id: string) => {
-    if (!window.confirm("Eliminare questa persona? L'operazione non è reversibile.")) {
-      return
-    }
+  const handleDeletePerson = async (id: string) => {
+    const ok = await confirm({
+      title: "Eliminare questa persona?",
+      description: "L'operazione non è reversibile.",
+    })
+    if (!ok) return
     setDeletingPersonId(id)
     deletePerson.mutate(id, {
       onSuccess: () => toast.success("Persona eliminata."),

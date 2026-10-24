@@ -1,9 +1,9 @@
-import { useState } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { Loader2, Save, Trash2 } from "lucide-react"
 
 import { Dialog, DialogCloseButton, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { useConfirm } from "@/hooks/useConfirm"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -34,7 +34,16 @@ export function CourseModal({
   isSaving,
   isDeleting,
 }: CourseModalProps) {
-  const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const confirm = useConfirm()
+
+  const handleDelete = async () => {
+    if (!course) return
+    const ok = await confirm({
+      title: "Eliminare questo corso?",
+      description: "Vengono eliminati anche i suoi livelli/orari e non comparirà più sul sito pubblico.",
+    })
+    if (ok) onDelete(course.id)
+  }
 
   const {
     register,
@@ -207,44 +216,24 @@ export function CourseModal({
 
         <div className="flex items-center justify-between gap-3 border-t pt-4">
           {mode === "edit" && course ? (
-            confirmingDelete ? (
-              <div className="border-destructive/40 bg-destructive/5 flex-1 space-y-3 rounded-md border p-3">
-                <p className="text-sm">
-                  Eliminare questo corso? Vengono eliminati anche i suoi livelli/orari e non
-                  comparirà più sul sito pubblico.
-                </p>
-                <div className="flex justify-end gap-2">
-                  <Button type="button" variant="outline" size="sm" onClick={() => setConfirmingDelete(false)}>
-                    Annulla
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    disabled={isDeleting}
-                    onClick={() => onDelete(course.id)}
-                  >
-                    {isDeleting && <Loader2 className="animate-spin" />}
-                    Conferma eliminazione
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <Button type="button" variant="destructive" size="sm" onClick={() => setConfirmingDelete(true)}>
-                <Trash2 />
-                Elimina corso
-              </Button>
-            )
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              disabled={isDeleting}
+              onClick={handleDelete}
+            >
+              {isDeleting ? <Loader2 className="animate-spin" /> : <Trash2 />}
+              Elimina corso
+            </Button>
           ) : (
             <span />
           )}
 
-          {!confirmingDelete && (
-            <Button type="submit" disabled={isSaving}>
-              {isSaving ? <Loader2 className="animate-spin" /> : <Save />}
-              Salva
-            </Button>
-          )}
+          <Button type="submit" disabled={isSaving}>
+            {isSaving ? <Loader2 className="animate-spin" /> : <Save />}
+            Salva
+          </Button>
         </div>
       </form>
     </Dialog>

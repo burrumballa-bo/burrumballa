@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'sonner'
 import './index.css'
 import App from './App.tsx'
+import { ConfirmProvider } from '@/components/ConfirmProvider'
 
 const queryClient = new QueryClient()
 
@@ -12,7 +13,9 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <App />
+        <ConfirmProvider>
+          <App />
+        </ConfirmProvider>
         <Toaster richColors position="top-center" />
       </BrowserRouter>
     </QueryClientProvider>

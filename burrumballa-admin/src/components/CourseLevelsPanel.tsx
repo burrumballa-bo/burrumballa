@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { useConfirm } from "@/hooks/useConfirm"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
@@ -38,6 +39,7 @@ export function CourseLevelsPanel({ course }: CourseLevelsPanelProps) {
   const createLevel = useCreateCourseLevel()
   const updateLevel = useUpdateCourseLevel()
   const deleteLevel = useDeleteCourseLevel()
+  const confirm = useConfirm()
 
   const {
     register,
@@ -91,14 +93,20 @@ export function CourseLevelsPanel({ course }: CourseLevelsPanelProps) {
                     }),
                 })
               }
-              onDelete={(id) =>
+              onDelete={async (id) => {
+                const ok = await confirm({
+                  title: "Eliminare questa classe?",
+                  description:
+                    "Gli iscritti assegnati a questa classe non la avranno più nella loro scheda.",
+                })
+                if (!ok) return
                 deleteLevel.mutate(id, {
                   onError: (error) =>
                     toast.error("Eliminazione non riuscita.", {
                       description: (error as Error).message,
                     }),
                 })
-              }
+              }}
               isSaving={updateLevel.isPending}
               isDeleting={deleteLevel.isPending}
             />

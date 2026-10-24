@@ -14,6 +14,7 @@ import {
   usePreviewReceipt,
   type IssueReceiptResult,
 } from "@/hooks/useReceipts"
+import { useConfirm } from "@/hooks/useConfirm"
 import { downloadBlob } from "@/lib/export"
 import { formatCurrency } from "@/lib/format"
 import type { IncassoMethod } from "@/lib/paymentMethods"
@@ -56,6 +57,7 @@ interface ReceiptModalProps {
 }
 
 export function ReceiptModal({ initial, suggestions = [], onClose }: ReceiptModalProps) {
+  const confirm = useConfirm()
   const preview = usePreviewReceipt()
   const issue = useIssueReceipt()
 
@@ -118,11 +120,14 @@ export function ReceiptModal({ initial, suggestions = [], onClose }: ReceiptModa
   const filename = (r: IssueReceiptResult) =>
     `ricevuta-${r.receipt.year}-${String(r.receipt.number).padStart(4, "0")}.pdf`
 
-  const handleIssue = (send: boolean) => {
-    const confirmed = window.confirm(
-      `Emettere la ricevuta di ${formatCurrency(total)} a ${name.trim()}?\n\n` +
-        "Riceverà il numero progressivo e non potrà più essere modificata: in caso di errore andrà annullata ed emessa di nuovo."
-    )
+  const handleIssue = async (send: boolean) => {
+    const confirmed = await confirm({
+      title: `Emettere la ricevuta di ${formatCurrency(total)} a ${name.trim()}?`,
+      description:
+        "Riceverà il numero progressivo e non potrà più essere modificata: in caso di errore andrà annullata ed emessa di nuovo.",
+      confirmLabel: send ? "Emetti e invia" : "Emetti",
+      destructive: false,
+    })
     if (!confirmed) return
     issue.mutate(
       { receipt: toDraft(), send },
@@ -307,7 +312,17 @@ export function ReceiptModal({ initial, suggestions = [], onClose }: ReceiptModa
                 variant="ghost"
                 className="text-destructive shrink-0"
                 aria-label="Rimuovi voce"
-                onClick={() => setItems((p) => p.filter((x) => x.key !== it.key))}
+                onClick={async () => {
+                  const empty = !it.description.trim() && !it.amount.trim()
+                  const ok =
+                    empty ||
+                    (await confirm({
+                      title: "Rimuovere questa voce?",
+                      description: it.description.trim() || undefined,
+                      confirmLabel: "Rimuovi",
+                    }))
+                  if (ok) setItems((p) => p.filter((x) => x.key !== it.key))
+                }}
               >
                 <Trash2 />
               </Button>

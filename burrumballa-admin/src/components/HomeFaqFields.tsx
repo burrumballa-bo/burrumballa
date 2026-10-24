@@ -1,6 +1,7 @@
 import { useFieldArray, type Control, type FieldErrors, type UseFormRegister } from "react-hook-form"
 import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react"
 
+import { useConfirm } from "@/hooks/useConfirm"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -18,6 +19,7 @@ interface HomeFaqFieldsProps {
 // "home": sono quindi un array del form, gestito con useFieldArray e salvato
 // insieme al resto della pagina dal bottone "Salva Home".
 export function HomeFaqFields({ control, register, errors }: HomeFaqFieldsProps) {
+  const confirm = useConfirm()
   const { fields, append, remove, move } = useFieldArray({ control, name: "faq.items" })
 
   return (
@@ -81,7 +83,13 @@ export function HomeFaqFields({ control, register, errors }: HomeFaqFieldsProps)
                       size="icon"
                       aria-label="Elimina domanda"
                       className="text-destructive hover:text-destructive"
-                      onClick={() => remove(index)}
+                      onClick={async () => {
+                        const ok = await confirm({
+                          title: "Eliminare questa domanda?",
+                          description: "Verrà tolta dalle FAQ al salvataggio della pagina.",
+                        })
+                        if (ok) remove(index)
+                      }}
                     >
                       <Trash2 />
                     </Button>

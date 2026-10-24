@@ -2,6 +2,7 @@ import { type ChangeEvent } from "react"
 import { ImageOff, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
+import { useConfirm } from "@/hooks/useConfirm"
 import { useUploadSiteMedia } from "@/hooks/useMediaUpload"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -22,6 +23,7 @@ interface MediaUploadFieldProps {
 // (immagine, gif o video, rilevato dall'estensione) per ogni slot media,
 // caricato nel bucket pubblico "site-media".
 export function MediaUploadField({ label, value, onChange, folder, hint }: MediaUploadFieldProps) {
+  const confirm = useConfirm()
   const upload = useUploadSiteMedia(folder)
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -73,7 +75,19 @@ export function MediaUploadField({ label, value, onChange, folder, hint }: Media
             </p>
           )}
           {value && (
-            <Button type="button" variant="outline" size="sm" onClick={() => onChange(null)}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                const ok = await confirm({
+                  title: `Rimuovere ${label.toLowerCase()}?`,
+                  description: "Il file verrà tolto da questo campo al salvataggio.",
+                  confirmLabel: "Rimuovi",
+                })
+                if (ok) onChange(null)
+              }}
+            >
               Rimuovi
             </Button>
           )}

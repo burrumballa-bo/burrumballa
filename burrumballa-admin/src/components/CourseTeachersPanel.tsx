@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { Loader2, Plus } from "lucide-react"
 import { toast } from "sonner"
 
+import { useConfirm } from "@/hooks/useConfirm"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -33,6 +34,7 @@ export function CourseTeachersPanel({ course }: CourseTeachersPanelProps) {
   const createTeacher = useCreateCourseTeacher()
   const updateTeacher = useUpdateCourseTeacher()
   const deleteTeacher = useDeleteCourseTeacher()
+  const confirm = useConfirm()
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const {
@@ -76,7 +78,12 @@ export function CourseTeachersPanel({ course }: CourseTeachersPanelProps) {
                 toast.error("Salvataggio non riuscito.", { description: (error as Error).message }),
             })
           }
-          onDelete={(id) => {
+          onDelete={async (id) => {
+            const ok = await confirm({
+              title: "Eliminare questo insegnante?",
+              description: "Non comparirà più nella pagina del corso.",
+            })
+            if (!ok) return
             setDeletingId(id)
             deleteTeacher.mutate(id, {
               onError: (error) =>
