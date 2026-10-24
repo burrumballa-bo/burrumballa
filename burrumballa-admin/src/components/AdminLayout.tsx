@@ -39,6 +39,7 @@ const NAV: NavGroup[] = [
     items: [
       { to: "/admin", label: "Home", icon: House, end: true },
       { to: "/admin/impostazioni", label: "Impostazioni", icon: Settings },
+      { to: "/admin/ricevute", label: "Ricevute", icon: ReceiptText },
     ],
   },
   {
@@ -64,11 +65,6 @@ const NAV: NavGroup[] = [
       { to: "/admin/contenuti/footer", label: "Footer" },
       { to: "/admin/contenuti/tema", label: "Tema" },
       { to: "/admin/contenuti/impostazioni-generali", label: "Impostazioni sito" },
-    ],
-  },
-  {
-    items: [
-      { to: "/admin/ricevute", label: "Ricevute", icon: ReceiptText },
     ],
   },
 ]
