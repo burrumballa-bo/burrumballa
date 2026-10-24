@@ -76,6 +76,7 @@ export function useUpdatePaymentStatus() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["registrations"] })
+      queryClient.invalidateQueries({ queryKey: ["receipts"] })
     },
   })
 }
@@ -126,6 +127,7 @@ export function useUpdatePrezzoAdmin() {
 // Reinvia la ricevuta di pagamento ignorando la guardia anti-doppio-invio
 // (vedi `resend` in supabase/functions/send-payment-confirmation).
 export function useResendReceipt() {
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (id: string) => {
       const { data, error } = await supabase.functions.invoke("send-payment-confirmation", {
@@ -141,6 +143,7 @@ export function useResendReceipt() {
         )
       }
     },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["receipts"] }),
   })
 }
 
@@ -188,6 +191,7 @@ export function useCreateRegistration() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["registrations"] })
       queryClient.invalidateQueries({ queryKey: ["event-options-stato"] })
+      queryClient.invalidateQueries({ queryKey: ["receipts"] })
     },
   })
 }

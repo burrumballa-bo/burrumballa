@@ -1,14 +1,20 @@
 // Edge Function invocata dalla dashboard admin quando lo stato di
 // un'iscrizione passa a uno stato pagato ("pagato_bonifico" o
-// "pagato_in_loco"). Genera la ricevuta PDF (dati dinamici da
-// `app_settings` + timbro da Storage) e la invia via email all'iscritto,
+// "pagato_in_loco" / "pagato_pos"). Emette la ricevuta con la numerazione
+// unica di public.receipts (vedi ../_shared/receipt.ts) e la invia via
+// email all'iscritto,
 // con guardia anti-doppio-invio su
 // `registrations.email_conferma_bonifico_inviata_at` (il nome e' storico:
 // vale per qualsiasi metodo di pagamento).
 //
 // Con `resend: true` (bottone "Rimanda ricevuta" nel modale iscritto) la
 // ricevuta viene reinviata a prescindere dalla guardia, per qualsiasi
-// iscrizione gia' pagata (bonifico o in loco).
+// iscrizione gia' pagata.
+//
+// Un'iscrizione ha al piu' una ricevuta valida: i reinvii riusano la
+// stessa (stesso numero e stesso PDF). Se nel frattempo l'importo pagato
+// e' cambiato (prezzo admin), la vecchia viene annullata e se ne emette
+// una nuova.
 //
 // Deploy:
 //   supabase functions deploy send-payment-confirmation
@@ -30,25 +36,25 @@
 // processo server-to-server, non un client anon/authenticated) e per
 // scaricare il timbro dal bucket privato "assets".
 
-import { createClient } from "npm:@supabase/supabase-js@2"
+import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2"
 import {
-  PDFDocument,
-  StandardFonts,
-  rgb,
-  type PDFFont,
-  type PDFPage,
-} from "npm:pdf-lib@1.17.1"
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts"
+  RECEIPT_SETTINGS_COLUMNS,
+  ensureReceiptPdf,
+  fromAddress,
+  issueReceipt,
+  markReceiptSent,
+  pdfSafeText,
+  receiptFilename,
+  sendMail,
+  smtpConfigFromEnv,
+  type IncassoMethod,
+  type ReceiptItem,
+  type ReceiptRow,
+  type ReceiptSettings,
+} from "../_shared/receipt.ts"
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")
-const SMTP_HOST = Deno.env.get("SMTP_HOST")
-const SMTP_PORT = Deno.env.get("SMTP_PORT")
-const SMTP_USER = Deno.env.get("SMTP_USER")
-const SMTP_PASS = Deno.env.get("SMTP_PASS")
-const SMTP_FROM_FALLBACK = Deno.env.get("SMTP_FROM") ?? SMTP_USER ?? ""
-
-const TIMBRO_BUCKET = "assets"
 const EMAIL_SUBJECT = "Pagamento confermato — SENTI COME SUONA vol.3"
 
 const corsHeaders = {
@@ -98,62 +104,25 @@ interface Registration {
   email_conferma_bonifico_inviata_at: string | null
 }
 
-interface AppSettings {
-  ricevuta_intestazione: string | null
-  ricevuta_indirizzo: string | null
-  ricevuta_piva_cf: string | null
-  ricevuta_iban: string | null
-  ricevuta_note: string | null
-  timbro_url: string | null
-  email_mittente_generale: string | null
-}
-
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("it-IT", {
-    style: "currency",
-    currency: "EUR",
-  }).format(value)
-}
-
-function formatDate(date: Date): string {
-  return new Intl.DateTimeFormat("it-IT", { dateStyle: "long" }).format(date)
-}
-
-function receiptNumber(registration: Registration): string {
-  return `SCS3-${registration.id.slice(0, 8).toUpperCase()}`
-}
-
-// I font standard di pdf-lib (Helvetica) usano la codifica WinAnsi e vanno
-// in errore su caratteri fuori da quel set (es. emoji in una nota admin).
-// I testi qui sotto arrivano da campi liberi (note, indirizzo, nomi): li
-// sanifichiamo prima di disegnarli per non far fallire l'intera ricevuta.
-function pdfSafeText(text: string): string {
-  return Array.from(text)
-    .map((char) => {
-      const code = char.codePointAt(0) ?? 0
-      const isSafe = (code >= 0x20 && code <= 0x7e) || (code >= 0xa0 && code <= 0xff)
-      return isSafe ? char : "?"
-    })
-    .join("")
+const INCASSO_BY_STATUS: Record<Registration["payment_status"], IncassoMethod | null> = {
+  da_pagare: null,
+  pagato_bonifico: "bonifico",
+  pagato_in_loco: "contanti",
+  pagato_pos: "pos",
 }
 
 // Il prezzo amministratore, se impostato, e' la cifra effettivamente
 // pagata e sostituisce il totale calcolato dal listino.
 function importoPagato(registration: Registration): number {
-  return registration.prezzo_admin ?? registration.amount_total
-}
-
-interface ReceiptLine {
-  label: string
-  amount: number | null
+  return Number(registration.prezzo_admin ?? registration.amount_total)
 }
 
 function buildReceiptLines(
   registration: Registration,
   workshopLabel: string | null,
   battleLabels: string[]
-): ReceiptLine[] {
-  const lines: ReceiptLine[] = []
+): ReceiptItem[] {
+  const lines: ReceiptItem[] = []
 
   // Con un prezzo amministratore gli importi di listino non corrispondono
   // a quanto pagato: elenchiamo le attivita' senza prezzi (niente
@@ -161,282 +130,90 @@ function buildReceiptLines(
   if (registration.prezzo_admin !== null) {
     if (registration.workshop) {
       lines.push({
-        label: pdfSafeText(`Workshop: ${workshopLabel ?? registration.workshop}`),
+        description: pdfSafeText(`Workshop: ${workshopLabel ?? registration.workshop}`),
         amount: null,
       })
     }
     if (battleLabels.length > 0) {
-      lines.push({ label: pdfSafeText(`Battle: ${battleLabels.join(", ")}`), amount: null })
+      lines.push({ description: pdfSafeText(`Battle: ${battleLabels.join(", ")}`), amount: null })
     }
     return lines
   }
 
   if (registration.amount_workshop > 0) {
     lines.push({
-      label: pdfSafeText(`Workshop: ${workshopLabel ?? registration.workshop ?? "-"}`),
-      amount: registration.amount_workshop,
+      description: pdfSafeText(`Workshop: ${workshopLabel ?? registration.workshop ?? "-"}`),
+      amount: Number(registration.amount_workshop),
     })
   }
 
   if (registration.amount_battle > 0) {
     const label = battleLabels.length > 0 ? battleLabels.join(", ") : "Battle"
     lines.push({
-      label: pdfSafeText(`Battle: ${label}`),
-      amount: registration.amount_battle,
+      description: pdfSafeText(`Battle: ${label}`),
+      amount: Number(registration.amount_battle),
     })
   }
 
   if (registration.surcharge_late > 0) {
     lines.push({
-      label: "Maggiorazione iscrizione in ritardo",
-      amount: registration.surcharge_late,
+      description: "Maggiorazione iscrizione in ritardo",
+      amount: Number(registration.surcharge_late),
     })
   }
 
   if (registration.surcharge_onsite > 0) {
     lines.push({
-      label: "Maggiorazione pagamento sul posto",
-      amount: registration.surcharge_onsite,
+      description: "Maggiorazione pagamento sul posto",
+      amount: Number(registration.surcharge_onsite),
     })
   }
+
+  // Iscrizione senza voci a pagamento: la ricevuta deve comunque avere una riga.
+  if (lines.length === 0) lines.push({ description: "Iscrizione SENTI COME SUONA vol.3", amount: null })
 
   return lines
 }
 
-async function tryEmbedImage(pdfDoc: PDFDocument, bytes: Uint8Array) {
-  try {
-    return await pdfDoc.embedPng(bytes)
-  } catch {
-    try {
-      return await pdfDoc.embedJpg(bytes)
-    } catch {
-      return null
-    }
-  }
-}
+// Ricevuta valida dell'iscrizione: riusata se l'importo e' lo stesso,
+// altrimenti annullata e sostituita da una nuova.
+async function getOrIssueReceipt(
+  supabaseAdmin: SupabaseClient,
+  registration: Registration,
+  items: ReceiptItem[]
+): Promise<{ row: ReceiptRow; pdf: Uint8Array }> {
+  const total = importoPagato(registration)
+  const { data: existing } = await supabaseAdmin
+    .from("receipts")
+    .select("*")
+    .eq("registration_id", registration.id)
+    .is("cancelled_at", null)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle<ReceiptRow>()
 
-function drawWrappedText(
-  page: PDFPage,
-  text: string,
-  options: {
-    x: number
-    y: number
-    maxWidth: number
-    font: PDFFont
-    size: number
-    lineHeight: number
-    color?: ReturnType<typeof rgb>
+  if (existing && Number(existing.total) === total) {
+    return { row: existing, pdf: await ensureReceiptPdf(supabaseAdmin, existing) }
   }
-): number {
-  const words = text.split(/\s+/).filter(Boolean)
-  let line = ""
-  let y = options.y
-  const color = options.color ?? rgb(0.35, 0.35, 0.35)
-
-  const flushLine = () => {
-    if (!line) return
-    page.drawText(line, { x: options.x, y, size: options.size, font: options.font, color })
-    y -= options.lineHeight
-    line = ""
+  if (existing) {
+    await supabaseAdmin
+      .from("receipts")
+      .update({ cancelled_at: new Date().toISOString() })
+      .eq("id", existing.id)
   }
 
-  for (const word of words) {
-    const candidate = line ? `${line} ${word}` : word
-    if (options.font.widthOfTextAtSize(candidate, options.size) > options.maxWidth) {
-      flushLine()
-      line = word
-    } else {
-      line = candidate
-    }
-  }
-  flushLine()
-
-  return y
-}
-
-async function buildReceiptPdf(params: {
-  registration: Registration
-  settings: AppSettings
-  workshopLabel: string | null
-  battleLabels: string[]
-  stampBytes: Uint8Array | null
-}): Promise<Uint8Array> {
-  const { registration, settings, workshopLabel, battleLabels, stampBytes } = params
-
-  const pdfDoc = await PDFDocument.create()
-  const page = pdfDoc.addPage([595.28, 841.89])
-  const { width } = page.getSize()
-
-  const font = await pdfDoc.embedFont(StandardFonts.Helvetica)
-  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
-
-  const marginX = 50
-  const contentWidth = width - marginX * 2
-  const black = rgb(0.1, 0.1, 0.1)
-  const gray = rgb(0.4, 0.4, 0.4)
-
-  let y = 780
-
-  // Intestazione associazione
-  page.drawText(pdfSafeText(settings.ricevuta_intestazione ?? "Burrumballa APS"), {
-    x: marginX,
-    y,
-    size: 18,
-    font: fontBold,
-    color: black,
-  })
-  y -= 22
-
-  if (settings.ricevuta_indirizzo) {
-    page.drawText(pdfSafeText(settings.ricevuta_indirizzo), {
-      x: marginX,
-      y,
-      size: 10,
-      font,
-      color: gray,
-    })
-    y -= 14
-  }
-  if (settings.ricevuta_piva_cf) {
-    page.drawText(pdfSafeText(settings.ricevuta_piva_cf), {
-      x: marginX,
-      y,
-      size: 10,
-      font,
-      color: gray,
-    })
-    y -= 14
-  }
-
-  y -= 20
-  page.drawLine({
-    start: { x: marginX, y },
-    end: { x: width - marginX, y },
-    thickness: 1,
-    color: rgb(0.8, 0.8, 0.8),
-  })
-  y -= 28
-
-  page.drawText("RICEVUTA DI PAGAMENTO", { x: marginX, y, size: 14, font: fontBold, color: black })
-  y -= 20
-
-  page.drawText(`N. ricevuta: ${receiptNumber(registration)}`, {
-    x: marginX,
-    y,
-    size: 11,
-    font,
-    color: black,
-  })
-  y -= 16
-  page.drawText(`Data: ${formatDate(new Date())}`, { x: marginX, y, size: 11, font, color: black })
-  y -= 30
-
-  page.drawText("Iscritto/a", { x: marginX, y, size: 10, font: fontBold, color: gray })
-  y -= 15
-  page.drawText(pdfSafeText(`${registration.nome} ${registration.cognome}`), {
-    x: marginX,
-    y,
-    size: 12,
-    font,
-    color: black,
-  })
-  y -= 15
-  page.drawText(pdfSafeText(registration.email), { x: marginX, y, size: 11, font, color: gray })
-  y -= 35
-
-  // Tabella voci
-  const colDescX = marginX
-  const colAmountX = width - marginX - 80
-
-  page.drawText("Descrizione", { x: colDescX, y, size: 10, font: fontBold, color: gray })
-  page.drawText("Importo", { x: colAmountX, y, size: 10, font: fontBold, color: gray })
-  y -= 10
-  page.drawLine({
-    start: { x: marginX, y },
-    end: { x: width - marginX, y },
-    thickness: 0.75,
-    color: rgb(0.8, 0.8, 0.8),
-  })
-  y -= 20
-
-  const lines = buildReceiptLines(registration, workshopLabel, battleLabels)
-  for (const line of lines) {
-    page.drawText(line.label, { x: colDescX, y, size: 11, font, color: black })
-    if (line.amount !== null) {
-      page.drawText(formatCurrency(line.amount), {
-        x: colAmountX,
-        y,
-        size: 11,
-        font,
-        color: black,
-      })
-    }
-    y -= 20
-  }
-
-  y -= 5
-  page.drawLine({
-    start: { x: marginX, y },
-    end: { x: width - marginX, y },
-    thickness: 1,
-    color: rgb(0.6, 0.6, 0.6),
-  })
-  y -= 25
-
-  page.drawText("Totale pagato", { x: colDescX, y, size: 13, font: fontBold, color: black })
-  page.drawText(formatCurrency(importoPagato(registration)), {
-    x: colAmountX,
-    y,
-    size: 13,
-    font: fontBold,
-    color: black,
-  })
-  y -= 40
-
-  if (settings.ricevuta_iban) {
-    page.drawText(pdfSafeText(`IBAN: ${settings.ricevuta_iban}`), {
-      x: marginX,
-      y,
-      size: 10,
-      font,
-      color: gray,
-    })
-    y -= 25
-  }
-
-  if (settings.ricevuta_note) {
-    y = drawWrappedText(page, pdfSafeText(settings.ricevuta_note), {
-      x: marginX,
-      y,
-      maxWidth: contentWidth,
-      font,
-      size: 9,
-      lineHeight: 12,
-    })
-  }
-
-  // Timbro: posizione fissa in basso a destra.
-  if (stampBytes) {
-    const stampImage = await tryEmbedImage(pdfDoc, stampBytes)
-    if (stampImage) {
-      const maxStampSize = 110
-      const scale = Math.min(
-        maxStampSize / stampImage.width,
-        maxStampSize / stampImage.height,
-        1
-      )
-      const stampWidth = stampImage.width * scale
-      const stampHeight = stampImage.height * scale
-      page.drawImage(stampImage, {
-        x: width - marginX - stampWidth,
-        y: 60,
-        width: stampWidth,
-        height: stampHeight,
-      })
-    }
-  }
-
-  return pdfDoc.save()
+  return issueReceipt(
+    supabaseAdmin,
+    {
+      recipient_name: `${registration.nome} ${registration.cognome}`,
+      recipient_email: registration.email,
+      items,
+      total,
+      payment_method: INCASSO_BY_STATUS[registration.payment_status],
+      registration_id: registration.id,
+    },
+    null
+  )
 }
 
 function confermaPagamento(registration: Registration): string {
@@ -445,7 +222,7 @@ function confermaPagamento(registration: Registration): string {
     : "Abbiamo ricevuto il tuo pagamento"
 }
 
-function buildEmailHtml(registration: Registration, settings: AppSettings): string {
+function buildEmailHtml(registration: Registration, settings: ReceiptSettings): string {
   return `
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
       <h1 style="font-size: 20px;">Pagamento confermato — SENTI COME SUONA vol.3</h1>
@@ -457,7 +234,7 @@ function buildEmailHtml(registration: Registration, settings: AppSettings): stri
   `
 }
 
-function buildEmailText(registration: Registration, settings: AppSettings): string {
+function buildEmailText(registration: Registration, settings: ReceiptSettings): string {
   return [
     "Pagamento confermato — SENTI COME SUONA vol.3",
     "",
@@ -484,7 +261,8 @@ Deno.serve(async (req: Request) => {
       500
     )
   }
-  if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS) {
+  const smtp = smtpConfigFromEnv()
+  if (!smtp) {
     return jsonResponse(
       { error: "Configurazione SMTP incompleta (SMTP_HOST/SMTP_PORT/SMTP_USER/SMTP_PASS)" },
       500
@@ -561,11 +339,9 @@ Deno.serve(async (req: Request) => {
   try {
     const { data: settingsRow, error: settingsError } = await supabaseAdmin
       .from("app_settings")
-      .select(
-        "ricevuta_intestazione, ricevuta_indirizzo, ricevuta_piva_cf, ricevuta_iban, ricevuta_note, timbro_url, email_mittente_generale"
-      )
+      .select(RECEIPT_SETTINGS_COLUMNS)
       .eq("id", 1)
-      .single<AppSettings>()
+      .single<ReceiptSettings>()
 
     if (settingsError) throw new Error(`Impostazioni non disponibili: ${settingsError.message}`)
 
@@ -596,59 +372,21 @@ Deno.serve(async (req: Request) => {
       (chiave) => options?.find((o) => o.tipo === "battle" && o.chiave === chiave)?.label ?? chiave
     )
 
-    let stampBytes: Uint8Array | null = null
-    if (settingsRow.timbro_url) {
-      const { data: stampBlob, error: stampError } = await supabaseAdmin.storage
-        .from(TIMBRO_BUCKET)
-        .download(settingsRow.timbro_url)
-
-      if (!stampError && stampBlob) {
-        stampBytes = new Uint8Array(await stampBlob.arrayBuffer())
-      }
-    }
-
-    const pdfBytes = await buildReceiptPdf({
+    const { row: receipt, pdf } = await getOrIssueReceipt(
+      supabaseAdmin,
       registration,
-      settings: settingsRow,
-      workshopLabel,
-      battleLabels,
-      stampBytes,
+      buildReceiptLines(registration, workshopLabel, battleLabels)
+    )
+
+    await sendMail(smtp, {
+      from: fromAddress(smtp, senderAddress, settingsRow.ricevuta_intestazione),
+      to: registration.email,
+      subject: EMAIL_SUBJECT,
+      text: buildEmailText(registration, settingsRow),
+      html: buildEmailHtml(registration, settingsRow),
+      attachment: { filename: receiptFilename(receipt), content: pdf },
     })
-
-    const fromAddress = senderAddress
-      ? settingsRow.ricevuta_intestazione
-        ? `${settingsRow.ricevuta_intestazione} <${senderAddress}>`
-        : senderAddress
-      : SMTP_FROM_FALLBACK
-
-    const smtpClient = new SMTPClient({
-      connection: {
-        hostname: SMTP_HOST,
-        port: Number(SMTP_PORT),
-        tls: Number(SMTP_PORT) === 465,
-        auth: { username: SMTP_USER, password: SMTP_PASS },
-      },
-    })
-
-    try {
-      await smtpClient.send({
-        from: fromAddress,
-        to: registration.email,
-        subject: EMAIL_SUBJECT,
-        content: buildEmailText(registration, settingsRow),
-        html: buildEmailHtml(registration, settingsRow),
-        attachments: [
-          {
-            filename: `ricevuta-${receiptNumber(registration)}.pdf`,
-            content: pdfBytes,
-            contentType: "application/pdf",
-            encoding: "binary",
-          },
-        ],
-      })
-    } finally {
-      await smtpClient.close()
-    }
+    await markReceiptSent(supabaseAdmin, receipt.id, registration.email)
 
     return jsonResponse({ ok: true, skipped: false })
   } catch (error) {

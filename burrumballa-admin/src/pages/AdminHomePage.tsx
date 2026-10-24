@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom"
-import { CalendarDays, GraduationCap, Globe, LogOut, Settings } from "lucide-react"
+import { CalendarDays, GraduationCap, Globe, LogOut, ReceiptText, Settings } from "lucide-react"
 
 import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
@@ -26,6 +26,13 @@ const SECTIONS = [
     title: "Gestione eventi",
     description: "Eventi, iscritti e pagina dedicata.",
     button: "Apri gestione eventi",
+  },
+  {
+    path: "/admin/ricevute",
+    icon: ReceiptText,
+    title: "Ricevute",
+    description: "Archivio delle ricevute numerate di scuola ed eventi, e nuove ricevute.",
+    button: "Apri ricevute",
   },
 ]
 

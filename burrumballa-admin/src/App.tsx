@@ -21,6 +21,7 @@ import GestioneEventiPage from "@/pages/GestioneEventiPage"
 import CorsiGestionePage from "@/pages/corsi/CorsiGestionePage"
 import IscrittiScuolaPage from "@/pages/corsi/IscrittiScuolaPage"
 import IncassiScuolaPage from "@/pages/corsi/IncassiScuolaPage"
+import RicevutePage from "@/pages/RicevutePage"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
 
 function App() {
@@ -169,6 +170,14 @@ function App() {
         element={
           <ProtectedRoute>
             <IncassiScuolaPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/ricevute"
+        element={
+          <ProtectedRoute>
+            <RicevutePage />
           </ProtectedRoute>
         }
       />

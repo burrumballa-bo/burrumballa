@@ -9,14 +9,23 @@ interface DialogProps {
   children: React.ReactNode
 }
 
+// Dialog aperti, dal piu' vecchio al piu' recente: Esc chiude solo l'ultimo
+// (es. la ricevuta aperta sopra la scheda iscritto).
+const openStack: symbol[] = []
+
 function Dialog({ open, onOpenChange, children }: DialogProps) {
   React.useEffect(() => {
     if (!open) return
+    const id = Symbol("dialog")
+    openStack.push(id)
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onOpenChange(false)
+      if (e.key === "Escape" && openStack[openStack.length - 1] === id) onOpenChange(false)
     }
     document.addEventListener("keydown", onKeyDown)
-    return () => document.removeEventListener("keydown", onKeyDown)
+    return () => {
+      document.removeEventListener("keydown", onKeyDown)
+      openStack.splice(openStack.indexOf(id), 1)
+    }
   }, [open, onOpenChange])
 
   if (!open) return null
