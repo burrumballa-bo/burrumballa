@@ -15,7 +15,6 @@ import {
   type LucideIcon,
 } from "lucide-react"
 
-import { useAuth } from "@/hooks/useAuth"
 import { supabase } from "@/lib/supabase"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -99,7 +98,6 @@ function isItemActive(item: NavItem, pathname: string) {
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const navigate = useNavigate()
   const { pathname } = useLocation()
-  const { session } = useAuth()
   const [openGroups, setOpenGroups] = useState(loadOpenGroups)
 
   const toggleGroup = (label: string) =>
@@ -185,11 +183,6 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         })}
       </nav>
       <div className="border-t p-3">
-        {session?.user.email && (
-          <p className="text-muted-foreground truncate px-1 pb-2 text-xs" title={session.user.email}>
-            {session.user.email}
-          </p>
-        )}
         <Button variant="outline" size="sm" className="w-full" onClick={handleLogout}>
           <LogOut />
           Esci
