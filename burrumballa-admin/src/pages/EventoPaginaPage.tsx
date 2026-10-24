@@ -385,8 +385,8 @@ export default function EventoPaginaPage() {
                   <p className="text-muted-foreground text-xs">
                     Indirizzo da cui partono le email dell&apos;evento (conferma
                     iscrizione e ricevuta di pagamento) e a cui arrivano le
-                    risposte degli iscritti. L&apos;email dei contatti del sito è
-                    un&apos;altra e si imposta in Impostazioni.
+                    risposte degli iscritti. Se vuoto viene usato il mittente
+                    generale impostato in Impostazioni.
                   </p>
                 )}
               </div>

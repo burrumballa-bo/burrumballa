@@ -19,8 +19,9 @@
 //   SMTP_PORT   - porta SMTP (465 = TLS implicito, 587 = STARTTLS)
 //   SMTP_USER   - utente/casella SMTP
 //   SMTP_PASS   - password della casella SMTP
-//   SMTP_FROM   - mittente di fallback "Nome <email@dominio>",
-//                 usato solo se event_info.email_mittente e' vuoto
+//   SMTP_FROM   - mittente di fallback "Nome <email@dominio>", usato solo
+//                 se event_info.email_mittente e
+//                 app_settings.email_mittente_generale sono vuoti
 //                 (opzionale, default SMTP_USER)
 //
 // SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY sono iniettate automaticamente
@@ -104,6 +105,7 @@ interface AppSettings {
   ricevuta_iban: string | null
   ricevuta_note: string | null
   timbro_url: string | null
+  email_mittente_generale: string | null
 }
 
 function formatCurrency(value: number): string {
@@ -560,23 +562,23 @@ Deno.serve(async (req: Request) => {
     const { data: settingsRow, error: settingsError } = await supabaseAdmin
       .from("app_settings")
       .select(
-        "ricevuta_intestazione, ricevuta_indirizzo, ricevuta_piva_cf, ricevuta_iban, ricevuta_note, timbro_url"
+        "ricevuta_intestazione, ricevuta_indirizzo, ricevuta_piva_cf, ricevuta_iban, ricevuta_note, timbro_url, email_mittente_generale"
       )
       .eq("id", 1)
       .single<AppSettings>()
 
     if (settingsError) throw new Error(`Impostazioni non disponibili: ${settingsError.message}`)
 
-    // Il mittente e' quello dell'evento (event_info.email_mittente), non
-    // piu' quello delle impostazioni generali: in Impostazioni ora c'e'
-    // l'email dei contatti del sito, che e' un'altra cosa.
+    // Il mittente e' quello dell'evento (event_info.email_mittente); se
+    // vuoto si ricade sul mittente generale delle Impostazioni.
     const { data: eventInfo } = await supabaseAdmin
       .from("event_info")
       .select("email_mittente")
       .eq("id", 1)
       .maybeSingle<{ email_mittente: string | null }>()
 
-    const senderAddress = eventInfo?.email_mittente?.trim() || null
+    const senderAddress =
+      eventInfo?.email_mittente?.trim() || settingsRow.email_mittente_generale?.trim() || null
 
     const chiavi = [
       ...(registration.workshop ? [registration.workshop] : []),

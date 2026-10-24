@@ -2,7 +2,7 @@ import { useEffect, useState, type ChangeEvent } from "react"
 import { useNavigate } from "react-router-dom"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import { ArrowLeft, Loader2, Stamp } from "lucide-react"
+import { ArrowLeft, Loader2, PenLine, Stamp, type LucideIcon } from "lucide-react"
 import { toast } from "sonner"
 
 import {
@@ -15,9 +15,11 @@ import {
   emptyAppSettingsFormValues,
   type AppSettingsFormValues,
 } from "@/lib/appSettingsSchema"
+import { seasonLabel, currentSeason } from "@/lib/seasons"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Select } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import {
   Card,
@@ -27,68 +29,136 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 
-const MAX_TIMBRO_SIZE_BYTES = 3 * 1024 * 1024
+const MAX_IMAGE_SIZE_BYTES = 3 * 1024 * 1024
+
+const MONTHS = [
+  "Gennaio",
+  "Febbraio",
+  "Marzo",
+  "Aprile",
+  "Maggio",
+  "Giugno",
+  "Luglio",
+  "Agosto",
+  "Settembre",
+  "Ottobre",
+  "Novembre",
+  "Dicembre",
+]
+
+// Timbro e firma: anteprima del file salvato (signed URL) o di quello
+// appena scelto, caricato solo al salvataggio del form.
+function SettingsImageField({
+  label,
+  storedPath,
+  file,
+  onFileChange,
+  placeholderIcon: PlaceholderIcon,
+}: {
+  label: string
+  storedPath: string | null | undefined
+  file: File | null
+  onFileChange: (file: File) => void
+  placeholderIcon: LucideIcon
+}) {
+  const signedUrlQuery = useTimbroSignedUrl(storedPath)
+  const [preview, setPreview] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!file) {
+      setPreview(null)
+      return
+    }
+    const url = URL.createObjectURL(file)
+    setPreview(url)
+    return () => URL.revokeObjectURL(url)
+  }, [file])
+
+  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const selected = event.target.files?.[0]
+    event.target.value = ""
+    if (!selected) return
+
+    if (!selected.type.startsWith("image/")) {
+      toast.error(`${label}: il file deve essere un'immagine.`)
+      return
+    }
+    if (selected.size > MAX_IMAGE_SIZE_BYTES) {
+      toast.error(`${label}: l'immagine non può superare i 3 MB.`)
+      return
+    }
+    onFileChange(selected)
+  }
+
+  const displayedUrl = preview ?? signedUrlQuery.data ?? null
+
+  return (
+    <div className="space-y-3">
+      <Label>{label}</Label>
+      {displayedUrl ? (
+        <img
+          src={displayedUrl}
+          alt={`Anteprima ${label.toLowerCase()}`}
+          className="border-input h-32 w-32 rounded-md border object-contain p-2"
+        />
+      ) : (
+        <div className="border-input text-muted-foreground flex h-32 w-32 items-center justify-center rounded-md border border-dashed">
+          <PlaceholderIcon className="size-8" />
+        </div>
+      )}
+      <Input type="file" accept="image/*" aria-label={`Carica ${label.toLowerCase()}`} onChange={handleChange} />
+      {file && (
+        <p className="text-muted-foreground text-sm">
+          Nuovo file selezionato: {file.name} (verrà caricato al salvataggio)
+        </p>
+      )}
+    </div>
+  )
+}
 
 export default function ImpostazioniPage() {
   const navigate = useNavigate()
   const settingsQuery = useAppSettings()
   const updateSettings = useUpdateAppSettings()
-  const timbroSignedUrlQuery = useTimbroSignedUrl(settingsQuery.data?.timbro_url)
 
   const [timbroFile, setTimbroFile] = useState<File | null>(null)
-  const [timbroPreview, setTimbroPreview] = useState<string | null>(null)
+  const [firmaFile, setFirmaFile] = useState<File | null>(null)
+
+  const settings = settingsQuery.data
 
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<AppSettingsFormValues>({
     resolver: zodResolver(appSettingsSchema),
-    values: settingsQuery.data
+    values: settings
       ? {
-          email_contatti: settingsQuery.data.email_contatti ?? "",
-          ricevuta_intestazione: settingsQuery.data.ricevuta_intestazione ?? "",
-          ricevuta_indirizzo: settingsQuery.data.ricevuta_indirizzo ?? "",
-          ricevuta_piva_cf: settingsQuery.data.ricevuta_piva_cf ?? "",
-          ricevuta_iban: settingsQuery.data.ricevuta_iban ?? "",
-          ricevuta_note: settingsQuery.data.ricevuta_note ?? "",
+          email_contatti: settings.email_contatti ?? "",
+          email_mittente_generale: settings.email_mittente_generale ?? "",
+          ricevuta_intestazione: settings.ricevuta_intestazione ?? "",
+          ricevuta_indirizzo: settings.ricevuta_indirizzo ?? "",
+          ricevuta_piva_cf: settings.ricevuta_piva_cf ?? "",
+          ricevuta_iban: settings.ricevuta_iban ?? "",
+          ricevuta_note: settings.ricevuta_note ?? "",
+          presidente_nome: settings.presidente_nome ?? "",
+          stagione_mese_inizio: String(settings.stagione_mese_inizio ?? 9),
+          prezzo_tessera: settings.prezzo_tessera != null ? String(settings.prezzo_tessera) : "",
+          prezzo_quota_iscrizione:
+            settings.prezzo_quota_iscrizione != null ? String(settings.prezzo_quota_iscrizione) : "",
         }
       : emptyAppSettingsFormValues,
   })
 
-  useEffect(() => {
-    if (!timbroFile) {
-      setTimbroPreview(null)
-      return
-    }
-    const url = URL.createObjectURL(timbroFile)
-    setTimbroPreview(url)
-    return () => URL.revokeObjectURL(url)
-  }, [timbroFile])
-
-  const handleTimbroChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    event.target.value = ""
-    if (!file) return
-
-    if (!file.type.startsWith("image/")) {
-      toast.error("Il timbro deve essere un'immagine.")
-      return
-    }
-    if (file.size > MAX_TIMBRO_SIZE_BYTES) {
-      toast.error("L'immagine del timbro non può superare i 3 MB.")
-      return
-    }
-    setTimbroFile(file)
-  }
-
   const onSubmit = (values: AppSettingsFormValues) => {
     updateSettings.mutate(
-      { values, timbroFile },
+      { values, timbroFile, firmaFile },
       {
         onSuccess: () => {
           toast.success("Impostazioni salvate.")
           setTimbroFile(null)
+          setFirmaFile(null)
         },
         onError: (error) => {
           toast.error("Salvataggio non riuscito.", {
@@ -99,7 +169,7 @@ export default function ImpostazioniPage() {
     )
   }
 
-  const displayedTimbroUrl = timbroPreview ?? timbroSignedUrlQuery.data ?? null
+  const startMonth = Number(watch("stagione_mese_inizio")) || 9
 
   if (settingsQuery.isLoading) {
     return (
@@ -132,30 +202,51 @@ export default function ImpostazioniPage() {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>Email contatti</CardTitle>
+            <CardTitle>Email</CardTitle>
             <CardDescription>
-              Indirizzo a cui arrivano i messaggi del form contatti del sito
-              (home, popup &quot;iscriviti a un corso&quot; e &quot;lezione di
-              prova&quot;). È anche il contatto pubblico mostrato
-              nell&apos;informativa privacy. Il mittente delle email
-              dell&apos;evento si imposta invece in Evento → Modifica pagina
-              evento.
+              Il mittente delle email dell&apos;evento si imposta in Evento →
+              Modifica pagina evento; se lì è vuoto viene usato il mittente
+              generale.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2">
-            <Label htmlFor="email_contatti">Email contatti</Label>
-            <Input
-              id="email_contatti"
-              type="email"
-              placeholder="info@burrumballa.it"
-              aria-invalid={!!errors.email_contatti}
-              {...register("email_contatti")}
-            />
-            {errors.email_contatti && (
-              <p className="text-destructive text-sm">
-                {errors.email_contatti.message}
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email_contatti">Email contatti</Label>
+              <Input
+                id="email_contatti"
+                type="email"
+                placeholder="info@burrumballa.it"
+                aria-invalid={!!errors.email_contatti}
+                {...register("email_contatti")}
+              />
+              <p className="text-muted-foreground text-xs">
+                Riceve i messaggi del form contatti del sito ed è il contatto
+                pubblico mostrato nell&apos;informativa privacy.
               </p>
-            )}
+              {errors.email_contatti && (
+                <p className="text-destructive text-sm">{errors.email_contatti.message}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email_mittente_generale">Mittente generale</Label>
+              <Input
+                id="email_mittente_generale"
+                type="email"
+                placeholder="segreteria@burrumballa.it"
+                aria-invalid={!!errors.email_mittente_generale}
+                {...register("email_mittente_generale")}
+              />
+              <p className="text-muted-foreground text-xs">
+                Indirizzo da cui partono le ricevute della scuola e quelle
+                create a mano. Deve essere una casella abilitata all&apos;invio
+                sul server di posta.
+              </p>
+              {errors.email_mittente_generale && (
+                <p className="text-destructive text-sm">
+                  {errors.email_mittente_generale.message}
+                </p>
+              )}
+            </div>
           </CardContent>
         </Card>
 
@@ -163,10 +254,9 @@ export default function ImpostazioniPage() {
           <CardHeader>
             <CardTitle>Dati per la ricevuta</CardTitle>
             <CardDescription>
-              Usati dalle Edge Functions per generare la ricevuta PDF.
-              Intestazione e IBAN vengono mostrati anche a chi si iscrive con
-              pagamento tramite bonifico, nella pagina di conferma
-              iscrizione.
+              Usati per generare le ricevute PDF. Intestazione e IBAN vengono
+              mostrati anche a chi si iscrive all&apos;evento con pagamento
+              tramite bonifico, nella pagina di conferma iscrizione.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -213,37 +303,98 @@ export default function ImpostazioniPage() {
             <div className="space-y-2">
               <Label htmlFor="ricevuta_note">Note</Label>
               <Textarea id="ricevuta_note" rows={3} {...register("ricevuta_note")} />
+              <p className="text-muted-foreground text-xs">
+                Stampate in fondo a ogni ricevuta.
+              </p>
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Timbro</CardTitle>
+            <CardTitle>Timbro e firma</CardTitle>
             <CardDescription>
-              Immagine del timbro usata nella ricevuta PDF, caricata nel bucket privato
-              "assets".
+              Immagini stampate in fondo alla ricevuta PDF, salvate nel bucket
+              privato &quot;assets&quot;. Per la firma usa un PNG con sfondo
+              trasparente.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {displayedTimbroUrl ? (
-              <img
-                src={displayedTimbroUrl}
-                alt="Anteprima timbro"
-                className="border-input h-32 w-32 rounded-md border object-contain p-2"
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="presidente_nome">Nome del presidente</Label>
+              <Input
+                id="presidente_nome"
+                placeholder="Mario Rossi"
+                {...register("presidente_nome")}
               />
-            ) : (
-              <div className="border-input text-muted-foreground flex h-32 w-32 items-center justify-center rounded-md border border-dashed">
-                <Stamp className="size-8" />
-              </div>
-            )}
-            <Input type="file" accept="image/*" onChange={handleTimbroChange} />
-            {timbroFile && (
-              <p className="text-muted-foreground text-sm">
-                Nuovo file selezionato: {timbroFile.name} (verrà caricato al
-                salvataggio)
+              <p className="text-muted-foreground text-xs">
+                Compare sotto la firma come &quot;Il Presidente — nome&quot;.
               </p>
-            )}
+            </div>
+            <div className="grid gap-6 sm:grid-cols-2">
+              <SettingsImageField
+                label="Timbro"
+                storedPath={settings?.timbro_url}
+                file={timbroFile}
+                onFileChange={setTimbroFile}
+                placeholderIcon={Stamp}
+              />
+              <SettingsImageField
+                label="Firma del presidente"
+                storedPath={settings?.firma_url}
+                file={firmaFile}
+                onFileChange={setFirmaFile}
+                placeholderIcon={PenLine}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Scuola</CardTitle>
+            <CardDescription>
+              Tessere e quote di iscrizione valgono per una stagione. Gli
+              importi qui sotto vengono proposti in automatico nella scheda
+              iscritto e si possono sempre cambiare caso per caso.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-3">
+            <div className="space-y-2">
+              <Label htmlFor="stagione_mese_inizio">Inizio stagione</Label>
+              <Select id="stagione_mese_inizio" {...register("stagione_mese_inizio")}>
+                {MONTHS.map((month, i) => (
+                  <option key={month} value={String(i + 1)}>
+                    {month}
+                  </option>
+                ))}
+              </Select>
+              <p className="text-muted-foreground text-xs">
+                Stagione in corso: {seasonLabel(currentSeason(startMonth))}
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="prezzo_tessera">Prezzo tessera (€)</Label>
+              <Input
+                id="prezzo_tessera"
+                type="number"
+                min={0}
+                step="0.01"
+                aria-invalid={!!errors.prezzo_tessera}
+                {...register("prezzo_tessera")}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="prezzo_quota_iscrizione">Quota di iscrizione (€)</Label>
+              <Input
+                id="prezzo_quota_iscrizione"
+                type="number"
+                min={0}
+                step="0.01"
+                aria-invalid={!!errors.prezzo_quota_iscrizione}
+                {...register("prezzo_quota_iscrizione")}
+              />
+            </div>
           </CardContent>
         </Card>
 
