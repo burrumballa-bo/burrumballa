@@ -16,6 +16,7 @@ import { Select } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { RegistrationAmounts, RegistrationFields } from "@/components/RegistrationFields"
 import { EMPTY_REGISTRATION_FIELDS, fieldValuesToRegistration } from "@/lib/registrationFields"
+import { useEventId } from "@/hooks/useEventId"
 import { useEventInfo } from "@/hooks/useEventInfo"
 import { useEventOptionsStato } from "@/hooks/useEventOptionsStato"
 import { notifyReceiptResult } from "@/hooks/usePaymentStatusChange"
@@ -25,16 +26,24 @@ import {
   PAYMENT_STATUS_BADGE_CLASSES,
   PAYMENT_STATUS_LABELS,
 } from "@/lib/paymentStatus"
-import { calcolaImporti, parsePrezzoAdmin } from "@/lib/pricing"
+import { calcolaImporti, parsePrezzoAdmin, type EventPricing } from "@/lib/pricing"
 import type { PaymentStatus } from "@/types/registration"
+
+// Solo finche' l'evento non e' caricato: gli importi veri usano i suoi prezzi.
+const DEFAULT_PRICING: EventPricing = {
+  battle_prezzi: [],
+  maggiorazione_ritardo: 0,
+  maggiorazione_sul_posto: 0,
+}
 
 interface RegistrationCreateModalProps {
   onClose: () => void
 }
 
 export function RegistrationCreateModal({ onClose }: RegistrationCreateModalProps) {
-  const optionsQuery = useEventOptionsStato()
-  const eventInfoQuery = useEventInfo()
+  const eventId = useEventId()
+  const optionsQuery = useEventOptionsStato(eventId)
+  const eventInfoQuery = useEventInfo(eventId)
   const createRegistration = useCreateRegistration()
 
   const [fields, setFields] = useState(EMPTY_REGISTRATION_FIELDS)
@@ -56,6 +65,7 @@ export function RegistrationCreateModal({ onClose }: RegistrationCreateModalProp
     paymentMethod: fields.paymentMethod,
     workshopOptions,
     deadline: scadenza ? new Date(scadenza) : null,
+    pricing: eventInfoQuery.data ?? DEFAULT_PRICING,
   })
 
   // Gli stati "pagato" seguono il metodo scelto: bonifico -> pagato
@@ -73,6 +83,7 @@ export function RegistrationCreateModal({ onClose }: RegistrationCreateModalProp
   const handleCreate = () => {
     createRegistration.mutate(
       {
+        event_id: eventId,
         ...values,
         ...importi,
         payment_status: paymentStatus,
@@ -177,7 +188,10 @@ export function RegistrationCreateModal({ onClose }: RegistrationCreateModalProp
           <Button type="button" variant="outline" onClick={onClose}>
             Annulla
           </Button>
-          <Button onClick={handleCreate} disabled={!isValid || createRegistration.isPending}>
+          <Button
+            onClick={handleCreate}
+            disabled={!isValid || !eventInfoQuery.data || createRegistration.isPending}
+          >
             {createRegistration.isPending && <Loader2 className="animate-spin" />}
             Crea iscritto
           </Button>

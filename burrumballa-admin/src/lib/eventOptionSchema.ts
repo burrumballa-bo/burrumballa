@@ -43,6 +43,7 @@ export const eventOptionSchema = z
     sold_out_manuale: z.boolean(),
     // Rilevanti solo per tipo 'workshop': per 'battle' restano sempre false/[].
     composto: z.boolean(),
+    richiede_partner: z.boolean(),
     child_ids: z.array(z.string()),
   })
   .refine((v) => !v.composto || v.child_ids.length > 0, {

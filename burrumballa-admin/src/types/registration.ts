@@ -4,6 +4,7 @@ export type PaymentStatus = "da_pagare" | "pagato_bonifico" | "pagato_in_loco" |
 
 export interface Registration {
   id: string
+  event_id: number
   created_at: string
   nome: string
   cognome: string

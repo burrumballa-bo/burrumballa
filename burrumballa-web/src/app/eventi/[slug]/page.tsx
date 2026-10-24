@@ -1,22 +1,19 @@
 import type { Metadata } from "next"
+import { notFound } from "next/navigation"
 import { MapPin } from "lucide-react"
 
 import { RegistrationForm } from "@/components/registration/registration-form"
-import { PersonAvatar } from "@/components/senti-come-suona/person-avatar"
-import { TribaleBackground } from "@/components/senti-come-suona/tribale-background"
-import { TribaleStrip } from "@/components/senti-come-suona/tribale-strip"
+import { PersonAvatar } from "@/components/event-page/person-avatar"
+import { TribaleBackground } from "@/components/event-page/tribale-background"
+import { TribaleStrip } from "@/components/event-page/tribale-strip"
 import { cn } from "@/lib/utils"
 import {
   formatEventDate,
   formatEventDayMonthName,
   formatEventTimeRange,
-  getEventInfo,
+  getEventBySlug,
 } from "@/lib/event-info"
-import {
-  getEventPeople,
-  getSignedAssetUrls,
-  sentiComeSuonaPath,
-} from "@/lib/senti-come-suona-assets"
+import { getEventPeople, getSignedAssetUrls } from "@/lib/event-assets"
 
 import { buildEventMetadata } from "./metadata"
 
@@ -26,32 +23,35 @@ export const dynamic = "force-dynamic"
 // Taglio diagonale ricorrente nel design (tag, pillole, CTA).
 const DIAGONAL_CUT = "[clip-path:polygon(0_0,100%_0,94%_100%,0_100%)]"
 
-// File caricati su Storage (bucket 'assets', cartella 'senti_come_suona/').
-const HERO_COVER_FILE = "sfondo_crew.jpeg"
-const HERO_FRAME_FILE = "sfondo_tribale.jpg"
-const HERO_LOGO_FILE = "senti_come_suona_logo.png"
-
-export async function generateMetadata(): Promise<Metadata> {
-  const eventInfo = await getEventInfo()
-  return buildEventMetadata(eventInfo)
+interface EventPageProps {
+  params: Promise<{ slug: string }>
 }
 
-export default async function SentiComeSuonaPage() {
-  const [eventInfo, people] = await Promise.all([getEventInfo(), getEventPeople()])
+export async function generateMetadata({ params }: EventPageProps): Promise<Metadata> {
+  const eventInfo = await getEventBySlug((await params).slug)
+  return eventInfo ? buildEventMetadata(eventInfo) : {}
+}
+
+// Pagina evento dal modello unico: testi, immagini (copertina, cornice,
+// logo), citta' e colori arrivano da event_info, gestiti dall'admin.
+export default async function EventPage({ params }: EventPageProps) {
+  const eventInfo = await getEventBySlug((await params).slug)
+  if (!eventInfo) notFound()
+
+  const people = await getEventPeople(eventInfo.id)
 
   const imagePaths = [
-    sentiComeSuonaPath(HERO_COVER_FILE),
-    sentiComeSuonaPath(HERO_FRAME_FILE),
-    sentiComeSuonaPath(HERO_LOGO_FILE),
-    ...people
-      .map((persona) => persona.immagine_path)
-      .filter((path): path is string => !!path),
-  ]
+    eventInfo.immagine_copertina,
+    eventInfo.immagine_cornice,
+    eventInfo.immagine_logo,
+    ...people.map((persona) => persona.immagine_path),
+  ].filter((path): path is string => !!path)
   const assetUrls = await getSignedAssetUrls(imagePaths)
+  const urlOf = (path: string | null) => (path ? (assetUrls[path] ?? null) : null)
 
-  const coverUrl = assetUrls[sentiComeSuonaPath(HERO_COVER_FILE)] ?? null
-  const frameUrl = assetUrls[sentiComeSuonaPath(HERO_FRAME_FILE)] ?? null
-  const logoUrl = assetUrls[sentiComeSuonaPath(HERO_LOGO_FILE)] ?? null
+  const coverUrl = urlOf(eventInfo.immagine_copertina)
+  const frameUrl = urlOf(eventInfo.immagine_cornice)
+  const logoUrl = urlOf(eventInfo.immagine_logo)
 
   const dataEvento = formatEventDate(
     eventInfo.data_evento,
@@ -110,9 +110,11 @@ export default async function SentiComeSuonaPage() {
                   {dayMonthName}
                 </p>
               )}
-              <p className="mt-2 text-sm font-bold tracking-[0.25em] text-white/70 uppercase sm:text-base lg:text-lg">
-                Bologna · Italy
-              </p>
+              {eventInfo.citta && (
+                <p className="mt-2 text-sm font-bold tracking-[0.25em] text-white/70 uppercase sm:text-base lg:text-lg">
+                  {eventInfo.citta}
+                </p>
+              )}
             </div>
           </div>
 
@@ -124,9 +126,11 @@ export default async function SentiComeSuonaPage() {
                 {dayMonthName}
               </p>
             )}
-            <p className="mt-2 text-sm font-bold tracking-[0.25em] text-white/70 uppercase">
-              Bologna · Italy
-            </p>
+            {eventInfo.citta && (
+              <p className="mt-2 text-sm font-bold tracking-[0.25em] text-white/70 uppercase">
+                {eventInfo.citta}
+              </p>
+            )}
           </div>
         </div>
       </section>
@@ -135,7 +139,7 @@ export default async function SentiComeSuonaPage() {
       <section className="bg-black">
         {/* La linea viola segue la stessa larghezza dell'hero (full-bleed,
             boxed solo su monitor grandi), non quella del blocco testo. */}
-        <div className="border-t-2 border-[#7c1fd6] 2xl:mx-auto 2xl:max-w-6xl" />
+        <div className="border-t-2 border-[color:var(--event-accent-2)] 2xl:mx-auto 2xl:max-w-6xl" />
         <div className="px-5 py-5 lg:mx-auto lg:max-w-3xl lg:px-10 lg:py-8">
           {eventInfo.descrizione && (
             <p className="mb-3 text-[13px] leading-relaxed text-white/75 lg:text-sm">
@@ -145,7 +149,7 @@ export default async function SentiComeSuonaPage() {
 
           {eventInfo.luogo && (
             <div className="mb-3 flex items-center gap-2">
-              <MapPin className="size-4 shrink-0 text-[#f5d90a]" />
+              <MapPin className="size-4 shrink-0 text-[color:var(--event-accent)]" />
               <p className="text-sm font-bold text-white lg:text-base">
                 {eventInfo.luogo}
               </p>
@@ -156,7 +160,7 @@ export default async function SentiComeSuonaPage() {
             <div className="flex flex-wrap gap-2">
               <span
                 className={cn(
-                  "bg-[#f5d90a] px-3 py-2 text-sm font-bold text-black",
+                  "bg-[color:var(--event-accent)] px-3 py-2 text-sm font-bold text-black",
                   DIAGONAL_CUT
                 )}
               >
@@ -201,7 +205,7 @@ export default async function SentiComeSuonaPage() {
                           {persona.nome}
                         </p>
                         {persona.ruolo && (
-                          <p className="text-[8px] font-bold tracking-[0.1em] text-[#f5d90a] uppercase lg:text-[10px]">
+                          <p className="text-[8px] font-bold tracking-[0.1em] text-[color:var(--event-accent)] uppercase lg:text-[10px]">
                             {persona.ruolo}
                           </p>
                         )}
@@ -239,7 +243,7 @@ export default async function SentiComeSuonaPage() {
                         {persona.ruolo && (
                           <p
                             className="text-[7px] font-bold tracking-[0.08em] uppercase lg:text-[9px]"
-                            style={{ color: persona.colore ?? "#a855f7" }}
+                            style={{ color: persona.colore ?? "var(--event-accent-2)" }}
                           >
                             {persona.ruolo}
                           </p>
@@ -255,7 +259,7 @@ export default async function SentiComeSuonaPage() {
       )}
 
       {/* Titolo sezione iscrizione */}
-      <section className="relative border-t-2 border-[#f5d90a] bg-[#111]">
+      <section className="relative border-t-2 border-[color:var(--event-accent)] bg-[#111]">
         <TribaleBackground url={frameUrl} />
         <div className="relative px-5 pt-7 pb-7 lg:mx-auto lg:max-w-3xl lg:px-10 lg:pt-12 lg:pb-12">
           <h2 className="font-[family-name:var(--font-anton)] text-[28px] tracking-[0.03em] text-white uppercase sm:text-[30px] lg:text-4xl">
@@ -275,7 +279,13 @@ export default async function SentiComeSuonaPage() {
 
       <div id="iscrizione" className="scroll-mt-8 bg-[#050505]">
         <div className="px-5 py-6 lg:mx-auto lg:max-w-3xl lg:px-10 lg:py-10">
-          <RegistrationForm />
+          {eventInfo.iscrizioni_aperte ? (
+            <RegistrationForm event={eventInfo} />
+          ) : (
+            <p className="border border-white/15 bg-[#151515] p-5 text-sm text-white/75">
+              Le iscrizioni a questo evento sono chiuse.
+            </p>
+          )}
         </div>
       </div>
     </main>

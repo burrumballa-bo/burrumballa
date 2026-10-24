@@ -9,13 +9,14 @@ import type {
 // Conteggi in tempo reale: aggiornamento periodico + refetch dopo ogni salvataggio.
 const LIVE_REFETCH_INTERVAL_MS = 15_000
 
-export function useEventOptionsStato() {
+export function useEventOptionsStato(eventId: number) {
   return useQuery({
-    queryKey: ["event-options-stato"],
+    queryKey: ["event-options-stato", eventId],
     queryFn: async (): Promise<EventOptionStato[]> => {
       const { data, error } = await supabase
         .from("event_options_stato")
         .select("*")
+        .eq("event_id", eventId)
         .order("tipo", { ascending: true })
         .order("ordine", { ascending: true })
 

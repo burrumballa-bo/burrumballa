@@ -165,6 +165,7 @@ export interface UpdateRegistrationInput extends RegistrationValues {
 }
 
 export interface CreateRegistrationInput extends RegistrationValues, Importi {
+  event_id: number
   payment_status: PaymentStatus
   prezzo_admin: number | null
   note_admin: string | null

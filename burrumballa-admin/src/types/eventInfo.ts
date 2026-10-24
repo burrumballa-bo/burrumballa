@@ -1,5 +1,7 @@
 export interface EventInfo {
   id: number
+  /** Indirizzo della pagina pubblica: /eventi/<slug>. */
+  slug: string
   titolo: string
   data_evento: string | null
   ora_inizio: string | null
@@ -18,5 +20,23 @@ export interface EventInfo {
   /** Se false il form pubblico non propone il bonifico: ci si iscrive
    *  comunque e si paga di persona all'evento. */
   bonifico_attivo: boolean
+  /** Visibile sul sito. */
+  pubblicato: boolean
+  iscrizioni_aperte: boolean
+  /** Es. "Bologna · Italy", sotto la data nell'hero. */
+  citta: string | null
+  colore_primario: string
+  colore_secondario: string
+  /** Path nel bucket privato "assets". */
+  immagine_copertina: string | null
+  immagine_cornice: string | null
+  immagine_logo: string | null
+  /** Prezzo battle per numero di categorie: [1 categoria, 2, 3, ...]. */
+  battle_prezzi: number[]
+  maggiorazione_ritardo: number
+  maggiorazione_sul_posto: number
+  created_at: string
   updated_at: string
 }
+
+export type EventInfoPatch = Partial<Omit<EventInfo, "id" | "created_at" | "updated_at">>

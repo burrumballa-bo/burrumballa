@@ -40,6 +40,7 @@ import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2"
 import {
   RECEIPT_SETTINGS_COLUMNS,
   ensureReceiptPdf,
+  escapeHtml,
   fromAddress,
   issueReceipt,
   markReceiptSent,
@@ -55,7 +56,6 @@ import {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")
-const EMAIL_SUBJECT = "Pagamento confermato — SENTI COME SUONA vol.3"
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -87,6 +87,7 @@ function isValidPayload(value: unknown): value is RequestPayload {
 
 interface Registration {
   id: string
+  event_id: number
   nome: string
   cognome: string
   email: string
@@ -119,6 +120,7 @@ function importoPagato(registration: Registration): number {
 
 function buildReceiptLines(
   registration: Registration,
+  eventTitle: string,
   workshopLabel: string | null,
   battleLabels: string[]
 ): ReceiptItem[] {
@@ -170,7 +172,7 @@ function buildReceiptLines(
   }
 
   // Iscrizione senza voci a pagamento: la ricevuta deve comunque avere una riga.
-  if (lines.length === 0) lines.push({ description: "Iscrizione SENTI COME SUONA vol.3", amount: null })
+  if (lines.length === 0) lines.push({ description: `Iscrizione ${eventTitle}`, amount: null })
 
   return lines
 }
@@ -222,24 +224,24 @@ function confermaPagamento(registration: Registration): string {
     : "Abbiamo ricevuto il tuo pagamento"
 }
 
-function buildEmailHtml(registration: Registration, settings: ReceiptSettings): string {
+function buildEmailHtml(registration: Registration, settings: ReceiptSettings, eventTitle: string): string {
   return `
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-      <h1 style="font-size: 20px;">Pagamento confermato — SENTI COME SUONA vol.3</h1>
-      <p>Ciao ${registration.nome},</p>
-      <p>${confermaPagamento(registration)}: la tua iscrizione a <strong>Senti Come Suona vol.3</strong> è confermata.</p>
+      <h1 style="font-size: 20px;">Pagamento confermato — ${escapeHtml(eventTitle)}</h1>
+      <p>Ciao ${escapeHtml(registration.nome)},</p>
+      <p>${confermaPagamento(registration)}: la tua iscrizione a <strong>${escapeHtml(eventTitle)}</strong> è confermata.</p>
       <p>In allegato trovi la ricevuta di pagamento in PDF.</p>
       <p>A presto,<br />${settings.ricevuta_intestazione ?? "Burrumballa"}</p>
     </div>
   `
 }
 
-function buildEmailText(registration: Registration, settings: ReceiptSettings): string {
+function buildEmailText(registration: Registration, settings: ReceiptSettings, eventTitle: string): string {
   return [
-    "Pagamento confermato — SENTI COME SUONA vol.3",
+    `Pagamento confermato — ${eventTitle}`,
     "",
     `Ciao ${registration.nome},`,
-    `${confermaPagamento(registration)}: la tua iscrizione a Senti Come Suona vol.3 è confermata.`,
+    `${confermaPagamento(registration)}: la tua iscrizione a ${eventTitle} è confermata.`,
     "In allegato trovi la ricevuta di pagamento in PDF.",
     "",
     `A presto,\n${settings.ricevuta_intestazione ?? "Burrumballa"}`,
@@ -287,7 +289,7 @@ Deno.serve(async (req: Request) => {
   const { data: registration, error: fetchError } = await supabaseAdmin
     .from("registrations")
     .select(
-      "id, nome, cognome, email, workshop, battle_categories, payment_method, payment_status, amount_workshop, amount_battle, surcharge_late, surcharge_onsite, amount_total, prezzo_admin, created_at, email_conferma_bonifico_inviata_at"
+      "id, event_id, nome, cognome, email, workshop, battle_categories, payment_method, payment_status, amount_workshop, amount_battle, surcharge_late, surcharge_onsite, amount_total, prezzo_admin, created_at, email_conferma_bonifico_inviata_at"
     )
     .eq("id", payload.registrationId)
     .maybeSingle<Registration>()
@@ -345,13 +347,14 @@ Deno.serve(async (req: Request) => {
 
     if (settingsError) throw new Error(`Impostazioni non disponibili: ${settingsError.message}`)
 
-    // Il mittente e' quello dell'evento (event_info.email_mittente); se
-    // vuoto si ricade sul mittente generale delle Impostazioni.
+    // Titolo e mittente sono quelli dell'evento dell'iscrizione; senza
+    // mittente evento si ricade sul mittente generale delle Impostazioni.
     const { data: eventInfo } = await supabaseAdmin
       .from("event_info")
-      .select("email_mittente")
-      .eq("id", 1)
-      .maybeSingle<{ email_mittente: string | null }>()
+      .select("titolo, email_mittente")
+      .eq("id", registration.event_id)
+      .maybeSingle<{ titolo: string; email_mittente: string | null }>()
+    const eventTitle = eventInfo?.titolo ?? "evento Burrumballa"
 
     const senderAddress =
       eventInfo?.email_mittente?.trim() || settingsRow.email_mittente_generale?.trim() || null
@@ -363,6 +366,7 @@ Deno.serve(async (req: Request) => {
     const { data: options } = await supabaseAdmin
       .from("event_options")
       .select("chiave, tipo, label")
+      .eq("event_id", registration.event_id)
       .in("chiave", chiavi.length > 0 ? chiavi : ["__none__"])
 
     const workshopLabel =
@@ -375,15 +379,15 @@ Deno.serve(async (req: Request) => {
     const { row: receipt, pdf } = await getOrIssueReceipt(
       supabaseAdmin,
       registration,
-      buildReceiptLines(registration, workshopLabel, battleLabels)
+      buildReceiptLines(registration, eventTitle, workshopLabel, battleLabels)
     )
 
     await sendMail(smtp, {
       from: fromAddress(smtp, senderAddress, settingsRow.ricevuta_intestazione),
       to: registration.email,
-      subject: EMAIL_SUBJECT,
-      text: buildEmailText(registration, settingsRow),
-      html: buildEmailHtml(registration, settingsRow),
+      subject: `Pagamento confermato — ${eventTitle}`,
+      text: buildEmailText(registration, settingsRow, eventTitle),
+      html: buildEmailHtml(registration, settingsRow, eventTitle),
       attachment: { filename: receiptFilename(receipt), content: pdf },
     })
     await markReceiptSent(supabaseAdmin, receipt.id, registration.email)

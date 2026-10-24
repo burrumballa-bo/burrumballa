@@ -18,7 +18,7 @@ export function buildEventMetadata(eventInfo: EventInfo): Metadata {
     title,
     description,
     keywords: [
-      "Senti Come Suona",
+      eventInfo.titolo,
       "Burrumballa",
       "battle hip hop",
       "battle waacking",
@@ -26,7 +26,7 @@ export function buildEventMetadata(eventInfo: EventInfo): Metadata {
       "evento hip hop",
     ],
     alternates: {
-      canonical: "/eventi/senti-come-suona",
+      canonical: `/eventi/${eventInfo.slug}`,
     },
     robots: {
       index: true,
@@ -35,7 +35,7 @@ export function buildEventMetadata(eventInfo: EventInfo): Metadata {
     openGraph: {
       title,
       description,
-      url: "/eventi/senti-come-suona",
+      url: `/eventi/${eventInfo.slug}`,
       siteName: "Burrumballa",
       type: "website",
       locale: "it_IT",

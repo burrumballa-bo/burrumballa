@@ -1,8 +1,11 @@
 import { z } from "zod"
 
-import { HIPHOP_2VS2_OPEN_KEY, NO_BATTLE_KEY, NO_WORKSHOP_KEY } from "./pricing"
+import { NO_BATTLE_KEY, NO_WORKSHOP_KEY } from "./pricing"
 
-export const registrationSchema = z
+// `partnerKeys` restituisce le chiavi delle categorie battle che chiedono
+// il nome del crew/partner (event_options.richiede_partner): e' una
+// funzione perche' le opzioni arrivano dopo il primo render del form.
+export const buildRegistrationSchema = (partnerKeys: () => string[]) => z
   .object({
     nome: z.string().trim().min(1),
     cognome: z.string().trim().min(1),
@@ -29,16 +32,17 @@ export const registrationSchema = z
           "Devi acconsentire alla pubblicazione di foto/video per completare l'iscrizione.",
       }),
   })
-  // Categoria Hip Hop 2vs2 Open: il crew/partner è obbligatorio solo in
-  // questo caso (in tutti gli altri il campo resta facoltativo/nascosto).
+  // Categorie in coppia (es. Hip Hop 2vs2): il crew/partner è obbligatorio
+  // solo in questo caso (in tutti gli altri il campo resta nascosto).
   .superRefine((values, ctx) => {
+    const keys = partnerKeys()
     if (
-      values.battleCategorie.includes(HIPHOP_2VS2_OPEN_KEY) &&
+      values.battleCategorie.some((c) => keys.includes(c)) &&
       !values.akaPartner2vs2?.trim()
     ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Il crew/partner 2vs2 è obbligatorio per la categoria Hip Hop 2vs2 Open.",
+        message: "Il crew/partner è obbligatorio per la categoria in coppia scelta.",
         path: ["akaPartner2vs2"],
       })
     }
@@ -54,7 +58,7 @@ export const registrationSchema = z
     }
   })
 
-export type RegistrationFormValues = z.infer<typeof registrationSchema>
+export type RegistrationFormValues = z.infer<ReturnType<typeof buildRegistrationSchema>>
 
 export const registrationDefaultValues: RegistrationFormValues = {
   nome: "",

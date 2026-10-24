@@ -2,10 +2,11 @@ import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import { ArrowLeft, Loader2, RefreshCw } from "lucide-react"
+import { ArrowLeft, ExternalLink, Loader2, RefreshCw, Upload } from "lucide-react"
 import { toast } from "sonner"
 
 import { useConfirm } from "@/hooks/useConfirm"
+import { useEventId } from "@/hooks/useEventId"
 import { useEventInfo, useUpdateEventInfo } from "@/hooks/useEventInfo"
 import {
   useCreateEventOption,
@@ -16,9 +17,10 @@ import {
 import {
   useCreateEventPerson,
   useDeleteEventPerson,
+  useEventImageFiles,
   useEventPeople,
-  useSentiComeSuonaImageFiles,
   useUpdateEventPerson,
+  useUploadEventImage,
 } from "@/hooks/useEventPeople"
 import {
   eventInfoSchema,
@@ -26,6 +28,7 @@ import {
   type EventInfoFormValues,
 } from "@/lib/eventInfoSchema"
 import { isoToDatetimeLocal, datetimeLocalToIso } from "@/lib/datetime"
+import { PUBLIC_SITE_URL } from "@/lib/site"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -42,6 +45,8 @@ import { EventOptionsSection } from "@/components/EventOptionsSection"
 import { EventOptionModal } from "@/components/EventOptionModal"
 import { EventInfoNoteField } from "@/components/EventInfoNoteField"
 import { EventPeopleSection } from "@/components/EventPeopleSection"
+import { EventImageField } from "@/components/EventImageField"
+import { EventPricingCard } from "@/components/EventPricingCard"
 import type {
   EventOptionInsertInput,
   EventOptionStato,
@@ -52,6 +57,7 @@ import type {
   EventPersonInsertInput,
   EventPersonUpdateInput,
 } from "@/types/eventPerson"
+import type { EventInfoPatch } from "@/types/eventInfo"
 
 type EventInfoNoteFieldKey = "nota_battle" | "nota_workshop" | "nota_pagamento"
 
@@ -62,9 +68,10 @@ type OptionModalState =
 
 export default function EventoPaginaPage() {
   const navigate = useNavigate()
-  const eventInfoQuery = useEventInfo()
-  const updateEventInfo = useUpdateEventInfo()
-  const optionsQuery = useEventOptionsStato()
+  const eventId = useEventId()
+  const eventInfoQuery = useEventInfo(eventId)
+  const updateEventInfo = useUpdateEventInfo(eventId)
+  const optionsQuery = useEventOptionsStato(eventId)
   const createOption = useCreateEventOption()
   const updateOption = useUpdateEventOption()
   const deleteOption = useDeleteEventOption()
@@ -72,8 +79,9 @@ export default function EventoPaginaPage() {
   const [optionModal, setOptionModal] = useState<OptionModalState>(null)
   const [deletingOptionId, setDeletingOptionId] = useState<string | null>(null)
 
-  const peopleQuery = useEventPeople()
-  const imageFilesQuery = useSentiComeSuonaImageFiles()
+  const peopleQuery = useEventPeople(eventId)
+  const imageFilesQuery = useEventImageFiles(eventId)
+  const uploadImage = useUploadEventImage(eventId)
   const createPerson = useCreateEventPerson()
   const updatePerson = useUpdateEventPerson()
   const deletePerson = useDeleteEventPerson()
@@ -83,12 +91,18 @@ export default function EventoPaginaPage() {
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<EventInfoFormValues>({
     resolver: zodResolver(eventInfoSchema),
     values: eventInfoQuery.data
       ? {
           titolo: eventInfoQuery.data.titolo ?? "",
+          slug: eventInfoQuery.data.slug ?? "",
+          citta: eventInfoQuery.data.citta ?? "",
+          colore_primario: eventInfoQuery.data.colore_primario ?? "#f5d90a",
+          colore_secondario: eventInfoQuery.data.colore_secondario ?? "#a855f7",
           data_evento: eventInfoQuery.data.data_evento ?? "",
           ora_inizio: eventInfoQuery.data.ora_inizio ?? "",
           ora_fine: eventInfoQuery.data.ora_fine ?? "",
@@ -114,6 +128,10 @@ export default function EventoPaginaPage() {
     updateEventInfo.mutate(
       {
         titolo: values.titolo,
+        slug: values.slug,
+        citta: values.citta || null,
+        colore_primario: values.colore_primario.toLowerCase(),
+        colore_secondario: values.colore_secondario.toLowerCase(),
         data_evento: values.data_evento || null,
         ora_inizio: values.ora_inizio || null,
         ora_fine: values.ora_fine || null,
@@ -123,60 +141,40 @@ export default function EventoPaginaPage() {
         testi_informativi: values.testi_informativi || null,
         email_mittente: values.email_mittente || null,
         scadenza_iscrizioni: scadenzaIso,
-        // Non gestite in questo form: si salvano da sole nelle rispettive
-        // sezioni (vedi handleSaveNoteField), qui si preservano invariate.
-        nota_battle: eventInfoQuery.data?.nota_battle ?? null,
-        nota_workshop: eventInfoQuery.data?.nota_workshop ?? null,
-        nota_pagamento: eventInfoQuery.data?.nota_pagamento ?? null,
-        bonifico_attivo: eventInfoQuery.data?.bonifico_attivo ?? true,
       },
       {
         onSuccess: () => toast.success("Info evento salvate."),
         onError: (error) =>
           toast.error("Salvataggio non riuscito.", {
-            description: (error as Error).message,
+            description: (error as Error).message.includes("event_info_slug_key")
+              ? "Questo indirizzo è già usato da un altro evento."
+              : (error as Error).message,
           }),
       }
     )
   }
 
-  const handleSaveNoteField = (field: EventInfoNoteFieldKey, value: string) => {
-    if (!eventInfoQuery.data) return
-    const { id, updated_at, ...rest } = eventInfoQuery.data
-    updateEventInfo.mutate(
-      { ...rest, [field]: value.trim() || null },
-      {
-        onSuccess: () => toast.success("Nota salvata."),
-        onError: (error) =>
-          toast.error("Salvataggio nota non riuscito.", {
-            description: (error as Error).message,
-          }),
-      }
-    )
-  }
+  // Salvataggi immediati (interruttori, immagini, prezzi): solo i campi toccati.
+  const savePatch = (patch: EventInfoPatch, successMessage: string) =>
+    updateEventInfo.mutate(patch, {
+      onSuccess: () => toast.success(successMessage),
+      onError: (error) =>
+        toast.error("Salvataggio non riuscito.", { description: (error as Error).message }),
+    })
 
-  const handleToggleBonifico = (value: boolean) => {
-    if (!eventInfoQuery.data) return
-    const { id, updated_at, ...rest } = eventInfoQuery.data
-    updateEventInfo.mutate(
-      { ...rest, bonifico_attivo: value },
-      {
-        onSuccess: () =>
-          toast.success(
-            value
-              ? "Pagamento con bonifico attivato."
-              : "Pagamento con bonifico disattivato: si pagherà di persona."
-          ),
-        onError: (error) =>
-          toast.error("Salvataggio non riuscito.", {
-            description: (error as Error).message,
-          }),
-      }
-    )
-  }
+  const handleSaveNoteField = (field: EventInfoNoteFieldKey, value: string) =>
+    savePatch({ [field]: value.trim() || null }, "Nota salvata.")
 
-  const handleCreateOption = (input: EventOptionInsertInput) => {
-    createOption.mutate(input, {
+  const handleToggleBonifico = (value: boolean) =>
+    savePatch(
+      { bonifico_attivo: value },
+      value
+        ? "Pagamento con bonifico attivato."
+        : "Pagamento con bonifico disattivato: si pagherà di persona."
+    )
+
+  const handleCreateOption = (input: Omit<EventOptionInsertInput, "event_id">) => {
+    createOption.mutate({ ...input, event_id: eventId }, {
       onSuccess: () => {
         toast.success("Opzione creata.")
         setOptionModal(null)
@@ -217,7 +215,7 @@ export default function EventoPaginaPage() {
   }
 
   const handleCreatePerson = (input: EventPersonInsertInput, onDone: () => void) => {
-    createPerson.mutate(input, {
+    createPerson.mutate({ ...input, event_id: eventId }, {
       onSuccess: () => {
         toast.success("Persona aggiunta.")
         onDone()
@@ -264,11 +262,21 @@ export default function EventoPaginaPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-6 md:p-8">
-      <div className="flex items-center gap-3">
-        <Button variant="outline" size="icon" onClick={() => navigate("/admin/evento")}>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button variant="outline" size="icon" onClick={() => navigate(`/admin/eventi/${eventId}`)}>
           <ArrowLeft />
         </Button>
-        <h1 className="text-2xl font-semibold">Modifica pagina evento</h1>
+        <h1 className="text-2xl font-semibold">
+          Modifica evento{eventInfoQuery.data ? ` — ${eventInfoQuery.data.titolo}` : ""}
+        </h1>
+        {eventInfoQuery.data && (
+          <Button variant="outline" size="sm" className="ml-auto" asChild>
+            <a href={`${PUBLIC_SITE_URL}/eventi/${eventInfoQuery.data.slug}`} target="_blank" rel="noreferrer">
+              <ExternalLink />
+              Apri pagina pubblica
+            </a>
+          </Button>
+        )}
       </div>
 
       {eventInfoQuery.isLoading ? (
@@ -299,6 +307,52 @@ export default function EventoPaginaPage() {
                 {errors.titolo && (
                   <p className="text-destructive text-sm">{errors.titolo.message}</p>
                 )}
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="slug">Indirizzo della pagina</Label>
+                  <div className="flex items-center gap-1 text-sm">
+                    <span className="text-muted-foreground shrink-0">/eventi/</span>
+                    <Input id="slug" aria-invalid={!!errors.slug} {...register("slug")} />
+                  </div>
+                  {errors.slug ? (
+                    <p className="text-destructive text-sm">{errors.slug.message}</p>
+                  ) : (
+                    <p className="text-muted-foreground text-xs">
+                      Cambiandolo, i link già condivisi smettono di funzionare.
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="citta">Città</Label>
+                  <Input id="citta" placeholder="Bologna · Italy" {...register("citta")} />
+                  <p className="text-muted-foreground text-xs">Sotto la data, sulla foto di copertina.</p>
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                {(
+                  [
+                    ["colore_primario", "Colore principale", "Pulsanti, prezzi, bordi."],
+                    ["colore_secondario", "Colore secondario", "Linee, titoletti, ruoli."],
+                  ] as const
+                ).map(([name, label, hint]) => (
+                  <div key={name} className="space-y-2">
+                    <Label htmlFor={name}>{label}</Label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        aria-label={`${label} (selettore)`}
+                        className="border-input h-9 w-12 shrink-0 cursor-pointer rounded-md border bg-transparent p-1"
+                        value={watch(name)}
+                        onChange={(e) => setValue(name, e.target.value, { shouldDirty: true })}
+                      />
+                      <Input id={name} className="font-mono" aria-invalid={!!errors[name]} {...register(name)} />
+                    </div>
+                    <p className="text-muted-foreground text-xs">{hint}</p>
+                  </div>
+                ))}
               </div>
 
               <div className="grid gap-4 sm:grid-cols-3">
@@ -436,6 +490,80 @@ export default function EventoPaginaPage() {
         </form>
       )}
 
+      {eventInfoQuery.data && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Pubblicazione e immagini</CardTitle>
+            <CardDescription>Salvati subito. Le immagini stanno nella cartella dell&apos;evento.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="flex items-start justify-between gap-4 rounded-md border p-3">
+                <div className="space-y-1">
+                  <Label htmlFor="pubblicato">Visibile sul sito</Label>
+                  <p className="text-muted-foreground text-xs">
+                    Spento, la pagina pubblica risponde &quot;non trovata&quot;.
+                  </p>
+                </div>
+                <Switch
+                  id="pubblicato"
+                  checked={eventInfoQuery.data.pubblicato}
+                  disabled={updateEventInfo.isPending}
+                  onCheckedChange={(value) =>
+                    savePatch({ pubblicato: value }, value ? "Evento pubblicato." : "Evento tolto dal sito.")
+                  }
+                />
+              </div>
+              <div className="flex items-start justify-between gap-4 rounded-md border p-3">
+                <div className="space-y-1">
+                  <Label htmlFor="iscrizioni_aperte">Iscrizioni aperte</Label>
+                  <p className="text-muted-foreground text-xs">
+                    Spento, la pagina resta visibile ma il form non c&apos;è più.
+                  </p>
+                </div>
+                <Switch
+                  id="iscrizioni_aperte"
+                  checked={eventInfoQuery.data.iscrizioni_aperte}
+                  disabled={updateEventInfo.isPending}
+                  onCheckedChange={(value) =>
+                    savePatch({ iscrizioni_aperte: value }, value ? "Iscrizioni aperte." : "Iscrizioni chiuse.")
+                  }
+                />
+              </div>
+            </div>
+            <div className="grid gap-5 lg:grid-cols-3">
+              {(
+                [
+                  ["immagine_copertina", "Copertina", "Foto grande dell'hero."],
+                  ["immagine_cornice", "Cornice", "Texture delle fasce sopra e sotto la copertina."],
+                  ["immagine_logo", "Logo", "PNG trasparente, a destra sulla copertina."],
+                ] as const
+              ).map(([field, label, hint]) => (
+                <EventImageField
+                  key={field}
+                  eventId={eventId}
+                  label={label}
+                  hint={hint}
+                  value={eventInfoQuery.data[field]}
+                  files={imageFilesQuery.data ?? []}
+                  disabled={updateEventInfo.isPending}
+                  onChange={(path) => savePatch({ [field]: path }, "Immagine salvata.")}
+                />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {eventInfoQuery.data && (
+        <EventPricingCard
+          key={eventInfoQuery.data.updated_at}
+          event={eventInfoQuery.data}
+          isSaving={updateEventInfo.isPending}
+          onSave={(patch) => savePatch(patch, "Prezzi salvati.")}
+        />
+      )}
+
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <div>
@@ -522,9 +650,28 @@ export default function EventoPaginaPage() {
           <CardTitle>Giuria & Host / DJ</CardTitle>
           <CardDescription>
             Persone mostrate nella pagina pubblica dell&apos;evento.
-            L&apos;immagine si sceglie tra i file già caricati su Storage
-            (bucket &quot;assets&quot;, cartella &quot;senti_come_suona&quot;).
+            L&apos;immagine si sceglie tra i file dell&apos;evento: caricali qui.
           </CardDescription>
+          <label className="border-input hover:bg-accent mt-2 inline-flex w-fit cursor-pointer items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs transition-colors">
+            {uploadImage.isPending ? <Loader2 className="size-3.5 animate-spin" /> : <Upload className="size-3.5" />}
+            Carica immagine
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              className="sr-only"
+              disabled={uploadImage.isPending}
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                e.target.value = ""
+                if (!file) return
+                uploadImage.mutate(file, {
+                  onSuccess: () => toast.success("Immagine caricata: ora la trovi nei selettori."),
+                  onError: (error) =>
+                    toast.error("Caricamento non riuscito.", { description: (error as Error).message }),
+                })
+              }}
+            />
+          </label>
         </CardHeader>
         <CardContent>
           {peopleQuery.isLoading ? (

@@ -17,6 +17,9 @@ export interface EventOptionStato {
   sold_out: boolean
   // Chiavi dei workshop componenti, popolate solo quando composto = true.
   composto_di: string[]
+  event_id: number
+  /** Categoria in coppia: il form chiede il nome del crew/partner. */
+  richiede_partner: boolean
 }
 
 export interface EventOptionUpdateInput {
@@ -28,12 +31,14 @@ export interface EventOptionUpdateInput {
   max_posti: number | null
   sold_out_manuale: boolean
   composto: boolean
+  richiede_partner: boolean
   // Id dei workshop componenti (solo per tipo 'workshop'); sincronizzati
   // in event_option_components dopo l'update dell'opzione.
   childIds: string[]
 }
 
 export interface EventOptionInsertInput {
+  event_id: number
   tipo: EventOptionTipo
   chiave: string
   label: string
@@ -43,5 +48,6 @@ export interface EventOptionInsertInput {
   max_posti: number | null
   sold_out_manuale: boolean
   composto: boolean
+  richiede_partner: boolean
   childIds: string[]
 }

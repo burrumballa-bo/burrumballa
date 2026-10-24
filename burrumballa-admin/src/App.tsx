@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router-dom"
+import { Routes, Route, Navigate, useParams } from "react-router-dom"
 import LoginPage from "@/pages/LoginPage"
 import ResetPasswordPage from "@/pages/ResetPasswordPage"
 import AdminHomePage from "@/pages/AdminHomePage"
@@ -25,6 +25,11 @@ import RicevutePage from "@/pages/RicevutePage"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
 import { AdminLayout } from "@/components/AdminLayout"
 
+function LegacyEventRedirect() {
+  const { page } = useParams()
+  return <Navigate to={`/admin/eventi/1/${page ?? ""}`} replace />
+}
+
 function App() {
   return (
     <Routes>
@@ -40,10 +45,13 @@ function App() {
       >
         <Route path="/admin" element={<AdminHomePage />} />
         <Route path="/admin/impostazioni" element={<ImpostazioniPage />} />
-        <Route path="/admin/evento" element={<EventDashboardPage />} />
-        <Route path="/admin/evento/pagina" element={<EventoPaginaPage />} />
-        <Route path="/admin/evento/iscritti" element={<EventoIscrittiPage />} />
-        <Route path="/admin/evento/si-balla" element={<EventoSiBallaPage />} />
+        <Route path="/admin/eventi/:eventId" element={<EventDashboardPage />} />
+        <Route path="/admin/eventi/:eventId/pagina" element={<EventoPaginaPage />} />
+        <Route path="/admin/eventi/:eventId/iscritti" element={<EventoIscrittiPage />} />
+        <Route path="/admin/eventi/:eventId/si-balla" element={<EventoSiBallaPage />} />
+        {/* Indirizzi di quando c'era un solo evento: portano al primo. */}
+        <Route path="/admin/evento" element={<Navigate to="/admin/eventi/1" replace />} />
+        <Route path="/admin/evento/:page" element={<LegacyEventRedirect />} />
         <Route path="/admin/contenuti/home" element={<ContenutiHomePage />} />
         <Route path="/admin/contenuti/corsi" element={<ContenutiCorsiPage />} />
         <Route path="/admin/contenuti/classi" element={<ContenutiClassiPage />} />

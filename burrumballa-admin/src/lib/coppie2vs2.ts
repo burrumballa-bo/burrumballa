@@ -1,8 +1,8 @@
 import type { Registration } from "@/types/registration"
 
-// Categoria 2vs2: il campo `aka_partner_2vs2` del form ("Crew / partner
-// 2vs2") contiene il nome della crew OPPURE l'aka del partner.
-export const HIPHOP_2VS2_OPEN_KEY = "hiphop_2vs2_open"
+// Categorie in coppia (event_options.richiede_partner, es. Hip Hop 2vs2):
+// il campo `aka_partner_2vs2` del form ("Crew / partner") contiene il nome
+// della crew OPPURE l'aka del partner.
 
 export interface Coppia2vs2 {
   /** "idA|idB" con gli id ordinati: stabile a prescindere da chi è A o B. */
@@ -40,19 +40,15 @@ function coppia(a: Registration, b: Registration, crew: string | null): Coppia2v
   return { id: `${x.id}|${y.id}`, a: x, b: y, crew }
 }
 
-export function isIscrittoA2vs2(r: Registration): boolean {
-  return r.battle_categories.includes(HIPHOP_2VS2_OPEN_KEY)
-}
-
 /**
- * Accoppia gli iscritti alla 2vs2 Open: prima i partner reciproci (il campo
+ * Accoppia gli iscritti a una categoria in coppia: prima i partner reciproci (il campo
  * partner di A contiene l'aka di B e viceversa, senza ambiguità), poi chi ha
  * indicato lo stesso nome di crew. A parità,
  * vince chi si è iscritto prima; ognuno finisce in al massimo una coppia.
  */
-export function accoppia2vs2(registrations: Registration[]): Accoppiamento2vs2 {
+export function accoppia2vs2(registrations: Registration[], chiave: string): Accoppiamento2vs2 {
   const iscritti = registrations
-    .filter(isIscrittoA2vs2)
+    .filter((r) => r.battle_categories.includes(chiave))
     .sort((a, b) => a.created_at.localeCompare(b.created_at))
 
   const accoppiati = new Set<string>()

@@ -10,6 +10,7 @@ export interface EventPerson {
   colore: string | null
   ordine: number
   attivo: boolean
+  event_id: number
   created_at: string
 }
 
@@ -25,4 +26,8 @@ export interface EventPersonInsertInput {
 
 export interface EventPersonUpdateInput extends EventPersonInsertInput {
   id: string
+}
+
+export interface EventPersonCreateInput extends EventPersonInsertInput {
+  event_id: number
 }

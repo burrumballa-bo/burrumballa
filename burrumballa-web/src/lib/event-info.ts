@@ -1,6 +1,16 @@
+import { cache } from "react"
 import { createClient } from "@supabase/supabase-js"
 
+export interface EventPricing {
+  /** Prezzo della battle per numero di categorie: [1 categoria, 2, 3, ...]. */
+  battlePrezzi: number[]
+  maggiorazioneRitardo: number
+  maggiorazioneSulPosto: number
+}
+
 export interface EventInfo {
+  id: number
+  slug: string
   titolo: string
   data_evento: string | null
   ora_inizio: string | null
@@ -8,47 +18,79 @@ export interface EventInfo {
   descrizione_iscrizione: string | null
   descrizione: string | null
   luogo: string | null
+  citta: string | null
   testi_informativi: string | null
   scadenza_iscrizioni: string
+  nota_battle: string | null
+  nota_workshop: string | null
+  nota_pagamento: string | null
+  bonifico_attivo: boolean
+  iscrizioni_aperte: boolean
+  colore_primario: string
+  colore_secondario: string
+  /** Path nel bucket privato "assets" (signed URL lato server). */
+  immagine_copertina: string | null
+  immagine_cornice: string | null
+  immagine_logo: string | null
+  pricing: EventPricing
 }
 
-// Usato solo se `event_info` non è raggiungibile: riflette i valori
-// originali della pagina, così l'evento resta consultabile anche in caso
-// di errore di rete/config verso Supabase.
-const FALLBACK_EVENT_INFO: EventInfo = {
-  titolo: "Senti Come Suona",
-  data_evento: "2025-09-28",
-  ora_inizio: null,
-  ora_fine: null,
-  descrizione_iscrizione:
-    "Completa i dati, scegli categorie battle e workshop, paga in un unico form",
-  descrizione:
-    "Workshop di Waacking con Rada, battle Hip Hop & Allstyle (1vs1 e 2vs2) con giuria Spider, Zurek e Rada.",
-  luogo: null,
-  testi_informativi: null,
-  scadenza_iscrizioni: "2025-09-21T23:59:59+02:00",
+const COLUMNS =
+  "id, slug, titolo, data_evento, ora_inizio, ora_fine, descrizione_iscrizione, descrizione, luogo, citta, testi_informativi, scadenza_iscrizioni, nota_battle, nota_workshop, nota_pagamento, bonifico_attivo, iscrizioni_aperte, colore_primario, colore_secondario, immagine_copertina, immagine_cornice, immagine_logo, battle_prezzi, maggiorazione_ritardo, maggiorazione_sul_posto"
+
+type EventRow = Omit<EventInfo, "pricing"> & {
+  battle_prezzi: (number | string)[]
+  maggiorazione_ritardo: number | string
+  maggiorazione_sul_posto: number | string
 }
 
-// Lettura server-side (Server Component / generateMetadata): la tabella
-// `event_info` è leggibile da anon, quindi basta il client con anon key.
-export async function getEventInfo(): Promise<EventInfo> {
+function getAnonClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+}
+
+// numeric di Postgres puo' arrivare come stringa: si converte sempre.
+function toEventInfo({ battle_prezzi, maggiorazione_ritardo, maggiorazione_sul_posto, ...row }: EventRow): EventInfo {
+  return {
+    ...row,
+    pricing: {
+      battlePrezzi: battle_prezzi.map(Number),
+      maggiorazioneRitardo: Number(maggiorazione_ritardo),
+      maggiorazioneSulPosto: Number(maggiorazione_sul_posto),
+    },
+  }
+}
+
+// Lettura server-side (layout, pagina e generateMetadata condividono la
+// stessa richiesta grazie a cache). Anon vede solo gli eventi pubblicati:
+// null = evento inesistente o non pubblicato, la pagina risponde 404.
+export const getEventBySlug = cache(async (slug: string): Promise<EventInfo | null> => {
   try {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
-    const { data, error } = await supabase
+    const { data, error } = await getAnonClient()
       .from("event_info")
-      .select(
-        "titolo, data_evento, ora_inizio, ora_fine, descrizione_iscrizione, descrizione, luogo, testi_informativi, scadenza_iscrizioni"
-      )
-      .eq("id", 1)
-      .single()
+      .select(COLUMNS)
+      .eq("slug", slug)
+      .maybeSingle<EventRow>()
+    if (error || !data) return null
+    return toEventInfo(data)
+  } catch {
+    return null
+  }
+})
 
-    if (error || !data) return FALLBACK_EVENT_INFO
+/** Eventi pubblicati, dal piu' recente (sitemap). */
+export async function listPublishedEvents(): Promise<Pick<EventInfo, "slug" | "data_evento">[]> {
+  try {
+    const { data, error } = await getAnonClient()
+      .from("event_info")
+      .select("slug, data_evento")
+      .order("data_evento", { ascending: false })
+    if (error || !data) return []
     return data
   } catch {
-    return FALLBACK_EVENT_INFO
+    return []
   }
 }
 

@@ -58,7 +58,7 @@ export function CopyableRow({
         type="button"
         onClick={handleCopy}
         aria-label={`Copia ${label.toLowerCase()}`}
-        className="text-muted-foreground hover:border-[#f5d90a] hover:text-[#f5d90a] flex size-7 shrink-0 items-center justify-center border border-white/15 transition-colors"
+        className="text-muted-foreground hover:border-[color:var(--event-accent)] hover:text-[color:var(--event-accent)] flex size-7 shrink-0 items-center justify-center border border-white/15 transition-colors"
       >
         {copied ? (
           <Check className="size-3.5 text-[#7ef58a]" />
@@ -81,11 +81,11 @@ export function SectionCard({
 }) {
   const accentColor =
     accent === "purple"
-      ? "border-t-2 border-t-[#7c1fd6]"
+      ? "border-t-2 border-t-[color:var(--event-accent-2)]"
       : accent === "fuchsia"
         ? "border-t-2 border-t-[#d6249f]"
         : accent === "yellow"
-          ? "border-t-2 border-t-[#f5d90a]"
+          ? "border-t-2 border-t-[color:var(--event-accent)]"
           : "border-t-0"
 
   return (

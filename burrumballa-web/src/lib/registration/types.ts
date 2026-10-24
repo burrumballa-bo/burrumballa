@@ -11,6 +11,9 @@ export interface EventOptionStato {
   ordine: number
   iscritti: number
   sold_out: boolean
+  event_id: number
+  /** Categoria in coppia: il form chiede il nome del crew/partner. */
+  richiede_partner: boolean
 }
 
 export type PaymentMethod = "bonifico" | "sul_posto"

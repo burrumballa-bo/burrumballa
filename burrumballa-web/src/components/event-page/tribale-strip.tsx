@@ -20,7 +20,7 @@ export function TribaleStrip({
     return (
       <div
         className={cn(
-          "h-8 w-full bg-[repeating-linear-gradient(135deg,#7c1fd6_0_10px,#f5d90a_10px_20px,#d6249f_20px_30px)] sm:h-10 lg:h-12",
+          "h-8 w-full bg-[repeating-linear-gradient(135deg,var(--event-accent-2)_0_10px,var(--event-accent)_10px_20px,#d6249f_20px_30px)] sm:h-10 lg:h-12",
           className
         )}
         aria-hidden

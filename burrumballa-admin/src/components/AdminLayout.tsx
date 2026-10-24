@@ -71,14 +71,8 @@ const NAV: NavGroup[] = [
   },
 ]
 
-// Le pagine di un evento (/admin/evento/...) stanno sotto "Eventi".
-function isEventPath(pathname: string) {
-  return pathname.startsWith("/admin/evento")
-}
-
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const navigate = useNavigate()
-  const { pathname } = useLocation()
   const { session } = useAuth()
 
   const handleLogout = async () => {
@@ -110,7 +104,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                   cn(
                     "flex items-center gap-2 rounded-md px-3 py-1.5 text-sm transition-colors",
                     !item.icon && "pl-9",
-                    isActive || (item.to === "/admin/eventi" && isEventPath(pathname))
+                    isActive
                       ? "bg-accent text-foreground font-medium"
                       : "text-muted-foreground hover:bg-accent hover:text-foreground"
                   )

@@ -2,7 +2,6 @@ import type { Metadata } from "next"
 import Link from "next/link"
 
 import { LegalPageShell, LegalSection } from "@/components/legal/legal-page-shell"
-import { getEventInfo } from "@/lib/event-info"
 import { getOrgInfo } from "@/lib/org-info"
 
 export const dynamic = "force-dynamic"
@@ -17,7 +16,7 @@ export const metadata: Metadata = {
 }
 
 export default async function PrivacyPage() {
-  const [eventInfo, orgInfo] = await Promise.all([getEventInfo(), getOrgInfo()])
+  const orgInfo = await getOrgInfo()
 
   const titolare = orgInfo.intestazione || "Burrumballa APS"
   const contatto = orgInfo.email_contatto || "info@burrumballa.it"
@@ -29,8 +28,8 @@ export default async function PrivacyPage() {
         Regolamento (UE) 2016/679 (&quot;GDPR&quot;) e del D.Lgs. 196/2003
         come modificato dal D.Lgs. 101/2018 (Codice Privacy), descrive come{" "}
         {titolare} tratta i dati personali raccolti tramite il form di
-        iscrizione agli eventi organizzati (es. &quot;{eventInfo.titolo}
-        &quot;) e attraverso la navigazione del sito.
+        iscrizione agli eventi organizzati e attraverso la navigazione del
+        sito.
       </p>
 
       <LegalSection title="1. Titolare del trattamento">

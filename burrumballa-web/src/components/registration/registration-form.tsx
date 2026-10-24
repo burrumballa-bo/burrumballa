@@ -23,22 +23,21 @@ import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
+import type { EventInfo } from "@/lib/event-info"
 import {
-  BATTLE_ADDITIONAL_CATEGORY_PRICE,
   FALLBACK_NOTA_BATTLE,
   FALLBACK_NOTA_PAGAMENTO,
   FALLBACK_NOTA_WORKSHOP,
-  FALLBACK_REGISTRATION_DEADLINE,
-  HIPHOP_2VS2_OPEN_KEY,
   NO_BATTLE_KEY,
   NO_WORKSHOP_KEY,
-  ONSITE_SURCHARGE,
   calcolaTotale,
   formatCurrency,
+  prezzoBattlePerNumeroCategorie,
+  prezzoCategoriaAggiuntiva,
 } from "@/lib/registration/pricing"
 import {
+  buildRegistrationSchema,
   registrationDefaultValues,
-  registrationSchema,
   type RegistrationFormValues,
 } from "@/lib/registration/schema"
 import type { EventOptionStato } from "@/lib/registration/types"
@@ -51,25 +50,29 @@ import {
 import { DIAGONAL_CUT, SectionCard, deadlineFormatter } from "@/components/registration/shared"
 
 // Chiave sessionStorage con cui il riepilogo viene passato alla pagina di
-// conferma dedicata (/eventi/senti-come-suona/conferma): evita di dover
-// ripescare l'iscrizione da Supabase (anon non ha permessi di SELECT su
+// conferma dedicata (/eventi/<slug>/conferma): evita di dover ripescare
+// l'iscrizione da Supabase (anon non ha permessi di SELECT su
 // registrations) solo per mostrare un riepilogo di cortesia.
-const CONFIRMATION_STORAGE_KEY = "scs-registration-confirmation"
+export function confirmationStorageKey(slug: string) {
+  return `registration-confirmation:${slug}`
+}
 
-export function RegistrationForm() {
+export function RegistrationForm({ event }: { event: EventInfo }) {
   const router = useRouter()
   const [options, setOptions] = React.useState<EventOptionStato[] | null>(null)
   const [optionsError, setOptionsError] = React.useState<string | null>(null)
-  const [deadline, setDeadline] = React.useState<Date>(FALLBACK_REGISTRATION_DEADLINE)
-  const [bonificoInfo, setBonificoInfo] = React.useState<BonificoInfo>(
-    FALLBACK_BONIFICO_INFO
-  )
-  const [noteBattle, setNoteBattle] = React.useState(FALLBACK_NOTA_BATTLE)
-  const [noteWorkshop, setNoteWorkshop] = React.useState(FALLBACK_NOTA_WORKSHOP)
-  const [notePagamento, setNotePagamento] = React.useState(FALLBACK_NOTA_PAGAMENTO)
+  const deadline = React.useMemo(() => new Date(event.scadenza_iscrizioni), [event.scadenza_iscrizioni])
+  const pricing = event.pricing
+  const [bonificoInfo, setBonificoInfo] = React.useState<BonificoInfo>({
+    ...FALLBACK_BONIFICO_INFO,
+    eventTitle: event.titolo,
+  })
+  const noteBattle = event.nota_battle || FALLBACK_NOTA_BATTLE
+  const noteWorkshop = event.nota_workshop || FALLBACK_NOTA_WORKSHOP
+  const notePagamento = event.nota_pagamento || FALLBACK_NOTA_PAGAMENTO
   // Gestito dall'admin (event_info.bonifico_attivo): da disattivato ci si
   // iscrive comunque, ma il pagamento avviene di persona all'evento.
-  const [bonificoAttivo, setBonificoAttivo] = React.useState(true)
+  const bonificoAttivo = event.bonifico_attivo !== false
 
   const loadOptions = React.useCallback(async () => {
     setOptionsError(null)
@@ -77,6 +80,7 @@ export function RegistrationForm() {
     const { data, error } = await supabase
       .from("event_options_stato")
       .select("*")
+      .eq("event_id", event.id)
       .order("ordine", { ascending: true })
 
     if (error) {
@@ -86,41 +90,10 @@ export function RegistrationForm() {
       return
     }
     setOptions((data as EventOptionStato[]) ?? [])
-  }, [])
+  }, [event.id])
 
   React.useEffect(() => {
     const supabase = createClient()
-
-    supabase
-      .from("event_info")
-      .select("titolo, scadenza_iscrizioni, nota_battle, nota_workshop, nota_pagamento")
-      .eq("id", 1)
-      .single()
-      .then(({ data, error }) => {
-        if (error || !data) return
-        if (data.scadenza_iscrizioni) {
-          setDeadline(new Date(data.scadenza_iscrizioni))
-        }
-        setBonificoInfo((prev) => ({
-          ...prev,
-          eventTitle: data.titolo || prev.eventTitle,
-        }))
-        if (data.nota_battle) setNoteBattle(data.nota_battle)
-        if (data.nota_workshop) setNoteWorkshop(data.nota_workshop)
-        if (data.nota_pagamento) setNotePagamento(data.nota_pagamento)
-      })
-
-    // Query separata: se la colonna non esistesse ancora non deve far
-    // saltare il caricamento di scadenza e note qui sopra.
-    supabase
-      .from("event_info")
-      .select("bonifico_attivo")
-      .eq("id", 1)
-      .single()
-      .then(({ data, error }) => {
-        if (error || !data) return
-        setBonificoAttivo(data.bonifico_attivo !== false)
-      })
 
     // Vista pubblica su app_settings (ricevuta_iban / ricevuta_intestazione):
     // stessi dati che l'admin gestisce in Impostazioni per la ricevuta PDF.
@@ -149,6 +122,13 @@ export function RegistrationForm() {
   const battleOptions = React.useMemo(
     () => (options ?? []).filter((o) => o.tipo === "battle"),
     [options]
+  )
+  // Categorie in coppia: letto dallo schema a ogni validazione.
+  const partnerKeysRef = React.useRef<string[]>([])
+  partnerKeysRef.current = battleOptions.filter((o) => o.richiede_partner).map((o) => o.chiave)
+  const registrationSchema = React.useMemo(
+    () => buildRegistrationSchema(() => partnerKeysRef.current),
+    []
   )
 
   const {
@@ -185,8 +165,9 @@ export function RegistrationForm() {
         paymentMethod,
         workshopOptions,
         deadline,
+        pricing,
       }),
-    [workshop, battleCategorie, paymentMethod, workshopOptions, deadline]
+    [workshop, battleCategorie, paymentMethod, workshopOptions, deadline, pricing]
   )
 
   async function onSubmit(values: RegistrationFormValues) {
@@ -196,6 +177,7 @@ export function RegistrationForm() {
       paymentMethod: values.paymentMethod,
       workshopOptions,
       deadline,
+      pricing,
     })
 
     const workshopValue =
@@ -205,6 +187,7 @@ export function RegistrationForm() {
     )
 
     const payload = {
+      event_id: event.id,
       nome: values.nome,
       cognome: values.cognome,
       data_nascita: values.dataNascita,
@@ -257,6 +240,7 @@ export function RegistrationForm() {
     try {
       await supabase.functions.invoke("send-registration-email", {
         body: {
+          eventId: event.id,
           nome: values.nome,
           cognome: values.cognome,
           email: values.email,
@@ -281,7 +265,7 @@ export function RegistrationForm() {
 
     try {
       sessionStorage.setItem(
-        CONFIRMATION_STORAGE_KEY,
+        confirmationStorageKey(event.slug),
         JSON.stringify({ riepilogo, deadline: deadline.toISOString(), bonificoInfo })
       )
     } catch {
@@ -291,7 +275,7 @@ export function RegistrationForm() {
     }
 
     toast.success("Iscrizione registrata con successo!")
-    router.push("/eventi/senti-come-suona/conferma")
+    router.push(`/eventi/${event.slug}/conferma`)
   }
 
   if (optionsError) {
@@ -438,7 +422,7 @@ export function RegistrationForm() {
           </div>
 
           <div className="mt-2 flex flex-col gap-2">
-            <p className="text-xs font-semibold tracking-[0.1em] text-[#a855f7] uppercase">
+            <p className="text-xs font-semibold tracking-[0.1em] text-[color:var(--event-accent-2)] uppercase">
               Aka
             </p>
             <div className="flex flex-col gap-2">
@@ -464,7 +448,7 @@ export function RegistrationForm() {
           <CardTitle className="font-[family-name:var(--font-anton)] text-lg uppercase">
             Battle
           </CardTitle>
-          <CardDescription className="text-xs font-bold tracking-[0.12em] text-[#a855f7] uppercase">
+          <CardDescription className="text-xs font-bold tracking-[0.12em] text-[color:var(--event-accent-2)] uppercase">
             Scegli le categorie a cui vuoi partecipare
           </CardDescription>
         </CardHeader>
@@ -494,7 +478,7 @@ export function RegistrationForm() {
                           id={`battle-${opzione.chiave}`}
                           checked={checked}
                           disabled={disabled}
-                          className="rounded-none border-[#f5d90a]/70 data-[state=checked]:border-[#f5d90a] data-[state=checked]:bg-[#f5d90a] data-[state=checked]:text-black"
+                          className="rounded-none border-[color:var(--event-accent)]/70 data-[state=checked]:border-[color:var(--event-accent)] data-[state=checked]:bg-[color:var(--event-accent)] data-[state=checked]:text-black"
                           onCheckedChange={(value) => {
                             const isChecked = value === true
                             if (isNoBattle) {
@@ -521,12 +505,15 @@ export function RegistrationForm() {
                         </Badge>
                       ) : (
                         !isNoBattle && (
-                          <span className="text-sm font-semibold text-[#f5d90a]">
+                          <span className="text-sm font-semibold text-[color:var(--event-accent)]">
                             {formatCurrency(
                               !primaBattleSelezionata ||
                                 opzione.chiave === primaBattleSelezionata
-                                ? opzione.prezzo
-                                : BATTLE_ADDITIONAL_CATEGORY_PRICE
+                                ? prezzoBattlePerNumeroCategorie(1, pricing)
+                                : prezzoCategoriaAggiuntiva(
+                                    totale.battleCount - (battleCategorie.includes(opzione.chiave) ? 1 : 0),
+                                    pricing
+                                  )
                             )}
                           </span>
                         )
@@ -537,9 +524,9 @@ export function RegistrationForm() {
               </div>
             )}
           />
-          {battleCategorie.includes(HIPHOP_2VS2_OPEN_KEY) && (
+          {battleCategorie.some((c) => partnerKeysRef.current.includes(c)) && (
             <div className="mt-3 flex flex-col gap-2">
-              <Label htmlFor="akaPartner2vs2">Crew / partner 2vs2 *</Label>
+              <Label htmlFor="akaPartner2vs2">Crew / partner *</Label>
               <Input
                 id="akaPartner2vs2"
                 aria-invalid={!!errors.akaPartner2vs2}
@@ -564,7 +551,7 @@ export function RegistrationForm() {
           <CardTitle className="font-[family-name:var(--font-anton)] text-lg uppercase">
             Workshop
           </CardTitle>
-          <p className="text-xs font-bold tracking-[0.12em] text-[#a855f7] uppercase">
+          <p className="text-xs font-bold tracking-[0.12em] text-[color:var(--event-accent-2)] uppercase">
             Scegli un&apos;opzione
           </p>
         </CardHeader>
@@ -588,7 +575,7 @@ export function RegistrationForm() {
                       className={cn(
                         "flex items-center justify-between gap-3 border p-2.5 transition-colors",
                         field.value === opzione.chiave
-                          ? "border-[#f5d90a] bg-[#1a1a1a]"
+                          ? "border-[color:var(--event-accent)] bg-[#1a1a1a]"
                           : "border-white/10 bg-[#151515]",
                         disabled
                           ? "cursor-not-allowed opacity-60"
@@ -605,7 +592,7 @@ export function RegistrationForm() {
                           <p className="text-sm font-semibold">{opzione.label}</p>
                           {!isNoWorkshop && (
                             <p className="mt-0.5 flex items-center gap-1.5 text-xs">
-                              <span className="text-[#f5d90a]">
+                              <span className="text-[color:var(--event-accent)]">
                                 {formatCurrency(opzione.prezzo)}
                               </span>
                               {disabled ? (
@@ -678,7 +665,7 @@ export function RegistrationForm() {
             )}
             <div className="mt-2 flex justify-between border-t border-white/15 pt-2 text-base font-bold">
               <span>Totale</span>
-              <span className="text-[#f5d90a]">
+              <span className="text-[color:var(--event-accent)]">
                 {formatCurrency(totale.amountTotal)}
               </span>
             </div>
@@ -699,7 +686,7 @@ export function RegistrationForm() {
                       className={cn(
                         "flex cursor-pointer items-start gap-3 border p-2.5",
                         field.value === "bonifico"
-                          ? "border-[#f5d90a] bg-[#1a1a1a]"
+                          ? "border-[color:var(--event-accent)] bg-[#1a1a1a]"
                           : "border-white/15 bg-[#151515]"
                       )}
                     >
@@ -720,7 +707,7 @@ export function RegistrationForm() {
                       className={cn(
                         "flex cursor-pointer items-start gap-3 border p-2.5",
                         field.value === "sul_posto"
-                          ? "border-[#f5d90a] bg-[#1a1a1a]"
+                          ? "border-[color:var(--event-accent)] bg-[#1a1a1a]"
                           : "border-white/15 bg-[#151515]"
                       )}
                     >
@@ -731,8 +718,8 @@ export function RegistrationForm() {
                       />
                       <div>
                         <p className="text-sm font-semibold">Contanti sul posto</p>
-                        <p className="text-xs font-medium text-[#f5d90a]">
-                          +{formatCurrency(ONSITE_SURCHARGE)} di maggiorazione.
+                        <p className="text-xs font-medium text-[color:var(--event-accent)]">
+                          +{formatCurrency(pricing.maggiorazioneSulPosto)} di maggiorazione.
                         </p>
                       </div>
                     </label>
@@ -740,7 +727,7 @@ export function RegistrationForm() {
                 )}
               />
             ) : (
-              <div className="flex items-start gap-3 border border-[#f5d90a] bg-[#1a1a1a] p-2.5">
+              <div className="flex items-start gap-3 border border-[color:var(--event-accent)] bg-[#1a1a1a] p-2.5">
                 <div>
                   <p className="text-sm font-semibold">Pagamento di persona</p>
                   <p className="text-muted-foreground text-xs">
@@ -748,8 +735,8 @@ export function RegistrationForm() {
                     paghi di persona all&apos;evento.
                   </p>
                   {totale.surchargeOnsite > 0 && (
-                    <p className="text-xs font-medium text-[#f5d90a]">
-                      +{formatCurrency(ONSITE_SURCHARGE)} di maggiorazione.
+                    <p className="text-xs font-medium text-[color:var(--event-accent)]">
+                      +{formatCurrency(pricing.maggiorazioneSulPosto)} di maggiorazione.
                     </p>
                   )}
                 </div>
@@ -775,7 +762,7 @@ export function RegistrationForm() {
                     checked={field.value}
                     onCheckedChange={(value) => field.onChange(value === true)}
                     aria-invalid={!!errors.consensoRegolamento}
-                    className="mt-0.5 rounded-none border-white/30 data-[state=checked]:border-[#f5d90a] data-[state=checked]:bg-[#f5d90a] data-[state=checked]:text-black"
+                    className="mt-0.5 rounded-none border-white/30 data-[state=checked]:border-[color:var(--event-accent)] data-[state=checked]:bg-[color:var(--event-accent)] data-[state=checked]:text-black"
                   />
                   <span className="text-muted-foreground text-xs leading-relaxed">
                     Accetto il regolamento dell&apos;evento e il trattamento
@@ -803,7 +790,7 @@ export function RegistrationForm() {
                     checked={field.value}
                     onCheckedChange={(value) => field.onChange(value === true)}
                     aria-invalid={!!errors.consensoImmagini}
-                    className="mt-0.5 rounded-none border-white/30 data-[state=checked]:border-[#f5d90a] data-[state=checked]:bg-[#f5d90a] data-[state=checked]:text-black"
+                    className="mt-0.5 rounded-none border-white/30 data-[state=checked]:border-[color:var(--event-accent)] data-[state=checked]:bg-[color:var(--event-accent)] data-[state=checked]:text-black"
                   />
                   <span className="text-muted-foreground text-xs leading-relaxed">
                     Acconsenti alla pubblicazione di foto/video
@@ -823,7 +810,7 @@ export function RegistrationForm() {
               <Link
                 href="/privacy"
                 target="_blank"
-                className="underline underline-offset-2 hover:text-[#f5d90a]"
+                className="underline underline-offset-2 hover:text-[color:var(--event-accent)]"
               >
                 informativa privacy
               </Link>{" "}
@@ -831,7 +818,7 @@ export function RegistrationForm() {
               <Link
                 href="/cookie-policy"
                 target="_blank"
-                className="underline underline-offset-2 hover:text-[#f5d90a]"
+                className="underline underline-offset-2 hover:text-[color:var(--event-accent)]"
               >
                 cookie policy
               </Link>
@@ -844,7 +831,7 @@ export function RegistrationForm() {
             type="submit"
             disabled={isSubmitting || submitDisabledByZeroBalance}
             className={cn(
-              "h-auto w-full bg-[#f5d90a] py-3.5 text-sm font-bold tracking-[0.05em] text-black uppercase hover:bg-[#f5d90a]/90",
+              "h-auto w-full bg-[color:var(--event-accent)] py-3.5 text-sm font-bold tracking-[0.05em] text-black uppercase hover:bg-[color:var(--event-accent)]/90",
               DIAGONAL_CUT
             )}
           >

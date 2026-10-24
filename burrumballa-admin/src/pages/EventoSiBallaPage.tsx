@@ -7,7 +7,8 @@ import autoTable from "jspdf-autotable"
 
 import { cn } from "@/lib/utils"
 import { downloadCsv, nomeFile } from "@/lib/export"
-import { HIPHOP_2VS2_OPEN_KEY, accoppia2vs2 } from "@/lib/coppie2vs2"
+import { accoppia2vs2 } from "@/lib/coppie2vs2"
+import { useEventId } from "@/hooks/useEventId"
 import { useEventInfo } from "@/hooks/useEventInfo"
 import { useEventOptionsStato } from "@/hooks/useEventOptionsStato"
 import { useRegistrations } from "@/hooks/useRegistrations"
@@ -134,7 +135,7 @@ function Sezione({
   vuoto,
   onOpenRegistration,
 }: SezioneProps) {
-  const saveOrdine = useSaveSiBallaOrdinamento()
+  const saveOrdine = useSaveSiBallaOrdinamento(useEventId())
   const ordinate = useMemo(() => applicaOrdine(righe, ordine), [righe, ordine])
 
   const handleShuffle = () => {
@@ -256,10 +257,11 @@ export default function EventoSiBallaPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
-  const eventInfoQuery = useEventInfo()
-  const registrationsQuery = useRegistrations()
-  const optionsQuery = useEventOptionsStato()
-  const ordinamentiQuery = useSiBallaOrdinamenti()
+  const eventId = useEventId()
+  const eventInfoQuery = useEventInfo(eventId)
+  const registrationsQuery = useRegistrations(eventId)
+  const optionsQuery = useEventOptionsStato(eventId)
+  const ordinamentiQuery = useSiBallaOrdinamenti(eventId)
 
   const pagati = useMemo(
     () => (registrationsQuery.data ?? []).filter(isPagato).sort(perCognome),
@@ -305,7 +307,10 @@ export default function EventoSiBallaPage() {
     return pagati.filter((r) => r.battle_categories.includes(active.chiave))
   }, [active, pagati])
 
-  const accoppiamento = useMemo(() => accoppia2vs2(pagati), [pagati])
+  const accoppiamento = useMemo(
+    () => (active?.richiede_partner ? accoppia2vs2(pagati, active.chiave) : null),
+    [active, pagati]
+  )
 
   // Cercato tra tutti gli iscritti, non solo i pagati: se dal modale lo
   // stato torna "da pagare" il modale resta aperto.
@@ -326,7 +331,7 @@ export default function EventoSiBallaPage() {
     const option = active
     const sezioneBase = `${option.tipo}:${option.chiave}`
 
-    if (option.tipo === "battle" && option.chiave === HIPHOP_2VS2_OPEN_KEY) {
+    if (option.tipo === "battle" && option.richiede_partner && accoppiamento) {
       return (
         <div className="space-y-6">
           <Sezione
@@ -381,7 +386,7 @@ export default function EventoSiBallaPage() {
         <Button
           variant="outline"
           size="icon"
-          onClick={() => navigate("/admin/evento/iscritti")}
+          onClick={() => navigate(`/admin/eventi/${eventId}/iscritti`)}
         >
           <ArrowLeft />
         </Button>

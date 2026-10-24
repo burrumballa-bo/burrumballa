@@ -1,10 +1,16 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "Senti Come Suona — 28 Settembre 2025";
+import { formatEventDate, getEventBySlug } from "@/lib/event-info";
+
+export const alt = "Evento Burrumballa";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-export default function Image() {
+export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
+  const event = await getEventBySlug((await params).slug);
+  const titolo = event?.titolo ?? "Burrumballa";
+  const data = event ? formatEventDate(event.data_evento) : null;
+
   return new ImageResponse(
     <div
       style={{
@@ -30,12 +36,10 @@ export default function Image() {
       >
         Burrumballa
       </div>
-      <div style={{ fontSize: 88, fontWeight: 700, textAlign: "center" }}>
-        Senti Come Suona
+      <div style={{ fontSize: 88, fontWeight: 700, textAlign: "center", padding: "0 60px" }}>
+        {titolo}
       </div>
-      <div style={{ fontSize: 36, color: "#d4d4d4" }}>
-        28 Settembre 2025 · Workshop &amp; Battle
-      </div>
+      {data && <div style={{ fontSize: 36, color: "#d4d4d4" }}>{data}</div>}
     </div>,
     { ...size },
   );

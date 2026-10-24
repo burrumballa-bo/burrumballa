@@ -21,7 +21,7 @@ interface RegistrationDetailDialogProps {
 // Modale di dettaglio iscritto già collegato alle mutation: usato da ogni
 // pagina che apre un iscritto (Iscritti, Si balla).
 export function RegistrationDetailDialog({ registration, onClose }: RegistrationDetailDialogProps) {
-  const optionsQuery = useEventOptionsStato()
+  const optionsQuery = useEventOptionsStato(registration.event_id)
   const { changeStatus, mutation: updateStatus } = usePaymentStatusChange()
   const updateNote = useUpdateNoteAdmin()
   const updateRegistration = useUpdateRegistration()

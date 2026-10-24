@@ -1,3 +1,4 @@
+import type { EventInfo } from "@/types/eventInfo"
 import type { EventOptionStato } from "@/types/eventOption"
 import type { PaymentMethod } from "@/types/registration"
 
@@ -10,12 +11,14 @@ import type { PaymentMethod } from "@/types/registration"
 export const NO_WORKSHOP_KEY = "no_workshop"
 export const NO_BATTLE_KEY = "no_battle"
 
-const LATE_SURCHARGE = 5
-const ONSITE_SURCHARGE = 5
 const WORKSHOP_FALLBACK_PRICE = 25
 
-// La battle si paga a scaglioni in base a QUANTE categorie si scelgono.
-const BATTLE_TIER_PRICES = [0, 15, 20, 25, 30]
+// Regole di prezzo dell'evento (event_info): la battle si paga a scaglioni
+// in base a QUANTE categorie si scelgono; oltre l'ultimo vale l'ultimo.
+export type EventPricing = Pick<
+  EventInfo,
+  "battle_prezzi" | "maggiorazione_ritardo" | "maggiorazione_sul_posto"
+>
 
 export interface CalcolaImportiInput {
   workshop: string
@@ -23,6 +26,7 @@ export interface CalcolaImportiInput {
   paymentMethod: PaymentMethod
   workshopOptions: EventOptionStato[]
   deadline: Date | null
+  pricing: EventPricing
 }
 
 export interface Importi {
@@ -52,14 +56,17 @@ export function calcolaImporti(input: CalcolaImportiInput): Importi {
     : 0
 
   const battleCount = input.battleCategories.filter((c) => c !== NO_BATTLE_KEY).length
+  const prezzi = input.pricing.battle_prezzi
   const amountBattle =
-    BATTLE_TIER_PRICES[Math.min(battleCount, BATTLE_TIER_PRICES.length - 1)]
+    battleCount > 0 && prezzi.length > 0 ? prezzi[Math.min(battleCount, prezzi.length) - 1] : 0
 
   // I sovrapprezzi riguardano solo la battle, come nel form pubblico.
   const isLate = input.deadline !== null && Date.now() > input.deadline.getTime()
-  const surchargeLate = isLate && amountBattle > 0 ? LATE_SURCHARGE : 0
+  const surchargeLate = isLate && amountBattle > 0 ? input.pricing.maggiorazione_ritardo : 0
   const surchargeOnsite =
-    input.paymentMethod === "sul_posto" && amountBattle > 0 ? ONSITE_SURCHARGE : 0
+    input.paymentMethod === "sul_posto" && amountBattle > 0
+      ? input.pricing.maggiorazione_sul_posto
+      : 0
 
   return {
     amount_workshop: amountWorkshop,

@@ -34,7 +34,7 @@ interface EventOptionModalProps {
   // componenti di un pacchetto: rilevante solo quando tipo === "workshop".
   siblingWorkshops: EventOptionStato[]
   onClose: () => void
-  onCreate: (input: EventOptionInsertInput) => void
+  onCreate: (input: Omit<EventOptionInsertInput, "event_id">) => void
   onSave: (input: EventOptionUpdateInput) => void
   onDelete: (id: string) => void
   isSaving: boolean
@@ -81,6 +81,7 @@ export function EventOptionModal({
       attivo: option?.attivo ?? true,
       sold_out_manuale: option?.sold_out_manuale ?? false,
       composto: option?.composto ?? false,
+      richiede_partner: option?.richiede_partner ?? false,
       child_ids: option
         ? siblingWorkshops
             .filter((w) => option.composto_di.includes(w.chiave))
@@ -92,6 +93,7 @@ export function EventOptionModal({
   const attivo = watch("attivo")
   const soldOutManuale = watch("sold_out_manuale")
   const composto = watch("composto")
+  const richiedePartner = watch("richiede_partner")
   const childIds = watch("child_ids")
 
   // La chiave "no_workshop" è un placeholder riservato (gratuito, escluso
@@ -127,6 +129,7 @@ export function EventOptionModal({
       attivo: values.attivo,
       sold_out_manuale: values.sold_out_manuale,
       composto: tipo === "workshop" ? values.composto : false,
+      richiede_partner: tipo === "battle" ? values.richiede_partner : false,
       childIds: tipo === "workshop" && values.composto ? values.child_ids : [],
     }
 
@@ -247,6 +250,23 @@ export function EventOptionModal({
             <Label htmlFor="option-sold-out">Sold out manuale</Label>
           </div>
         </div>
+
+        {tipo === "battle" && (
+          <div className="flex items-start gap-2 rounded-md border p-3">
+            <Switch
+              id="option-partner"
+              checked={richiedePartner}
+              onCheckedChange={(value) => setValue("richiede_partner", value)}
+            />
+            <div className="space-y-0.5">
+              <Label htmlFor="option-partner">Categoria in coppia</Label>
+              <p className="text-muted-foreground text-xs">
+                Il form chiede il nome della crew o del partner, e in &quot;Si balla&quot;
+                gli iscritti vengono accoppiati.
+              </p>
+            </div>
+          </div>
+        )}
 
         {tipo === "workshop" && (
           <div className="space-y-2 rounded-md border p-3">

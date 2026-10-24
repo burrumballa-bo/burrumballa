@@ -2,8 +2,9 @@ import { NextResponse, type NextRequest } from "next/server"
 
 // Sito ancora non pubblico: ogni pagina viene sostituita da /coming-soon
 // finché non arriva il parametro di sblocco, tranne le rotte in
-// PUBLIC_PREFIXES (l'evento "Senti Come Suona" deve restare raggiungibile
-// da chiunque, anche senza il parametro).
+// PUBLIC_PREFIXES e delle pagine evento /eventi/<slug> (gli eventi devono
+// restare raggiungibili da chiunque, anche senza il parametro; quelli non
+// pubblicati rispondono 404 dalla pagina stessa).
 const PREVIEW_COOKIE = "bb_preview"
 const PREVIEW_PARAM = "masca"
 const PREVIEW_COOKIE_MAX_AGE = 60 * 60 * 24 * 90 // 90 giorni
@@ -19,7 +20,6 @@ const PREVIEW_COOKIE_MAX_AGE = 60 * 60 * 24 * 90 // 90 giorni
 // contatti, /api/contatti). Un endpoint o esiste o dà errore, non diventa
 // mai HTML.
 const PUBLIC_PREFIXES = [
-  "/eventi/senti-come-suona",
   "/coming-soon",
   "/api",
   "/icon",
@@ -28,6 +28,8 @@ const PUBLIC_PREFIXES = [
 ]
 
 function isPublicPath(pathname: string): boolean {
+  // La lista /eventi resta dietro il gate, le singole pagine evento no.
+  if (pathname.startsWith("/eventi/")) return true
   return PUBLIC_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
   )

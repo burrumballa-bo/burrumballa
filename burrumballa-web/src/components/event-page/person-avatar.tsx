@@ -1,4 +1,4 @@
-import type { EventPerson } from "@/lib/senti-come-suona-assets"
+import type { EventPerson } from "@/lib/event-assets"
 
 import { PlaceholderPhoto } from "./placeholder-photo"
 

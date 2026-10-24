@@ -2,6 +2,7 @@ import { useMemo } from "react"
 import { useNavigate } from "react-router-dom"
 import { ArrowLeft, ListChecks, PencilLine } from "lucide-react"
 
+import { useEventId } from "@/hooks/useEventId"
 import { useEventInfo } from "@/hooks/useEventInfo"
 import { useEventOptionsStato } from "@/hooks/useEventOptionsStato"
 import { useRegistrations } from "@/hooks/useRegistrations"
@@ -18,9 +19,10 @@ const NO_BATTLE_KEY = "no_battle"
 
 export default function EventDashboardPage() {
   const navigate = useNavigate()
-  const eventInfoQuery = useEventInfo()
-  const registrationsQuery = useRegistrations()
-  const optionsQuery = useEventOptionsStato()
+  const eventId = useEventId()
+  const eventInfoQuery = useEventInfo(eventId)
+  const registrationsQuery = useRegistrations(eventId)
+  const optionsQuery = useEventOptionsStato(eventId)
 
   const registrations = useMemo(
     () => registrationsQuery.data ?? [],
@@ -54,11 +56,11 @@ export default function EventDashboardPage() {
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <Button onClick={() => navigate("/admin/evento/pagina")}>
+        <Button onClick={() => navigate(`/admin/eventi/${eventId}/pagina`)}>
           <PencilLine />
           Modifica pagina evento
         </Button>
-        <Button variant="outline" onClick={() => navigate("/admin/evento/iscritti")}>
+        <Button variant="outline" onClick={() => navigate(`/admin/eventi/${eventId}/iscritti`)}>
           <ListChecks />
           Iscritti
         </Button>

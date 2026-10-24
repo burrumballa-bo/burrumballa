@@ -24,7 +24,7 @@ export interface BonificoInfo {
 }
 
 export const FALLBACK_BONIFICO_INFO: BonificoInfo = {
-  eventTitle: "Senti Come Suona",
+  eventTitle: "evento Burrumballa",
   iban: "IT00 X000 0000 0000 0000 0000 000",
   intestatario: "Burrumballa APS",
 }
@@ -40,12 +40,14 @@ export function RegistrationConfirmation({
   riepilogo,
   deadline,
   bonificoInfo,
+  eventSlug,
   onReset,
 }: {
   riepilogo: RiepilogoIscrizione
   deadline: Date
   bonificoInfo: BonificoInfo
-  // Nella pagina di conferma dedicata (/eventi/senti-come-suona/conferma)
+  eventSlug: string
+  // Nella pagina di conferma dedicata (/eventi/<slug>/conferma)
   // non c'è uno stato di form da resettare: in quel caso si mostra un link
   // alla sezione iscrizione invece di un bottone stateful.
   onReset?: () => void
@@ -77,9 +79,9 @@ export function RegistrationConfirmation({
       </CardHeader>
       <CardContent className="flex flex-col gap-4 px-5">
         {isBonifico && (
-          <div className="flex flex-col gap-3 border border-[#7c1fd6]/50 bg-[#7c1fd6]/10 p-4">
+          <div className="flex flex-col gap-3 border border-[color:var(--event-accent-2)]/50 bg-[color:var(--event-accent-2)]/10 p-4">
             <div className="flex items-center gap-2 text-sm font-semibold">
-              <Banknote className="size-4 text-[#a855f7]" />
+              <Banknote className="size-4 text-[color:var(--event-accent-2)]" />
               Completa il pagamento con bonifico
             </div>
 
@@ -107,7 +109,7 @@ export function RegistrationConfirmation({
         )}
 
         <div className="flex flex-col gap-2 border border-white/10 bg-[#111] p-4">
-          <p className="mb-1 text-xs font-bold tracking-[0.12em] text-[#a855f7] uppercase">
+          <p className="mb-1 text-xs font-bold tracking-[0.12em] text-[color:var(--event-accent-2)] uppercase">
             Riepilogo iscrizione
           </p>
           <div className="flex justify-between text-sm">
@@ -165,7 +167,7 @@ export function RegistrationConfirmation({
           )}
           <div className="flex justify-between border-t border-white/15 pt-2 text-base font-bold">
             <span>Totale</span>
-            <span className="text-[#f5d90a]">
+            <span className="text-[color:var(--event-accent)]">
               {formatCurrency(totale.amountTotal)}
             </span>
           </div>
@@ -186,7 +188,7 @@ export function RegistrationConfirmation({
             variant="outline"
             className="w-full border-white/20 bg-transparent sm:w-auto"
           >
-            <Link href="/eventi/senti-come-suona#iscrizione">
+            <Link href={`/eventi/${eventSlug}#iscrizione`}>
               Nuova iscrizione
             </Link>
           </Button>
@@ -194,11 +196,11 @@ export function RegistrationConfirmation({
         <Button
           asChild
           className={cn(
-            "w-full bg-[#f5d90a] font-bold text-black uppercase hover:bg-[#f5d90a]/90 sm:w-auto",
+            "w-full bg-[color:var(--event-accent)] font-bold text-black uppercase hover:bg-[color:var(--event-accent)]/90 sm:w-auto",
             DIAGONAL_CUT
           )}
         >
-          <Link href="/eventi/senti-come-suona">
+          <Link href={`/eventi/${eventSlug}`}>
             Torna alla pagina dell&apos;evento
           </Link>
         </Button>

@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
+import { useParams } from "next/navigation"
 import { Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -15,7 +16,7 @@ import {
 import { DIAGONAL_CUT, SectionCard } from "@/components/registration/shared"
 import { cn } from "@/lib/utils"
 
-const CONFIRMATION_STORAGE_KEY = "scs-registration-confirmation"
+import { confirmationStorageKey } from "@/components/registration/registration-form"
 
 interface StoredConfirmation {
   riepilogo: RiepilogoIscrizione
@@ -24,6 +25,7 @@ interface StoredConfirmation {
 }
 
 export default function ConfermaIscrizionePage() {
+  const { slug } = useParams<{ slug: string }>()
   const [stato, setStato] = React.useState<"loading" | "found" | "missing">(
     "loading"
   )
@@ -39,8 +41,8 @@ export default function ConfermaIscrizionePage() {
     consumedRef.current = true
 
     try {
-      const raw = sessionStorage.getItem(CONFIRMATION_STORAGE_KEY)
-      sessionStorage.removeItem(CONFIRMATION_STORAGE_KEY)
+      const raw = sessionStorage.getItem(confirmationStorageKey(slug))
+      sessionStorage.removeItem(confirmationStorageKey(slug))
       if (!raw) {
         setStato("missing")
         return
@@ -51,7 +53,7 @@ export default function ConfermaIscrizionePage() {
     } catch {
       setStato("missing")
     }
-  }, [])
+  }, [slug])
 
   return (
     <div className="bg-[#050505] px-5 py-10 lg:mx-auto lg:max-w-3xl lg:px-10 lg:py-16">
@@ -81,11 +83,11 @@ export default function ConfermaIscrizionePage() {
             <Button
               asChild
               className={cn(
-                "w-fit bg-[#f5d90a] font-bold text-black uppercase hover:bg-[#f5d90a]/90",
+                "w-fit bg-[color:var(--event-accent)] font-bold text-black uppercase hover:bg-[color:var(--event-accent)]/90",
                 DIAGONAL_CUT
               )}
             >
-              <Link href="/eventi/senti-come-suona#iscrizione">
+              <Link href={`/eventi/${slug}#iscrizione`}>
                 Vai all&apos;iscrizione
               </Link>
             </Button>
@@ -98,6 +100,7 @@ export default function ConfermaIscrizionePage() {
           riepilogo={dati.riepilogo}
           deadline={new Date(dati.deadline)}
           bonificoInfo={dati.bonificoInfo ?? FALLBACK_BONIFICO_INFO}
+          eventSlug={slug}
         />
       )}
     </div>

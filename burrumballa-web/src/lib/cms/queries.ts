@@ -79,7 +79,7 @@ const HEADER_LOGO_FILE_BY_VARIANT: Record<ThemeContent["headerLogo"], string> =
 // Il bucket "assets" e' privato: la select anonima e' permessa solo per
 // questi due file grazie alla policy "assets_select_anon_header_logo" (vedi
 // supabase/migrations), stesso pattern della cartella 'senti_come_suona/'
-// in lib/senti-come-suona-assets.ts. Fallisce in modo silenzioso come le
+// in lib/event-assets.ts. Fallisce in modo silenzioso come le
 // altre query CMS: senza logo, l'header ricade sul placeholder.
 export async function getHeaderLogoSignedUrl(
   variant: ThemeContent["headerLogo"],

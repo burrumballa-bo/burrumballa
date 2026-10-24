@@ -10,9 +10,20 @@
 //   SMTP_PORT   - porta SMTP (465 = TLS implicito, 587 = STARTTLS)
 //   SMTP_USER   - utente/casella SMTP
 //   SMTP_PASS   - password della casella SMTP
-//   SMTP_FROM   - mittente "Nome <email@dominio>" (opzionale, default SMTP_USER)
+//   SMTP_FROM   - mittente "Nome <email@dominio>" di fallback (opzionale,
+//                 default SMTP_USER), usato se l'evento e le Impostazioni
+//                 non hanno un mittente
+//
+// Con `eventId` titolo e mittente arrivano dall'evento (event_info), con
+// ricaduta sul mittente generale delle Impostazioni.
 
+import { createClient } from "npm:@supabase/supabase-js@2"
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts"
+
+import { escapeHtml } from "../_shared/receipt.ts"
+
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")
 
 const SMTP_HOST = Deno.env.get("SMTP_HOST")
 const SMTP_PORT = Deno.env.get("SMTP_PORT")
@@ -27,6 +38,7 @@ const corsHeaders = {
 }
 
 interface RegistrationEmailPayload {
+  eventId?: number
   nome: string
   cognome: string
   email: string
@@ -47,7 +59,8 @@ function isValidPayload(value: unknown): value is RegistrationEmailPayload {
     Array.isArray(p.battleLabels) &&
     p.battleLabels.every((label) => typeof label === "string") &&
     (p.paymentMethod === "bonifico" || p.paymentMethod === "sul_posto") &&
-    typeof p.amountTotal === "number"
+    typeof p.amountTotal === "number" &&
+    (p.eventId === undefined || typeof p.eventId === "number")
   )
 }
 
@@ -58,16 +71,16 @@ function formatCurrency(value: number): string {
   }).format(value)
 }
 
-function buildEmailHtml(payload: RegistrationEmailPayload): string {
+function buildEmailHtml(payload: RegistrationEmailPayload, eventTitle: string): string {
   const battleText = payload.battleLabels.join(", ")
   const pagamentoText =
     payload.paymentMethod === "bonifico" ? "Bonifico bancario" : "Sul posto"
 
   return `
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-      <h1 style="font-size: 20px;">Iscrizione confermata — Senti Come Suona</h1>
+      <h1 style="font-size: 20px;">Iscrizione confermata — ${escapeHtml(eventTitle)}</h1>
       <p>Ciao ${payload.nome},</p>
-      <p>Abbiamo ricevuto la tua iscrizione a <strong>Senti Come Suona</strong>. Ecco il riepilogo:</p>
+      <p>Abbiamo ricevuto la tua iscrizione a <strong>${escapeHtml(eventTitle)}</strong>. Ecco il riepilogo:</p>
       <ul>
         <li><strong>Nome:</strong> ${payload.nome} ${payload.cognome}</li>
         <li><strong>Workshop:</strong> ${payload.workshopLabel}</li>
@@ -85,15 +98,15 @@ function buildEmailHtml(payload: RegistrationEmailPayload): string {
   `
 }
 
-function buildEmailText(payload: RegistrationEmailPayload): string {
+function buildEmailText(payload: RegistrationEmailPayload, eventTitle: string): string {
   const pagamentoText =
     payload.paymentMethod === "bonifico" ? "Bonifico bancario" : "Sul posto"
 
   return [
-    "Iscrizione confermata — Senti Come Suona",
+    `Iscrizione confermata — ${eventTitle}`,
     "",
     `Ciao ${payload.nome},`,
-    "Abbiamo ricevuto la tua iscrizione a Senti Come Suona. Ecco il riepilogo:",
+    `Abbiamo ricevuto la tua iscrizione a ${eventTitle}. Ecco il riepilogo:`,
     `Nome: ${payload.nome} ${payload.cognome}`,
     `Workshop: ${payload.workshopLabel}`,
     `Battle: ${payload.battleLabels.join(", ")}`,
@@ -149,6 +162,32 @@ Deno.serve(async (req: Request) => {
     })
   }
 
+  // Titolo e mittente dell'evento; senza eventId (form vecchio) l'evento 1.
+  let eventTitle = "Senti Come Suona"
+  let from = SMTP_FROM
+  if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+    const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+      auth: { persistSession: false },
+    })
+    const [{ data: event }, { data: settings }] = await Promise.all([
+      supabaseAdmin
+        .from("event_info")
+        .select("titolo, email_mittente")
+        .eq("id", payload.eventId ?? 1)
+        .maybeSingle<{ titolo: string; email_mittente: string | null }>(),
+      supabaseAdmin
+        .from("app_settings")
+        .select("ricevuta_intestazione, email_mittente_generale")
+        .eq("id", 1)
+        .maybeSingle<{ ricevuta_intestazione: string | null; email_mittente_generale: string | null }>(),
+    ])
+    if (event?.titolo) eventTitle = event.titolo
+    const address = event?.email_mittente?.trim() || settings?.email_mittente_generale?.trim()
+    if (address) {
+      from = settings?.ricevuta_intestazione ? `${settings.ricevuta_intestazione} <${address}>` : address
+    }
+  }
+
   const smtpClient = new SMTPClient({
     connection: {
       hostname: SMTP_HOST,
@@ -160,11 +199,11 @@ Deno.serve(async (req: Request) => {
 
   try {
     await smtpClient.send({
-      from: SMTP_FROM,
+      from,
       to: payload.email,
-      subject: "Iscrizione confermata — Senti Come Suona",
-      content: buildEmailText(payload),
-      html: buildEmailHtml(payload),
+      subject: `Iscrizione confermata — ${eventTitle}`,
+      content: buildEmailText(payload, eventTitle),
+      html: buildEmailHtml(payload, eventTitle),
     })
   } catch (error) {
     const message = error instanceof Error ? error.message : "Errore sconosciuto"

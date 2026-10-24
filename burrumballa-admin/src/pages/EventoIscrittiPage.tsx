@@ -5,6 +5,8 @@ import { ArrowLeft, Search, Swords, UserPlus } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { accoppia2vs2 } from "@/lib/coppie2vs2"
 import { PAYMENT_STATUS_OPTIONS } from "@/lib/paymentStatus"
+import { useEventId } from "@/hooks/useEventId"
+import { useEventOptionsStato } from "@/hooks/useEventOptionsStato"
 import { useRegistrations } from "@/hooks/useRegistrations"
 import { usePaymentStatusChange } from "@/hooks/usePaymentStatusChange"
 import { Button } from "@/components/ui/button"
@@ -23,12 +25,14 @@ const FILTERS: { value: StatusFilter; label: string }[] = [
 
 export default function EventoIscrittiPage() {
   const navigate = useNavigate()
+  const eventId = useEventId()
+  const optionsQuery = useEventOptionsStato(eventId)
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("tutti")
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
 
-  const registrationsQuery = useRegistrations()
+  const registrationsQuery = useRegistrations(eventId)
   const { changeStatus, mutation: updateStatus } = usePaymentStatusChange()
 
   const registrations = useMemo(
@@ -36,9 +40,15 @@ export default function EventoIscrittiPage() {
     [registrationsQuery.data]
   )
 
+  // Iscritti a una categoria in coppia che non hanno ancora una coppia.
   const senzaCoppiaIds = useMemo(
-    () => new Set(accoppia2vs2(registrations).singoli.map((r) => r.id)),
-    [registrations]
+    () =>
+      new Set(
+        (optionsQuery.data ?? [])
+          .filter((o) => o.richiede_partner)
+          .flatMap((o) => accoppia2vs2(registrations, o.chiave).singoli.map((r) => r.id))
+      ),
+    [registrations, optionsQuery.data]
   )
 
   const searchFiltered = useMemo(() => {
@@ -75,7 +85,7 @@ export default function EventoIscrittiPage() {
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6 md:p-8">
       <div className="flex items-center gap-3">
-        <Button variant="outline" size="icon" onClick={() => navigate("/admin/evento")}>
+        <Button variant="outline" size="icon" onClick={() => navigate(`/admin/eventi/${eventId}`)}>
           <ArrowLeft />
         </Button>
         <h1 className="text-2xl font-semibold">Iscritti</h1>
@@ -83,7 +93,7 @@ export default function EventoIscrittiPage() {
           <UserPlus />
           Nuovo iscritto
         </Button>
-        <Button onClick={() => navigate("/admin/evento/si-balla")}>
+        <Button onClick={() => navigate(`/admin/eventi/${eventId}/si-balla`)}>
           <Swords />
           Si balla
         </Button>

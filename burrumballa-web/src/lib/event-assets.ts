@@ -1,17 +1,12 @@
 import { createClient } from "@supabase/supabase-js"
 
-// Bucket privato 'assets' (stesso del timbro ricevute): la cartella
-// 'senti_come_suona/' e' leggibile da anon SOLO tramite signed URL, grazie
-// alla policy storage 'assets_select_anon_senti_come_suona' scoped a quel
-// prefisso (vedi migrazione 20260811000200). Il resto del bucket (es.
+// Bucket privato 'assets' (stesso del timbro ricevute): le immagini degli
+// eventi sono leggibili da anon SOLO tramite signed URL, grazie alle policy
+// storage scoped alle cartelle 'senti_come_suona/' (primo evento) ed
+// 'eventi/' (vedi supabase/migrations). Il resto del bucket (es.
 // 'timbro/') resta privato: nessuna policy anon esiste su quei path.
 const ASSETS_BUCKET = "assets"
-export const SENTI_COME_SUONA_FOLDER = "senti_come_suona"
 const SIGNED_URL_TTL_SECONDS = 60 * 60
-
-export function sentiComeSuonaPath(fileName: string): string {
-  return `${SENTI_COME_SUONA_FOLDER}/${fileName}`
-}
 
 function getAnonClient() {
   return createClient(
@@ -60,14 +55,15 @@ export interface EventPerson {
   ordine: number
 }
 
-// Giuria e Host/DJ mostrati in pagina: gestiti dall'admin in /admin/evento
-// (tabella `event_people`), non piu' hardcoded.
-export async function getEventPeople(): Promise<EventPerson[]> {
+// Giuria e Host/DJ dell'evento: gestiti dall'admin nella pagina evento
+// (tabella `event_people`).
+export async function getEventPeople(eventId: number): Promise<EventPerson[]> {
   try {
     const supabase = getAnonClient()
     const { data, error } = await supabase
       .from("event_people")
       .select("id, categoria, nome, ruolo, immagine_path, colore, ordine")
+      .eq("event_id", eventId)
       .order("categoria", { ascending: true })
       .order("ordine", { ascending: true })
 
