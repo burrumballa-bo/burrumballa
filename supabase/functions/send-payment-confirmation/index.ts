@@ -87,7 +87,7 @@ interface Registration {
   workshop: string | null
   battle_categories: string[]
   payment_method: "bonifico" | "sul_posto"
-  payment_status: "da_pagare" | "pagato_bonifico" | "pagato_in_loco"
+  payment_status: "da_pagare" | "pagato_bonifico" | "pagato_in_loco" | "pagato_pos"
   amount_workshop: number
   amount_battle: number
   surcharge_late: number

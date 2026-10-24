@@ -21,7 +21,7 @@ import { useEventOptionsStato } from "@/hooks/useEventOptionsStato"
 import { notifyReceiptResult } from "@/hooks/usePaymentStatusChange"
 import { useCreateRegistration } from "@/hooks/useRegistrationMutations"
 import {
-  PAYMENT_CONFIRM_ACTIONS,
+  PAID_STATUSES_BY_METHOD,
   PAYMENT_STATUS_BADGE_CLASSES,
   PAYMENT_STATUS_LABELS,
 } from "@/lib/paymentStatus"
@@ -38,7 +38,7 @@ export function RegistrationCreateModal({ onClose }: RegistrationCreateModalProp
   const createRegistration = useCreateRegistration()
 
   const [fields, setFields] = useState(EMPTY_REGISTRATION_FIELDS)
-  const [pagato, setPagato] = useState(false)
+  const [statoScelto, setStatoScelto] = useState<PaymentStatus>("da_pagare")
   const [note, setNote] = useState("")
   const [prezzoAdmin, setPrezzoAdmin] = useState("")
 
@@ -58,10 +58,12 @@ export function RegistrationCreateModal({ onClose }: RegistrationCreateModalProp
     deadline: scadenza ? new Date(scadenza) : null,
   })
 
-  // Lo stato "pagato" segue il metodo di pagamento scelto: bonifico ->
-  // pagato bonifico, sul posto -> pagato in loco.
-  const statoPagato = PAYMENT_CONFIRM_ACTIONS[fields.paymentMethod].status
-  const paymentStatus: PaymentStatus = pagato ? statoPagato : "da_pagare"
+  // Gli stati "pagato" seguono il metodo scelto: bonifico -> pagato
+  // bonifico, sul posto -> contanti o POS. Cambiando metodo uno stato non
+  // piu' compatibile torna "da pagare".
+  const statiPagato = PAID_STATUSES_BY_METHOD[fields.paymentMethod]
+  const paymentStatus: PaymentStatus = statiPagato.includes(statoScelto) ? statoScelto : "da_pagare"
+  const pagato = paymentStatus !== "da_pagare"
 
   const { value: prezzoAdminValue, valid: prezzoAdminValido } = parsePrezzoAdmin(prezzoAdmin)
   const values = fieldValuesToRegistration(fields)
@@ -116,10 +118,14 @@ export function RegistrationCreateModal({ onClose }: RegistrationCreateModalProp
                 id="create-status"
                 className="h-8 w-auto text-xs"
                 value={paymentStatus}
-                onChange={(e) => setPagato(e.target.value !== "da_pagare")}
+                onChange={(e) => setStatoScelto(e.target.value as PaymentStatus)}
               >
                 <option value="da_pagare">{PAYMENT_STATUS_LABELS.da_pagare}</option>
-                <option value={statoPagato}>{PAYMENT_STATUS_LABELS[statoPagato]}</option>
+                {statiPagato.map((stato) => (
+                  <option key={stato} value={stato}>
+                    {PAYMENT_STATUS_LABELS[stato]}
+                  </option>
+                ))}
               </Select>
             </div>
             {pagato && (

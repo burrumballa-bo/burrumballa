@@ -6,6 +6,7 @@ import { jsPDF } from "jspdf"
 import autoTable from "jspdf-autotable"
 
 import { cn } from "@/lib/utils"
+import { downloadCsv, nomeFile } from "@/lib/export"
 import { HIPHOP_2VS2_OPEN_KEY, accoppia2vs2 } from "@/lib/coppie2vs2"
 import { useEventInfo } from "@/hooks/useEventInfo"
 import { useEventOptionsStato } from "@/hooks/useEventOptionsStato"
@@ -44,7 +45,7 @@ interface Riga {
 }
 
 function isPagato(r: Registration): boolean {
-  return r.payment_status === "pagato_bonifico" || r.payment_status === "pagato_in_loco"
+  return r.payment_status !== "da_pagare"
 }
 
 function perCognome(a: Registration, b: Registration): number {
@@ -105,33 +106,11 @@ function stampaPdf(titolo: string, sottotitolo: string, columns: string[], righe
   doc.save(`${nomeFile(titolo, sottotitolo)}.pdf`)
 }
 
-function nomeFile(titolo: string, sottotitolo: string): string {
-  return `${titolo}-${sottotitolo}`
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "")
-}
-
-function cellaCsv(value: string): string {
-  return /[";\n\r]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value
-}
-
-// Separatore ";" e BOM UTF-8: è il formato che Excel in italiano apre
-// direttamente in colonne, con gli accenti corretti.
 function stampaCsv(titolo: string, sottotitolo: string, columns: string[], righe: Riga[]) {
-  const linee = [
+  downloadCsv(nomeFile(titolo, sottotitolo), [
     ["#", ...columns],
     ...righe.map((r, i) => [String(i + 1), ...r.cells]),
-  ].map((cells) => cells.map(cellaCsv).join(";"))
-  const blob = new Blob(["\uFEFF" + linee.join("\r\n")], { type: "text/csv;charset=utf-8" })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement("a")
-  link.href = url
-  link.download = `${nomeFile(titolo, sottotitolo)}.csv`
-  link.click()
-  URL.revokeObjectURL(url)
+  ])
 }
 
 interface SezioneProps {

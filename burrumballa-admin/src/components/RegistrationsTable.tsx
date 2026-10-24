@@ -135,8 +135,8 @@ export function RegistrationsTable({
           const action = PAYMENT_CONFIRM_ACTIONS[registration.payment_method]
           const isPending = confirmingId === registration.id
 
-          // Già nello stato target: niente da confermare.
-          if (registration.payment_status === action.status) {
+          // Già pagato (anche con un altro metodo, es. POS): niente da confermare.
+          if (registration.payment_status !== "da_pagare") {
             return <span className="text-muted-foreground block text-right">—</span>
           }
 

@@ -20,6 +20,7 @@ import GestioneSitoPage from "@/pages/GestioneSitoPage"
 import GestioneEventiPage from "@/pages/GestioneEventiPage"
 import CorsiGestionePage from "@/pages/corsi/CorsiGestionePage"
 import IscrittiScuolaPage from "@/pages/corsi/IscrittiScuolaPage"
+import IncassiScuolaPage from "@/pages/corsi/IncassiScuolaPage"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
 
 function App() {
@@ -160,6 +161,14 @@ function App() {
         element={
           <ProtectedRoute>
             <IscrittiScuolaPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/corsi/incassi"
+        element={
+          <ProtectedRoute>
+            <IncassiScuolaPage />
           </ProtectedRoute>
         }
       />

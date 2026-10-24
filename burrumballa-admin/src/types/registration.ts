@@ -1,5 +1,6 @@
 export type PaymentMethod = "bonifico" | "sul_posto"
-export type PaymentStatus = "da_pagare" | "pagato_bonifico" | "pagato_in_loco"
+// "pagato_in_loco" e' il valore storico del pagamento in contanti.
+export type PaymentStatus = "da_pagare" | "pagato_bonifico" | "pagato_in_loco" | "pagato_pos"
 
 export interface Registration {
   id: string

@@ -1,6 +1,7 @@
 import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card"
 import { formatCurrency } from "@/lib/format"
-import { importoEffettivo } from "@/lib/paymentStatus"
+import { isElectronic } from "@/lib/paymentMethods"
+import { INCASSO_BY_STATUS, importoEffettivo } from "@/lib/paymentStatus"
 import type { Registration } from "@/types/registration"
 
 interface SummaryCardsProps {
@@ -14,6 +15,15 @@ export function SummaryCards({ registrations }: SummaryCardsProps) {
   const incassato = registrations
     .filter((r) => r.payment_status !== "da_pagare")
     .reduce((sum, r) => sum + importoEffettivo(r), 0)
+  // Contanti da una parte, POS + bonifico dall'altra.
+  let incassatoContanti = 0
+  let incassatoElettronico = 0
+  for (const r of registrations) {
+    const metodo = INCASSO_BY_STATUS[r.payment_status]
+    if (!metodo) continue
+    if (isElectronic(metodo)) incassatoElettronico += importoEffettivo(r)
+    else incassatoContanti += importoEffettivo(r)
+  }
   const daIncassare = registrations
     .filter((r) => r.payment_status === "da_pagare")
     .reduce((sum, r) => sum + importoEffettivo(r), 0)
@@ -26,6 +36,8 @@ export function SummaryCards({ registrations }: SummaryCardsProps) {
     { label: "Da confermare", value: String(daConfermare), className: "text-amber-600 dark:text-amber-400" },
     { label: "Incassato", value: formatCurrency(incassato), className: "text-emerald-600 dark:text-emerald-400" },
     { label: "Da incassare", value: formatCurrency(daIncassare), className: "text-amber-600 dark:text-amber-400" },
+    { label: "Incassato in contanti", value: formatCurrency(incassatoContanti) },
+    { label: "Incassato elettronico (POS + bonifico)", value: formatCurrency(incassatoElettronico) },
     { label: "Paganti sul posto", value: String(paganoSulPosto) },
     { label: "Paganti con bonifico", value: String(paganoBonifico) },
   ]

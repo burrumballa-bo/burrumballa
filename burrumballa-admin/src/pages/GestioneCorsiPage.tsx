@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom"
-import { ArrowLeft, BookOpen, Users } from "lucide-react"
+import { ArrowLeft, BookOpen, Users, Wallet } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -15,7 +15,13 @@ const SECTIONS = [
     path: "/admin/corsi/iscritti",
     icon: Users,
     title: "Iscritti",
-    description: "Iscritti alla scuola, classi frequentate e abbonamenti.",
+    description: "Iscritti alla scuola, classi, tessere, quote e abbonamenti.",
+  },
+  {
+    path: "/admin/corsi/incassi",
+    icon: Wallet,
+    title: "Incassi",
+    description: "Quanto è stato incassato, diviso tra contanti ed elettronico, e cosa manca.",
   },
 ]
 

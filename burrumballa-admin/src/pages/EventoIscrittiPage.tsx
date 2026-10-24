@@ -57,6 +57,7 @@ export default function EventoIscrittiPage() {
       da_pagare: 0,
       pagato_bonifico: 0,
       pagato_in_loco: 0,
+      pagato_pos: 0,
     }
     for (const r of searchFiltered) counts[r.payment_status] += 1
     return counts
